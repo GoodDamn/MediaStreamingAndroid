@@ -23,8 +23,8 @@ class MSAudioRecord
     companion object {
         private val TAG = MSAudioRecord::class.simpleName
         const val DEFAULT_SAMPLE_RATE = 44100
-        const val DEFAULT_BUFFER_SIZE = 32
-        const val DEFAULT_CHANNEL = AudioFormat.CHANNEL_IN_STEREO
+        const val DEFAULT_BUFFER_SIZE = 2048
+        const val DEFAULT_CHANNEL = AudioFormat.CHANNEL_IN_MONO
         const val DEFAULT_ENCODING = AudioFormat.ENCODING_PCM_16BIT
     }
 
@@ -62,7 +62,7 @@ class MSAudioRecord
         }
     }
 
-    private suspend inline fun runStream() {
+    private inline fun runStream() {
         val sample = read(
             mSampleData,
             0,
@@ -87,7 +87,6 @@ class MSAudioRecord
             }
 
             else -> {
-                Log.d(TAG, "runStream: $sample")
                 onSampleListener?.onRecordSamples(
                     mSampleData,
                     0,
