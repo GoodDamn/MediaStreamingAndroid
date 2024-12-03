@@ -136,10 +136,15 @@ ImageReader.OnImageAvailableListener {
             mImageView = ImageView(
                 context
             ).apply {
+                rotation = 90f
                 setBackgroundColor(
                     0xffff0000.toInt()
                 )
-                addView(this)
+                addView(
+                    this,
+                    mReader.height,
+                    mReader.width
+                )
             }
 
             layoutParams = FrameLayout.LayoutParams(
