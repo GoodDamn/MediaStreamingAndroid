@@ -10,37 +10,25 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import good.damn.editor.mediastreaming.audio.MSAudioRecord
-import good.damn.editor.mediastreaming.network.server.MSServerAudio
-import good.damn.editor.mediastreaming.network.server.listeners.MSListenerServerOnReceiveSamples
+import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
+import good.damn.editor.mediastreaming.network.server.MSServerUDP
+import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveData
 import good.damn.editor.mediastreaming.system.MSServiceHotspotCompat
 import good.damn.editor.mediastreaming.system.interfaces.MSListenerOnGetHotspotHost
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 class MSActivityServer
 : AppCompatActivity(),
-MSListenerServerOnReceiveSamples, MSListenerOnGetHotspotHost {
+MSListenerOnGetHotspotHost {
 
-    private val mServer = MSServerAudio().apply {
-        onReceiveSamples = this@MSActivityServer
-    }
-
-    private val mAudioTrack = AudioTrack(
-        AudioAttributes.Builder()
-            .setLegacyStreamType(
-                AudioManager.STREAM_VOICE_CALL
-            ).setContentType(
-                AudioAttributes.CONTENT_TYPE_SPEECH
-            ).build(),
-        AudioFormat.Builder()
-            .setSampleRate(
-                MSAudioRecord.DEFAULT_SAMPLE_RATE
-            ).setEncoding(
-                MSAudioRecord.DEFAULT_ENCODING
-            ).setChannelMask(
-                AudioFormat.CHANNEL_OUT_MONO
-            ).build(),
+    private val mServerAudio = MSServerUDP(
+        5555,
         MSAudioRecord.DEFAULT_BUFFER_SIZE,
-        AudioTrack.MODE_STREAM,
-        AudioManager.AUDIO_SESSION_ID_GENERATE
+        CoroutineScope(
+            Dispatchers.IO
+        ),
+        MSReceiverAudio()
     )
 
     private var mTextViewIp: TextView? = null
@@ -119,39 +107,27 @@ MSListenerServerOnReceiveSamples, MSListenerOnGetHotspotHost {
 
     }
 
-
     private inline fun onClickBtnStartServer(
         btn: Button
     ) {
-        mServer.start(
-            port = 5555
-        )
+        mServerAudio.start()
     }
 
     private inline fun onClickBtnStopServer(
         btn: Button
     ) {
-        mServer.stop()
-    }
-
-    override fun onReceiveSamples(
-        samples: ByteArray,
-        offset: Int,
-        len: Int
-    ) = mAudioTrack.run {
-        write(
-            samples,
-            offset,
-            len
-        )
-
-        play()
+        mServerAudio.stop()
     }
 
     override fun onGetHotspotIP(
         addressList: String
     ) {
         mTextViewIp?.text = "Host: $addressList\n\nPort: 5555"
+    }
+
+    override fun onStop() {
+        mServerAudio.release()
+        super.onStop()
     }
 
 }

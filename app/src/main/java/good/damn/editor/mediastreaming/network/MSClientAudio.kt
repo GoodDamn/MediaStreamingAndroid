@@ -32,6 +32,8 @@ class MSClientAudio {
     private val mQueue = ConcurrentLinkedQueue<ByteArray>()
 
     fun stream() = mScope.launch {
+        isStreamStopped = false
+
         while (
             !isStreamStopped
         ) {
