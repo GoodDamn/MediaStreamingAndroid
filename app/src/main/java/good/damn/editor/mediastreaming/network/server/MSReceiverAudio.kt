@@ -30,7 +30,7 @@ class MSReceiverAudio
         AudioManager.AUDIO_SESSION_ID_GENERATE
     )
 
-    override fun onReceiveData(
+    override suspend fun onReceiveData(
         data: ByteArray
     ) = mAudioTrack.run {
         write(

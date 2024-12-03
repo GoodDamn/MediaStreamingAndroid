@@ -47,8 +47,7 @@ open class MSServerUDP(
         mSocket.close()
     }
 
-    private inline fun listen() {
-
+    private suspend inline fun listen() {
         Log.d(TAG, "listen: ")
         mSocket.receive(
             DatagramPacket(
