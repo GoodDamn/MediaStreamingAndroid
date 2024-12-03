@@ -4,7 +4,7 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
-import good.damn.editor.mediastreaming.audio.MSAudioRecord
+import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveData
 
 class MSReceiverAudio
@@ -19,13 +19,13 @@ class MSReceiverAudio
             ).build(),
         AudioFormat.Builder()
             .setSampleRate(
-                MSAudioRecord.DEFAULT_SAMPLE_RATE
+                MSRecordAudio.DEFAULT_SAMPLE_RATE
             ).setEncoding(
-                MSAudioRecord.DEFAULT_ENCODING
+                MSRecordAudio.DEFAULT_ENCODING
             ).setChannelMask(
                 AudioFormat.CHANNEL_OUT_MONO
             ).build(),
-        MSAudioRecord.DEFAULT_BUFFER_SIZE,
+        MSRecordAudio.DEFAULT_BUFFER_SIZE,
         AudioTrack.MODE_STREAM,
         AudioManager.AUDIO_SESSION_ID_GENERATE
     )

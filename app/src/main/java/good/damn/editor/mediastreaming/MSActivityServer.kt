@@ -1,18 +1,13 @@
 package good.damn.editor.mediastreaming
 
-import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioManager
-import android.media.AudioTrack
 import android.os.Bundle
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import good.damn.editor.mediastreaming.audio.MSAudioRecord
+import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
-import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveData
 import good.damn.editor.mediastreaming.system.MSServiceHotspotCompat
 import good.damn.editor.mediastreaming.system.interfaces.MSListenerOnGetHotspotHost
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +19,7 @@ MSListenerOnGetHotspotHost {
 
     private val mServerAudio = MSServerUDP(
         5555,
-        MSAudioRecord.DEFAULT_BUFFER_SIZE,
+        MSRecordAudio.DEFAULT_BUFFER_SIZE,
         CoroutineScope(
             Dispatchers.IO
         ),

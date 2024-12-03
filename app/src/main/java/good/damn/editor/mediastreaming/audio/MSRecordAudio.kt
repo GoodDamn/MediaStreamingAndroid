@@ -7,11 +7,10 @@ import android.media.MediaRecorder.AudioSource
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @SuppressLint("MissingPermission")
-class MSAudioRecord
+class MSRecordAudio
 : AudioRecord(
     AudioSource.MIC,
     DEFAULT_SAMPLE_RATE,
@@ -21,7 +20,7 @@ class MSAudioRecord
 ) {
 
     companion object {
-        private val TAG = MSAudioRecord::class.simpleName
+        private val TAG = MSRecordAudio::class.simpleName
         const val DEFAULT_SAMPLE_RATE = 44100
         const val DEFAULT_BUFFER_SIZE = 2048
         const val DEFAULT_CHANNEL = AudioFormat.CHANNEL_IN_MONO

@@ -1,18 +1,16 @@
 package good.damn.editor.mediastreaming.audio.stream
 
-import android.media.AudioAttributes
-import android.media.AudioFormat
-import android.media.AudioManager
-import android.media.AudioTrack
-import android.util.Log
-import good.damn.editor.mediastreaming.audio.MSAudioRecord
+import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.audio.MSListenerOnSamplesRecord
-import good.damn.editor.mediastreaming.network.MSClientAudio
-import good.damn.editor.mediastreaming.stream.MSStream
+import good.damn.editor.mediastreaming.network.MSStateable
+import good.damn.editor.mediastreaming.network.client.MSClientAudio
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import java.net.InetAddress
 
 class MSStreamAudioInput
-: MSStream,
+: MSStateable,
 MSListenerOnSamplesRecord {
 
     companion object {
@@ -20,30 +18,34 @@ MSListenerOnSamplesRecord {
     }
 
     var host: InetAddress
-        get() = mClientAudio.host
+        get() = mClientAudioStream.host
         set(v) {
-            mClientAudio.host = v
+            mClientAudioStream.host = v
         }
 
-    private val mAudioRecord = MSAudioRecord().apply {
+    private val mAudioRecord = MSRecordAudio().apply {
         onSampleListener = this@MSStreamAudioInput
     }
 
-    private val mClientAudio = MSClientAudio()
+    private val mClientAudioStream = MSClientAudio(
+        CoroutineScope(
+            Dispatchers.IO
+        )
+    )
 
-    override fun start() {
-        mClientAudio.stream()
+    override fun start(): Job {
         mAudioRecord.startRecording()
+        return mClientAudioStream.start()
     }
 
     override fun stop() {
         mAudioRecord.stop()
-        mClientAudio.stopStream()
+        mClientAudioStream.stop()
     }
 
     override fun release() {
         mAudioRecord.release()
-        mClientAudio.stopStream()
+        mClientAudioStream.release()
     }
 
     override fun onRecordSamples(
@@ -51,7 +53,7 @@ MSListenerOnSamplesRecord {
         position: Int,
         len: Int
     ) {
-        mClientAudio.sendToMediaServer(
+        mClientAudioStream.sendToStream(
             samples
         )
     }

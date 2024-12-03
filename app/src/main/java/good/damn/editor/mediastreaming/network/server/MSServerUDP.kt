@@ -1,9 +1,8 @@
 package good.damn.editor.mediastreaming.network.server
 
 import android.util.Log
-import good.damn.editor.mediastreaming.audio.MSAudioRecord
+import good.damn.editor.mediastreaming.network.MSStateable
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveData
-import good.damn.editor.mediastreaming.network.server.listeners.MSListenerServerOnReceiveSamples
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.net.DatagramPacket
@@ -14,7 +13,7 @@ open class MSServerUDP(
     bufferSize: Int,
     private val scope: CoroutineScope,
     private val onReceiveData: MSListenerOnReceiveData
-): MSServer {
+): MSStateable {
 
     companion object {
         private val TAG = MSServerUDP::class.simpleName

@@ -1,16 +1,16 @@
-package good.damn.editor.mediastreaming.network
+package good.damn.editor.mediastreaming.network.client
 
-import android.util.Log
+import good.damn.editor.mediastreaming.network.MSStateable
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
-import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentLinkedQueue
 
-class MSClientAudio {
+class MSClientAudio(
+    private val scope: CoroutineScope
+): MSStateable {
 
     companion object {
         private val TAG = MSClientAudio::class.simpleName
@@ -20,24 +20,31 @@ class MSClientAudio {
         "0.0.0.0"
     )
 
-    var isStreamStopped = false
+    var isStreamRunning = false
         private set
 
     private var mSocket = DatagramSocket()
 
-    private val mScope = CoroutineScope(
-        Dispatchers.IO
-    )
+    private val mQueue = ConcurrentLinkedQueue<
+        ByteArray
+    >()
 
-    private val mQueue = ConcurrentLinkedQueue<ByteArray>()
+    fun sendToStream(
+        data: ByteArray
+    ) {
+        if (isStreamRunning) {
+            mQueue.add(
+                data
+            )
+        }
+    }
 
-    fun stream() = mScope.launch {
-        isStreamStopped = false
+    override fun start() = scope.launch {
+        isStreamRunning = true
 
         while (
-            !isStreamStopped
+            isStreamRunning
         ) {
-
             if (mQueue.isEmpty()) {
                 continue
             }
@@ -60,20 +67,16 @@ class MSClientAudio {
         mQueue.clear()
     }
 
-    fun sendToMediaServer(
-        data: ByteArray
-    ) {
-        if (isStreamStopped) {
-            return
-        }
-
-        mQueue.add(
-            data
-        )
+    override fun stop() {
+        isStreamRunning = false
     }
 
-    fun stopStream() {
-        isStreamStopped = true
+    override fun release() {
+        isStreamRunning = false
+        mSocket.apply {
+            disconnect()
+            close()
+        }
     }
 
 }
