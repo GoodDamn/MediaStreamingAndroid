@@ -16,7 +16,6 @@ class MSCameraStream
     }
 
     var targets: List<Surface>? = null
-    var streamUseCase: Long = 0x5 // CameraMetadata.VIDEO_CALL
     var handler = Handler(
         Looper.getMainLooper()
     )

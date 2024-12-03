@@ -37,6 +37,14 @@ class MSManagerCamera(
         return cameras
     }
 
+    fun getRotationInitial(
+        cameraId: String
+    ) = manager.getCameraCharacteristics(
+        cameraId
+    ).get(
+        CameraCharacteristics.SENSOR_ORIENTATION
+    )
+
     fun openCamera(
         cameraId: String,
         listener: CameraDevice.StateCallback
