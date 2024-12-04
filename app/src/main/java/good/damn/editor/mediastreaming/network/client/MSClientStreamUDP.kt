@@ -8,12 +8,13 @@ import java.net.DatagramSocket
 import java.net.InetAddress
 import java.util.concurrent.ConcurrentLinkedQueue
 
-class MSClientAudio(
+class MSClientStreamUDP(
+    private val port: Int,
     private val scope: CoroutineScope
 ): MSStateable {
 
     companion object {
-        private val TAG = MSClientAudio::class.simpleName
+        private val TAG = MSClientStreamUDP::class.simpleName
     }
 
     var host = InetAddress.getByName(
@@ -56,7 +57,7 @@ class MSClientAudio(
                 0,
                 data.size,
                 host,
-                5555
+                port
             )
 
             mSocket.send(

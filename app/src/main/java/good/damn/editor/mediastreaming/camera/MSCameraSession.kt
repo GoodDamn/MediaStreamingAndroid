@@ -2,17 +2,16 @@ package good.damn.editor.mediastreaming.camera
 
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
-import android.hardware.camera2.CameraMetadata
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Surface
 
-class MSCameraStream
+class MSCameraSession
 : CameraCaptureSession.StateCallback() {
 
     companion object {
-        private val TAG = MSCameraStream::class.simpleName
+        private val TAG = MSCameraSession::class.simpleName
     }
 
     var targets: List<Surface>? = null
@@ -49,6 +48,10 @@ class MSCameraStream
         session: CameraCaptureSession
     ) {
         Log.d(TAG, "onConfigureFailed: $session ")
+    }
+
+    fun stop() {
+        release()
     }
 
     fun release() {

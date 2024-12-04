@@ -7,7 +7,6 @@ import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.os.Handler
 import android.os.Looper
-import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnOpenCamera
 import java.util.LinkedList
 
 @SuppressLint("MissingPermission")

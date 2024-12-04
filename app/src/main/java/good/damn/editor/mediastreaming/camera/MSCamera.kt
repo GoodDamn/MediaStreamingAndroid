@@ -1,28 +1,51 @@
 package good.damn.editor.mediastreaming.camera
 
 import android.content.Context
+import android.graphics.ImageFormat
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
+import android.media.ImageReader
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
-import android.view.Surface
+import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnGetCameraFrameData
 import good.damn.editor.mediastreaming.misc.HandlerExecutor
 import java.util.LinkedList
 
 class MSCamera(
+    width: Int,
+    height: Int,
     context: Context
-): CameraDevice.StateCallback() {
+): CameraDevice.StateCallback(),
+ImageReader.OnImageAvailableListener {
 
     companion object {
         private val TAG = MSCamera::class.simpleName
     }
 
+    private val thread = HandlerThread(
+        "cameraDamn"
+    ).apply {
+        start()
+    }
 
+    private val mReader = ImageReader.newInstance(
+        width,
+        height,
+        ImageFormat.JPEG,
+        1
+    ).apply {
+        setOnImageAvailableListener(
+            this@MSCamera,
+            Handler(
+                thread.looper
+            )
+        )
+    }
 
     private val manager = MSManagerCamera(
         context
@@ -33,7 +56,7 @@ class MSCamera(
         CameraMetadata.LENS_FACING_BACK
     ).firstOrNull()
 
-    private val mCameraStream = MSCameraStream()
+    private val mCameraStream = MSCameraSession()
 
     val rotation = mCameraId?.run {
         manager.getRotationInitial(
@@ -41,17 +64,13 @@ class MSCamera(
         )
     } ?: 0
 
-    val thread = HandlerThread(
-        "cameraDamn"
-    ).apply {
-        start()
-    }
+    var onGetCameraFrame: MSListenerOnGetCameraFrameData? = null
 
-    fun openCameraStream(
-        targets: List<Surface>
-    ) {
+    fun openCameraStream() {
         Log.d(TAG, "openCameraStream: $mCameraId ROT: $rotation")
-        mCameraStream.targets = targets
+        mCameraStream.targets = listOf(
+            mReader.surface
+        )
         mCameraStream.handler = Handler(
             thread.looper
         )
@@ -61,6 +80,10 @@ class MSCamera(
                 this@MSCamera
             )
         }
+    }
+
+    fun stop() {
+        mCameraStream.stop()
     }
 
     fun release() {
@@ -104,6 +127,30 @@ class MSCamera(
             mCameraStream,
             mCameraStream.handler
         )
+    }
+
+    override fun onImageAvailable(
+        reader: ImageReader?
+    ) = mReader.run {
+        val image = acquireLatestImage()
+
+        val buffer = image
+            .planes[0]
+            .buffer
+
+        val data = ByteArray(
+            buffer.capacity()
+        )
+
+        buffer.get(
+            data
+        )
+
+        onGetCameraFrame?.onGetFrame(
+            data
+        )
+
+        image.close()
     }
 
     override fun onDisconnected(
