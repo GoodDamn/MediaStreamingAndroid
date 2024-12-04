@@ -2,6 +2,7 @@ package good.damn.editor.mediastreaming.camera
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.util.Log
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnGetCameraFrameBitmap
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnGetCameraFrameData
 import good.damn.editor.mediastreaming.network.MSStateable
@@ -17,6 +18,10 @@ class MSStreamCameraInput(
     context: Context,
     private val sendDtMs: Long = 16L
 ): MSStateable, MSListenerOnGetCameraFrameData {
+
+    companion object {
+        private val TAG = MSStreamCameraInput::class.simpleName
+    }
 
     private val mClientCamera = MSClientStreamUDP(
         5556,
@@ -79,6 +84,9 @@ class MSStreamCameraInput(
         if (sendDtMs > mCurrentTimeMs - mPrevTimeMs) {
             return
         }
+
+
+        Log.d(TAG, "onGetFrame: ${data.size}")
 
         mClientCamera.sendToStream(
             data

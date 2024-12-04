@@ -32,7 +32,7 @@ MSListenerOnGetHotspotHost, MSListenerOnReceiveFrame {
 
     private val mServerFrame = MSServerUDP(
         5556,
-        1024 * 65,
+        32768,
         CoroutineScope(
             Dispatchers.IO
         ),
