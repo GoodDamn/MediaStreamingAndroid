@@ -1,33 +1,23 @@
 package good.damn.editor.mediastreaming
 
 import android.Manifest
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
-import android.graphics.SurfaceTexture
-import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraDevice
 import android.media.ImageReader
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.view.Surface
-import android.view.SurfaceHolder
-import android.view.SurfaceView
-import android.view.TextureView
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import good.damn.editor.mediastreaming.audio.stream.MSStreamAudioInput
 import good.damn.editor.mediastreaming.camera.MSCamera
-import good.damn.editor.mediastreaming.camera.MSManagerCamera
-import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnOpenCamera
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import good.damn.editor.mediastreaming.system.permission.MSPermission
+import good.damn.media.gles.GLViewTexture
 import java.net.InetAddress
 
 class MSActivityClient
@@ -46,8 +36,12 @@ ImageReader.OnImageAvailableListener {
     private var mStreamAudio: MSStreamAudioInput? = null
     private var mCamera: MSCamera? = null
 
-    private var mImageView: ImageView? = null
+    private var mViewTexture: GLViewTexture? = null
     private var mEditText: EditText? = null
+
+    private val mHandlerMain = Handler(
+        Looper.getMainLooper()
+    )
 
     private val mReader = ImageReader.newInstance(
         800,
@@ -133,13 +127,9 @@ ImageReader.OnImageAvailableListener {
                 )
             }
 
-            mImageView = ImageView(
+            mViewTexture = GLViewTexture(
                 context
             ).apply {
-                rotation = 90f
-                setBackgroundColor(
-                    0xffff0000.toInt()
-                )
                 addView(
                     this,
                     mReader.height,
@@ -201,38 +191,32 @@ ImageReader.OnImageAvailableListener {
     override fun onImageAvailable(
         reader: ImageReader?
     ) {
-        Log.d(TAG, "onImageAvailable: $reader")
         reader?.apply {
-            val image =  acquireLatestImage()
-            val plane = image
-                .planes[0]
 
-            val buffer = plane.buffer
+            val image = acquireLatestImage()
+
+            val buffer = image
+                .planes[0]
+                .buffer
 
             val data = ByteArray(
                 buffer.capacity()
             )
 
-            buffer.get(data)
+            buffer.get(
+                data
+            )
 
-            val rowStride = plane.rowStride
-            val pixelStride = plane.pixelStride
-            Log.d(TAG, "onImageAvailable: SETUP: $rowStride $pixelStride")
-            Log.d(TAG, "onImageAvailable: $width $height ${buffer.capacity()} ${image.planes.size}")
-
-            BitmapFactory.decodeByteArray(
+            mViewTexture?.bitmap = BitmapFactory.decodeByteArray(
                 data,
                 0,
                 data.size
-            ).apply {
-                Handler(
-                    Looper.getMainLooper()
-                ).post {
-                    mImageView?.setImageBitmap(
-                        this
-                    )
-                }
+            )
+
+            mHandlerMain.post {
+                mViewTexture?.requestRender()
             }
+
             image.close()
         }
     }

@@ -119,12 +119,3 @@ class MSCamera(
     }
 
 }
-
-private class MSCameraExecutor: Executor {
-    override fun execute(
-        command: Runnable?
-    ) {
-        command?.run()
-    }
-
-}

@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "MediaStreaming"
 include(":app")
- 
+include(":GLES")
