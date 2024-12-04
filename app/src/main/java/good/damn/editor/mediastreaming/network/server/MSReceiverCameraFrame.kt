@@ -1,13 +1,12 @@
 package good.damn.editor.mediastreaming.network.server
 
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveData
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveFrame
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class MSReceiverFrameImage
+class MSReceiverCameraFrame
 : MSListenerOnReceiveData {
 
     var onReceiveFrame: MSListenerOnReceiveFrame? = null
