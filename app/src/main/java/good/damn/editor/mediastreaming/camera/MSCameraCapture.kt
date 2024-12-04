@@ -22,7 +22,7 @@ class MSCameraCapture
         timestamp: Long,
         frameNumber: Long
     ) {
-        Log.d(TAG, "onCaptureStarted: $timestamp $frameNumber")
+        //Log.d(TAG, "onCaptureStarted: $timestamp $frameNumber")
     }
 
     override fun onReadoutStarted(
@@ -31,7 +31,7 @@ class MSCameraCapture
         timestamp: Long,
         frameNumber: Long
     ) {
-        Log.d(TAG, "onReadoutStarted: $timestamp $frameNumber")
+        //Log.d(TAG, "onReadoutStarted: $timestamp $frameNumber")
     }
 
     override fun onCaptureProgressed(
@@ -39,7 +39,7 @@ class MSCameraCapture
         request: CaptureRequest,
         partialResult: CaptureResult
     ) {
-        Log.d(TAG, "onCaptureProgressed: ${partialResult.frameNumber} ${partialResult.sequenceId}")
+        //Log.d(TAG, "onCaptureProgressed: ${partialResult.frameNumber} ${partialResult.sequenceId}")
     }
 
     override fun onCaptureCompleted(
@@ -47,7 +47,7 @@ class MSCameraCapture
         request: CaptureRequest,
         result: TotalCaptureResult
     ) {
-        Log.d(TAG, "onCaptureCompleted: ${result.frameNumber} ${result.partialResults}")
+        //Log.d(TAG, "onCaptureCompleted: ${result.frameNumber} ${result.partialResults}")
     }
 
     override fun onCaptureFailed(
@@ -55,7 +55,7 @@ class MSCameraCapture
         request: CaptureRequest,
         failure: CaptureFailure
     ) {
-        Log.d(TAG, "onCaptureFailed: ${failure.reason}")
+        //Log.d(TAG, "onCaptureFailed: ${failure.reason}")
     }
 
     override fun onCaptureSequenceCompleted(
@@ -63,14 +63,14 @@ class MSCameraCapture
         sequenceId: Int,
         frameNumber: Long
     ) {
-        Log.d(TAG, "onCaptureSequenceCompleted: $frameNumber")
+        //Log.d(TAG, "onCaptureSequenceCompleted: $frameNumber")
     }
 
     override fun onCaptureSequenceAborted(
         session: CameraCaptureSession,
         sequenceId: Int
     ) {
-        Log.d(TAG, "onCaptureSequenceAborted: $sequenceId")
+        //Log.d(TAG, "onCaptureSequenceAborted: $sequenceId")
     }
 
     override fun onCaptureBufferLost(
@@ -79,6 +79,6 @@ class MSCameraCapture
         target: Surface,
         frameNumber: Long
     ) {
-        Log.d(TAG, "onCaptureBufferLost: $target $frameNumber")
+        //Log.d(TAG, "onCaptureBufferLost: $target $frameNumber")
     }
 }

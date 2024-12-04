@@ -182,6 +182,8 @@ ImageReader.OnImageAvailableListener {
                         thread.looper
                     )
                 )
+                Log.d(TAG, "onResultPermission: $rotation")
+                mViewTexture?.rotationShade = rotation
             }
         }
 

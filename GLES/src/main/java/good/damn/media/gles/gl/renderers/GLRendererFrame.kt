@@ -19,6 +19,12 @@ class GLRendererFrame(
             mTexture.bitmap = v
         }
 
+    var rotation: Int
+        get() = mTexture.rotation
+        set(v) {
+            mTexture.rotation = v
+        }
+
     private lateinit var mQuad: GLRenderQuad
     private lateinit var mTexture: GLRenderTexture
 

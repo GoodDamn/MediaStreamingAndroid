@@ -18,11 +18,14 @@ GLDrawable {
 
     var bitmap: Bitmap? = null
 
+    var rotation = 0
+
     var width = 0f
     var height = 0f
 
     private var mUniTexture = 0
     private var mUniResolution = 0
+    private var mUniRotation = 0
     private var mTextures = intArrayOf(1)
 
     init {
@@ -59,6 +62,11 @@ GLDrawable {
         mUniResolution = glGetUniformLocation(
             program,
             "u_res"
+        )
+
+        mUniRotation = glGetUniformLocation(
+            program,
+            "u_rotation"
         )
 
         glBindTexture(
@@ -115,6 +123,11 @@ GLDrawable {
         glBindTexture(
             GL_TEXTURE_2D,
             mTextures[0]
+        )
+
+        glUniform1i(
+            mUniRotation,
+            rotation
         )
 
         glUniform1i(

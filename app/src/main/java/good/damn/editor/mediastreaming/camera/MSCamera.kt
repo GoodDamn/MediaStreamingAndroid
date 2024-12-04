@@ -13,7 +13,6 @@ import android.util.Log
 import android.view.Surface
 import good.damn.editor.mediastreaming.misc.HandlerExecutor
 import java.util.LinkedList
-import java.util.concurrent.Executor
 
 class MSCamera(
     context: Context
@@ -23,11 +22,7 @@ class MSCamera(
         private val TAG = MSCamera::class.simpleName
     }
 
-    val thread = HandlerThread(
-        "cameraDamn"
-    ).apply {
-        start()
-    }
+
 
     private val manager = MSManagerCamera(
         context
@@ -38,18 +33,24 @@ class MSCamera(
         CameraMetadata.LENS_FACING_BACK
     ).firstOrNull()
 
-    private val mCameraRotation = mCameraId?.run {
+    private val mCameraStream = MSCameraStream()
+
+    val rotation = mCameraId?.run {
         manager.getRotationInitial(
             this
         )
     } ?: 0
 
-    private val mCameraStream = MSCameraStream()
+    val thread = HandlerThread(
+        "cameraDamn"
+    ).apply {
+        start()
+    }
 
     fun openCameraStream(
         targets: List<Surface>
     ) {
-        Log.d(TAG, "openCameraStream: $mCameraId ROT: $mCameraRotation")
+        Log.d(TAG, "openCameraStream: $mCameraId ROT: $rotation")
         mCameraStream.targets = targets
         mCameraStream.handler = Handler(
             thread.looper
