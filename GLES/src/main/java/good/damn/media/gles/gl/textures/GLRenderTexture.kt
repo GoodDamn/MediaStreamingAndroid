@@ -1,69 +1,42 @@
 package good.damn.media.gles.gl.textures
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.util.Log
+import good.damn.media.gles.GLViewTexture
 import good.damn.media.gles.R
 import good.damn.media.gles.extensions.rawText
 import good.damn.media.gles.gl.interfaces.GLDrawable
 import good.damn.media.gles.gl.interfaces.GLLayoutable
 import good.damn.media.gles.utils.gl.GLUtilities
 import good.damn.media.gles.gl.GL.*
-import java.nio.Buffer
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.IntBuffer
-import java.util.function.IntFunction
 
 class GLRenderTexture(
-    program: Int,
-    context: Context
+    val texture: GLTexture
 ): GLLayoutable,
 GLDrawable {
 
-    var bitmap: Bitmap? = null
-
     var rotation = 0
-
-    var width = 0f
-    var height = 0f
-
-
-    private var mBuffer: IntBuffer? = null
 
     private var mUniTexture = 0
     private var mUniResolution = 0
     private var mUniRotation = 0
     private var mTextures = intArrayOf(1)
 
-    private var mWidth = 0
-    private var mHeight = 0
+    private var mViewportWidth = 0f
+    private var mViewportHeight = 0f
 
-    init {
-        glAttachShader(
-            program,
-            GLUtilities.loadShader(
-                GL_FRAGMENT_SHADER,
-                context.rawText(
-                    R.raw.frag
-                )
-            )
-        )
+    fun create(
+        program: Int
+    ) {
 
         glGenTextures(
             1,
             mTextures,
             0
         )
-    }
-
-    override fun layout(
-        width: Int,
-        height: Int,
-        program: Int
-    ) {
-        this.width = width.toFloat()
-        this.height = height.toFloat()
 
         mUniTexture = glGetUniformLocation(
             program,
@@ -121,39 +94,47 @@ GLDrawable {
             GL_RED
         )
 
+        /*val w = texture.width
+        val h = texture.height
 
-        mWidth = 128
-        mHeight = 512
-
-        val pixels = IntArray(
-            mWidth * mHeight
-        )
-        for (ih in 0 until mHeight) {
-            for (iw in 0 until mWidth) {
-                pixels[ih * mWidth + iw] = 0x00ff00ff // BGRA
+        var pixel = 0
+        for (ih in 0 until h) {
+            for (iw in 0 until w) {
+                texture.buffer.apply {
+                    put(pixel, 255.toByte()) // A
+                    put(pixel+1, 0.toByte()) // R
+                    put(pixel+2, 0.toByte()) // G
+                    put(pixel+3, 255.toByte()) //  B
+                }
+                pixel += 4
             }
-        }
-
-        mBuffer = IntBuffer.wrap(
-            pixels
-        )
+        }*/
 
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
             GL_RGBA,
-            mWidth,
-            mHeight,
+            texture.width,
+            texture.height,
             0,
             GL_RGBA,
             GL_UNSIGNED_BYTE,
-            mBuffer
+            texture.buffer
         )
 
         glBindTexture(
             GL_TEXTURE_2D,
             0
         )
+    }
+
+    override fun layout(
+        width: Int,
+        height: Int,
+        program: Int
+    ) {
+        mViewportWidth = width.toFloat()
+        mViewportHeight = height.toFloat()
     }
 
     override fun draw(
@@ -163,12 +144,12 @@ GLDrawable {
             GL_TEXTURE_2D,
             0,
             GL_RGBA,
-            mWidth,
-            mHeight,
+            texture.width,
+            texture.height,
             0,
             GL_RGBA,
             GL_UNSIGNED_BYTE,
-            mBuffer
+            texture.buffer
         )
 
         glActiveTexture(
@@ -192,8 +173,8 @@ GLDrawable {
 
         glUniform2f(
             mUniResolution,
-            width,
-            height
+            mViewportWidth,
+            mViewportHeight
         )
     }
 }

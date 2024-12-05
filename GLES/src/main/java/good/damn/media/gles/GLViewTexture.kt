@@ -4,18 +4,14 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.opengl.GLSurfaceView
 import good.damn.media.gles.gl.renderers.GLRendererFrame
+import good.damn.media.gles.gl.textures.GLTexture
 
 class GLViewTexture(
-    context: Context
+    context: Context,
+    texture: GLTexture
 ): GLSurfaceView(
     context
 ) {
-
-    var bitmap: Bitmap?
-        get() = mRenderer.bitmap
-        set(v) {
-            mRenderer.bitmap = v
-        }
 
     var rotationShade: Int
         get() = mRenderer.rotation
@@ -24,7 +20,8 @@ class GLViewTexture(
         }
 
     private val mRenderer = GLRendererFrame(
-        context
+        context,
+        texture
     )
 
     init {
@@ -33,6 +30,7 @@ class GLViewTexture(
         setRenderer(
             mRenderer
         )
+
         renderMode = RENDERMODE_WHEN_DIRTY
 
     }

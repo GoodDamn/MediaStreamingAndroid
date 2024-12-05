@@ -10,11 +10,9 @@ import good.damn.media.gles.gl.interfaces.GLDrawable
 import good.damn.media.gles.gl.interfaces.GLLayoutable
 import good.damn.media.gles.utils.gl.GLUtilities
 
-class GLRenderQuad(
-    program: Int,
-    context: Context
-): GLDrawable,
-    GLLayoutable {
+class GLRenderQuad
+: GLDrawable,
+GLLayoutable {
 
     companion object {
         private const val STRIDE = 8
@@ -35,33 +33,21 @@ class GLRenderQuad(
 
     private var mAttrPosition = 0
 
-    init {
-
-        val vertexShader = GLUtilities.loadShader(
-            GL_VERTEX_SHADER,
-            context.rawText(
-                R.raw.vert
-            )
-        )
-
-        glAttachShader(
-            program,
-            vertexShader
-        )
-
-    }
-
-
-    override fun layout(
-        width: Int,
-        height: Int,
+    fun create(
         program: Int
     ) {
+
         mAttrPosition = glGetAttribLocation(
             program,
             "position"
         )
     }
+
+    override fun layout(
+        width: Int,
+        height: Int,
+        program: Int
+    ) {}
 
     override fun draw(
         program: Int

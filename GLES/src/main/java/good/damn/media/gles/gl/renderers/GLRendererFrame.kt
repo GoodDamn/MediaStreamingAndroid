@@ -3,21 +3,20 @@ package good.damn.media.gles.gl.renderers
 import android.content.Context
 import android.graphics.Bitmap
 import android.opengl.GLSurfaceView
+import good.damn.media.gles.R
+import good.damn.media.gles.extensions.rawText
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import good.damn.media.gles.gl.quad.GLRenderQuad
 import good.damn.media.gles.gl.textures.GLRenderTexture
 import good.damn.media.gles.gl.GL.*
+import good.damn.media.gles.gl.textures.GLTexture
+import good.damn.media.gles.utils.gl.GLUtilities
 
 class GLRendererFrame(
-    private val context: Context
+    private val context: Context,
+    texture: GLTexture
 ): GLSurfaceView.Renderer {
-
-    var bitmap: Bitmap?
-        get() = mTexture.bitmap
-        set(v) {
-            mTexture.bitmap = v
-        }
 
     var rotation: Int
         get() = mTexture.rotation
@@ -25,8 +24,10 @@ class GLRendererFrame(
             mTexture.rotation = v
         }
 
-    private lateinit var mQuad: GLRenderQuad
-    private lateinit var mTexture: GLRenderTexture
+    private val mQuad = GLRenderQuad()
+    private val mTexture = GLRenderTexture(
+        texture
+    )
 
     private var mProgram = 0
 
@@ -36,14 +37,24 @@ class GLRendererFrame(
     ) {
         mProgram = glCreateProgram()
 
-        mQuad = GLRenderQuad(
+        glAttachShader(
             mProgram,
-            context
+            GLUtilities.loadShader(
+                GL_VERTEX_SHADER,
+                context.rawText(
+                    R.raw.vert
+                )
+            )
         )
 
-        mTexture = GLRenderTexture(
+        glAttachShader(
             mProgram,
-            context
+            GLUtilities.loadShader(
+                GL_FRAGMENT_SHADER,
+                context.rawText(
+                    R.raw.frag
+                )
+            )
         )
 
         glLinkProgram(
@@ -51,6 +62,14 @@ class GLRendererFrame(
         )
 
         glUseProgram(
+            mProgram
+        )
+
+        mQuad.create(
+            mProgram
+        )
+
+        mTexture.create(
             mProgram
         )
     }
@@ -76,18 +95,6 @@ class GLRendererFrame(
     override fun onDrawFrame(
         gl: GL10?
     ) {
-        glClear(
-            GL_COLOR_BUFFER_BIT or
-            GL_DEPTH_BUFFER_BIT
-        )
-
-        glClearColor(
-            1.0f,
-            0.0f,
-            0.0f,
-            1.0f
-        )
-
         mTexture.draw(
             mProgram
         )

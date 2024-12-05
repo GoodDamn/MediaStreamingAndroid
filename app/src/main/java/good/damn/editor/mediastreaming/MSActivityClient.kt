@@ -1,8 +1,6 @@
 package good.damn.editor.mediastreaming
 
 import android.Manifest
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -12,21 +10,23 @@ import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import good.damn.editor.mediastreaming.audio.stream.MSStreamAudioInput
 import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
-import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnGetCameraFrameBitmap
-import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnGetCameraFrameData
+import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnUpdateCameraFrame
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import good.damn.editor.mediastreaming.system.permission.MSPermission
 import good.damn.media.gles.GLViewTexture
+import good.damn.media.gles.gl.textures.GLTexture
 import java.net.InetAddress
+import java.nio.ByteBuffer
 
 class MSActivityClient
 : AppCompatActivity(),
-MSListenerOnResultPermission, MSListenerOnGetCameraFrameData, MSListenerOnGetCameraFrameBitmap {
+MSListenerOnResultPermission,
+MSListenerOnUpdateCameraFrame {
 
     companion object {
         private val TAG = MSActivityClient::class.simpleName
-        private const val CAMERA_WIDTH = 480
-        private const val CAMERA_HEIGHT = 360
+        private const val CAMERA_WIDTH = 640
+        private const val CAMERA_HEIGHT = 480
     }
 
     private val mLauncherPermission = MSPermission().apply {
@@ -37,6 +37,10 @@ MSListenerOnResultPermission, MSListenerOnGetCameraFrameData, MSListenerOnGetCam
     private var mStreamInputCamera: MSStreamCameraInput? = null
 
     private var mViewTexture: GLViewTexture? = null
+    private val mTexture = GLTexture(
+        CAMERA_WIDTH,
+        CAMERA_HEIGHT
+    )
     private var mEditText: EditText? = null
 
     override fun onCreate(
@@ -116,7 +120,8 @@ MSListenerOnResultPermission, MSListenerOnGetCameraFrameData, MSListenerOnGetCam
             }
 
             mViewTexture = GLViewTexture(
-                context
+                context,
+                mTexture
             ).apply {
                 addView(
                     this,
@@ -149,21 +154,9 @@ MSListenerOnResultPermission, MSListenerOnGetCameraFrameData, MSListenerOnGetCam
         super.onStop()
     }
 
-    override fun onGetFrame(
-        data: ByteArray
-    ) {
-        val bitmap = BitmapFactory.decodeByteArray(
-            data,
-            0,
-            data.size
-        )
 
-        mViewTexture?.apply {
-            MSApp.ui {
-                this.bitmap = bitmap
-                requestRender()
-            }
-        }
+    override fun onUpdateFrame() {
+        mViewTexture?.requestRender()
     }
 
     override fun onResultPermission(
@@ -178,27 +171,15 @@ MSListenerOnResultPermission, MSListenerOnGetCameraFrameData, MSListenerOnGetCam
 
         Manifest.permission.CAMERA -> {
             mStreamInputCamera = MSStreamCameraInput(
-                CAMERA_WIDTH,
-                CAMERA_HEIGHT,
-                this
+                this,
+                mTexture
             ).apply {
-                onGetCameraFrameBitmap = this@MSActivityClient
+                onUpdateCameraFrame = this@MSActivityClient
                 mViewTexture?.rotationShade = rotation
             }
         }
 
         else -> Unit
-    }
-
-    override fun onGetFrameBitmap(
-        bitmap: Bitmap
-    ) {
-        mViewTexture?.apply {
-            MSApp.ui {
-                this.bitmap = bitmap
-                requestRender()
-            }
-        }
     }
 
     private inline fun onClickBtnVideoCall(

@@ -2,8 +2,8 @@ package good.damn.editor.mediastreaming.system
 
 import android.content.Context
 import android.net.wifi.WifiManager
+import good.damn.editor.mediastreaming.extensions.setIntegerOnPosition
 import good.damn.editor.mediastreaming.system.interfaces.MSListenerOnGetHotspotHost
-import good.damn.editor.mediastreaming.utils.MSUtilsByte
 import java.nio.ByteOrder
 
 @Deprecated("dhcpInfo of WifiManager class is deprecated")
@@ -33,12 +33,15 @@ class MSServiceHotspot(
             return
         }
 
-        val ip = MSUtilsByte.integer(
+        val ip = ByteArray(4)
+
+        ip.setIntegerOnPosition(
             if (ByteOrder.nativeOrder().equals(
                 ByteOrder.LITTLE_ENDIAN
             )) Integer.reverseBytes(
                 ipDhcp
-            ) else ipDhcp
+            ) else ipDhcp,
+            pos = 0
         )
 
         delegate?.onGetHotspotIP(

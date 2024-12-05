@@ -8,18 +8,21 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
-import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFrame
+import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFramePiece
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
-import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveFrame
+import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveFramePiece
 import good.damn.editor.mediastreaming.system.MSServiceHotspotCompat
 import good.damn.editor.mediastreaming.system.interfaces.MSListenerOnGetHotspotHost
 import good.damn.media.gles.GLViewTexture
+import good.damn.media.gles.gl.textures.GLTexture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MSActivityServer
 : AppCompatActivity(),
-MSListenerOnGetHotspotHost, MSListenerOnReceiveFrame {
+MSListenerOnGetHotspotHost,
+ MSListenerOnReceiveFramePiece {
 
     private val mServerAudio = MSServerUDP(
         5555,
@@ -36,12 +39,16 @@ MSListenerOnGetHotspotHost, MSListenerOnReceiveFrame {
         CoroutineScope(
             Dispatchers.IO
         ),
-        MSReceiverCameraFrame().apply {
-            onReceiveFrame = this@MSActivityServer
+        MSReceiverCameraFramePiece().apply {
+            onReceiveFramePiece = this@MSActivityServer
         }
     )
 
     private var mViewTexture: GLViewTexture? = null
+    private val mTexture = GLTexture(
+        480,
+        360
+    )
     private var mTextViewIp: TextView? = null
 
     override fun onCreate(
@@ -105,7 +112,8 @@ MSListenerOnGetHotspotHost, MSListenerOnReceiveFrame {
             }
 
             GLViewTexture(
-                context
+                context,
+                mTexture
             ).apply {
                 mViewTexture = this
                 addView(
@@ -138,12 +146,26 @@ MSListenerOnGetHotspotHost, MSListenerOnReceiveFrame {
         super.onStop()
     }
 
-    override fun onReceiveFrame(
-        frame: Bitmap
+
+    override suspend fun onReceiveFramePiece(
+        heightPiece: Int,
+        offsetPixels: Int,
+        pixels: ByteArray
     ) {
         mViewTexture?.apply {
-            bitmap = frame
-            requestRender()
+            val pos = heightPiece * mTexture.width
+            for (i in 0 until mTexture.width) {
+                mTexture.buffer.put(
+                    pos + i,
+                    pixels[offsetPixels + i]
+                )
+            }
+        }
+
+        withContext(
+            Dispatchers.Main
+        ) {
+            mViewTexture?.requestRender()
         }
     }
 
