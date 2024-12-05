@@ -24,9 +24,8 @@ import java.nio.ByteBuffer
 
 class MSStreamCameraInput(
     context: Context,
-    private val scope: CoroutineScope,
-    private val texture: GLTexture,
-    private val sendDtMs: Long = 16L
+    scope: CoroutineScope,
+    private val texture: GLTexture
 ): MSStateable, MSListenerOnGetCameraFrameData {
 
     companion object {
@@ -48,8 +47,9 @@ class MSStreamCameraInput(
         onGetCameraFrame = this@MSStreamCameraInput
     }
 
-    private var mCurrentTimeMs = System.currentTimeMillis()
-    private var mPrevTimeMs = mCurrentTimeMs
+    private val mBuffer = ByteArray(
+        8 + PIXEL_COLORS_SEND
+    )
 
     val rotation: Int
         get() = mCamera.rotation
@@ -96,66 +96,48 @@ class MSStreamCameraInput(
             texture.height
         )
 
-        scope.launch {
-            texture.buffer.apply {
-                val capacity = capacity()
-                var bufIndex = 0
-                var fromIndex = 0
-                var toIndex = PIXEL_COLORS_SEND
-                var buffer = ByteArray(
-                    8 + PIXEL_COLORS_SEND
-                )
-                var limit = PIXEL_COLORS_SEND
-
-                var i = 0
-                while (i < capacity) {
-                    if (bufIndex >= limit) {
-                        buffer.setIntegerOnPosition(
-                            fromIndex,
-                            pos = 0
-                        )
-
-                        buffer.setIntegerOnPosition(
-                            toIndex,
-                            pos = 4
-                        )
-                        mClientCamera.sendToStream(
-                            buffer
-                        )
-                        buffer = ByteArray(
-                            8 + PIXEL_COLORS_SEND
-                        )
-                        fromIndex += bufIndex
-                        bufIndex = 0
-                        limit = if (capacity - i < PIXEL_COLORS_SEND)
-                            capacity - i
-                        else PIXEL_COLORS_SEND
-                        toIndex = i + limit
-                        continue
-                    }
-
-                    buffer[8 + bufIndex++] = get(i)
-                    i++
-                }
-            }
-        }
-
         onUpdateCameraFrame?.apply {
             MSApp.ui {
                 onUpdateFrame()
             }
         }
 
-        mCurrentTimeMs = System.currentTimeMillis()
-//        if (sendDtMs > mCurrentTimeMs - mPrevTimeMs) {
-//            return
-//        }
-//
-//        mClientCamera.sendToStream(
-//            data
-//        )
+        texture.buffer.apply {
+            val capacity = capacity()
+            var bufIndex = 0
+            var fromIndex = 0
+            var toIndex = PIXEL_COLORS_SEND
+            var limit = PIXEL_COLORS_SEND
 
-        mPrevTimeMs = mCurrentTimeMs
+            var i = 0
+            while (i < capacity) {
+                if (bufIndex >= limit) {
+                    mBuffer.setIntegerOnPosition(
+                        fromIndex,
+                        pos = 0
+                    )
+
+                    mBuffer.setIntegerOnPosition(
+                        toIndex,
+                        pos = 4
+                    )
+                    mClientCamera.sendToStream(
+                        mBuffer
+                    )
+
+                    fromIndex += bufIndex
+                    bufIndex = 0
+                    limit = if (capacity - i < PIXEL_COLORS_SEND)
+                        capacity - i
+                    else PIXEL_COLORS_SEND
+                    toIndex = i + limit
+                    continue
+                }
+
+                mBuffer[8 + bufIndex++] = get(i)
+                i++
+            }
+        }
     }
 
 }
