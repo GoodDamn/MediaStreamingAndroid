@@ -2,18 +2,24 @@ package good.damn.editor.mediastreaming.camera
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.graphics.YuvImage
+import android.media.Image
 import android.util.Log
+import androidx.core.graphics.get
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnUpdateCameraFrame
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnGetCameraFrameData
 import good.damn.editor.mediastreaming.extensions.setIntegerOnPosition
 import good.damn.editor.mediastreaming.network.MSStateable
 import good.damn.editor.mediastreaming.network.client.MSClientStreamUDP
+import good.damn.editor.mediastreaming.utils.MSUtilsImage
 import good.damn.media.gles.gl.textures.GLTexture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import java.net.InetAddress
+import java.nio.Buffer
+import java.nio.ByteBuffer
 
 class MSStreamCameraInput(
     context: Context,
@@ -24,10 +30,6 @@ class MSStreamCameraInput(
     companion object {
         private val TAG = MSStreamCameraInput::class.simpleName
     }
-
-    private val mBufferPixels = IntArray(
-        texture.width * texture.height
-    )
 
     private val mClientCamera = MSClientStreamUDP(
         5556,
@@ -74,41 +76,109 @@ class MSStreamCameraInput(
     }
 
     override fun onGetFrame(
-        data: ByteArray
+        yPlane: Image.Plane,
+        uPlane: Image.Plane,
+        vPlane: Image.Plane
     ) {
-        val decodedBitmap = BitmapFactory.decodeByteArray(
-            data,
-            0,
-            data.size
+        MSUtilsImage.fromYUVtoARGB(
+            yPlane.buffer,
+            uPlane.buffer,
+            vPlane.buffer,
+            texture.buffer,
+            yPlane.rowStride,
+            yPlane.pixelStride,
+            uPlane.rowStride,
+            uPlane.pixelStride,
+            texture.width,
+            texture.height
         )
 
-        decodedBitmap.getPixels(
-            mBufferPixels,
-            0,
-            decodedBitmap.width,
-            0,
-            0,
-            decodedBitmap.width,
-            decodedBitmap.height
-        ) // ARGB
+        onUpdateCameraFrame?.apply {
+            MSApp.ui {
+                onUpdateFrame()
+            }
+        }
 
-        val colorBuf = ByteArray(4)
+        mCurrentTimeMs = System.currentTimeMillis()
+        if (sendDtMs > mCurrentTimeMs - mPrevTimeMs) {
+            return
+        }
+
+        /*mClientCamera.sendToStream(
+            data
+        )*/
+
+        mPrevTimeMs = mCurrentTimeMs
+    }
+
+    /*override fun onGetFrame(
+        yBuffer: ByteBuffer,
+        uBuffer: ByteBuffer,
+        vBuffer: ByteBuffer
+    ) {
+        Log.d(TAG, "onGetFrame: ${yBuffer.capacity()} ${uBuffer.capacity()} ${vBuffer.capacity()} ${texture.buffer.capacity()}")
+
+        MSUtilsImage.fromYUVtoARGB(
+            yBuffer,
+            uBuffer,
+            vBuffer,
+            texture.buffer,
+
+        )
+
+        var arrIndex = 0
+        var yIndex = 0
+        val dt = 1.0 / texture.buffer.capacity()
+        var factor = 0.0
+
+        var v: Byte
+        var u: Byte
+        var bufferPtr: Int
+
+        while (arrIndex < texture.buffer.capacity()) {
+            bufferPtr = (factor * yBuffer.capacity()).toInt()
+            v = (vBuffer[bufferPtr] - 128).toByte()
+            u = (uBuffer[bufferPtr] - 128).toByte()
+
+            factor += dt
+
+            // This interesting shit needs NDK with C lang
+            texture.buffer.put(
+                arrIndex,
+                255.toByte()
+            ) // A
+
+            texture.buffer.put(
+                arrIndex + 1,
+                (yBuffer[yIndex] + 1.3707f * v)
+                    .toInt().toByte()
+            ) // R
+
+            texture.buffer.put(
+                arrIndex + 2,
+                (yBuffer[yIndex] - 0.698f * v - 0.58f * u)
+                    .toInt().toByte()
+            ) // G
+
+            texture.buffer.put(
+                arrIndex + 3,
+                (yBuffer[yIndex] + 1.732f * u)
+                    .toInt().toByte()
+            ) // B
+
+
+            arrIndex += 4
+            yIndex++
+        }
 
         var arrIndex = 0
         var bufIndex = 0
 
         while (arrIndex < mBufferPixels.size) {
-            colorBuf.setIntegerOnPosition(
-                mBufferPixels[arrIndex++],
-                pos = 0
+            texture.buffer.put(
+                bufIndex++,
+                buffer
             )
-
-            colorBuf.forEach {
-                texture.buffer.put(
-                    bufIndex++,
-                    it
-                )
-            }
         }
 
         onUpdateCameraFrame?.apply {
@@ -122,15 +192,11 @@ class MSStreamCameraInput(
             return
         }
 
-        Log.d(TAG, "onGetFrame: ${data.size}")
-
-        
-        
         /*mClientCamera.sendToStream(
             data
         )*/
 
         mPrevTimeMs = mCurrentTimeMs
-    }
+    }*/
 
 }

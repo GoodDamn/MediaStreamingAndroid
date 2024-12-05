@@ -36,7 +36,7 @@ ImageReader.OnImageAvailableListener {
     private val mReader = ImageReader.newInstance(
         width,
         height,
-        ImageFormat.JPEG,
+        ImageFormat.YUV_420_888,
         1
     ).apply {
         setOnImageAvailableListener(
@@ -134,20 +134,10 @@ ImageReader.OnImageAvailableListener {
     ) = mReader.run {
         val image = acquireLatestImage()
 
-        val buffer = image
-            .planes[0]
-            .buffer
-
-        val data = ByteArray(
-            buffer.capacity()
-        )
-
-        buffer.get(
-            data
-        )
-
         onGetCameraFrame?.onGetFrame(
-            data
+            image.planes[0],
+            image.planes[1],
+            image.planes[2]
         )
 
         image.close()
