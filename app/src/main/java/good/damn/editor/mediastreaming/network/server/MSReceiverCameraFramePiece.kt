@@ -1,5 +1,6 @@
 package good.damn.editor.mediastreaming.network.server
 
+import good.damn.editor.mediastreaming.extensions.integer
 import good.damn.editor.mediastreaming.extensions.short
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveData
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveFramePiece
@@ -14,11 +15,13 @@ class MSReceiverCameraFramePiece
     override suspend fun onReceiveData(
         data: ByteArray
     ) {
-        val heightPiece = data.short()
+        val fromIndex = data.integer(0)
+        val toIndex = data.integer(4)
 
         onReceiveFramePiece?.onReceiveFramePiece(
-            heightPiece,
-            offsetPixels = 2,
+            from = fromIndex,
+            to = toIndex,
+            8,
             data
         )
     }

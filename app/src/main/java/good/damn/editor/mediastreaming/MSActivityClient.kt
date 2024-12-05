@@ -15,6 +15,8 @@ import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermi
 import good.damn.editor.mediastreaming.system.permission.MSPermission
 import good.damn.media.gles.GLViewTexture
 import good.damn.media.gles.gl.textures.GLTexture
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
 import java.nio.ByteBuffer
 
@@ -172,6 +174,9 @@ MSListenerOnUpdateCameraFrame {
         Manifest.permission.CAMERA -> {
             mStreamInputCamera = MSStreamCameraInput(
                 this,
+                CoroutineScope(
+                    Dispatchers.IO
+                ),
                 mTexture
             ).apply {
                 onUpdateCameraFrame = this@MSActivityClient

@@ -35,7 +35,7 @@ MSListenerOnGetHotspotHost,
 
     private val mServerFrame = MSServerUDP(
         5556,
-        32768,
+        8 + 12100 * 4,
         CoroutineScope(
             Dispatchers.IO
         ),
@@ -46,8 +46,8 @@ MSListenerOnGetHotspotHost,
 
     private var mViewTexture: GLViewTexture? = null
     private val mTexture = GLTexture(
-        480,
-        360
+        640,
+        480
     )
     private var mTextViewIp: TextView? = null
 
@@ -146,20 +146,22 @@ MSListenerOnGetHotspotHost,
         super.onStop()
     }
 
-
     override suspend fun onReceiveFramePiece(
-        heightPiece: Int,
+        from: Int,
+        to: Int,
         offsetPixels: Int,
         pixels: ByteArray
     ) {
-        mViewTexture?.apply {
-            val pos = heightPiece * mTexture.width
-            for (i in 0 until mTexture.width) {
-                mTexture.buffer.put(
-                    pos + i,
-                    pixels[offsetPixels + i]
-                )
-            }
+        val toIndex = if (to - from > pixels.size)
+            pixels.size
+        else to
+
+        var pixelsIndex = offsetPixels
+        for (i in from until toIndex) {
+            mTexture.buffer.put(
+                i,
+                pixels[pixelsIndex++]
+            )
         }
 
         withContext(
@@ -168,6 +170,7 @@ MSListenerOnGetHotspotHost,
             mViewTexture?.requestRender()
         }
     }
+
 
     private inline fun onClickBtnStartServer(
         btn: Button

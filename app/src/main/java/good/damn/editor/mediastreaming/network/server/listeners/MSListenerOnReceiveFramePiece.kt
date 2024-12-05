@@ -4,7 +4,8 @@ import android.graphics.Bitmap
 
 interface MSListenerOnReceiveFramePiece {
     suspend fun onReceiveFramePiece(
-        heightPiece: Int,
+        from: Int,
+        to: Int,
         offsetPixels: Int,
         pixels: ByteArray
     )
