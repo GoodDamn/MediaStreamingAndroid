@@ -1,11 +1,14 @@
-package good.damn.editor.mediastreaming
+package good.damn.editor.mediastreaming.fragments
 
-import android.graphics.Bitmap
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFramePiece
@@ -19,10 +22,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class MSActivityServer
-: AppCompatActivity(),
+class MSFragmentServer
+: Fragment(),
 MSListenerOnGetHotspotHost,
- MSListenerOnReceiveFramePiece {
+MSListenerOnReceiveFramePiece {
 
     private val mServerAudio = MSServerUDP(
         5555,
@@ -40,7 +43,7 @@ MSListenerOnGetHotspotHost,
             Dispatchers.IO
         ),
         MSReceiverCameraFramePiece().apply {
-            onReceiveFramePiece = this@MSActivityServer
+            onReceiveFramePiece = this@MSFragmentServer
         }
     )
 
@@ -51,16 +54,15 @@ MSListenerOnGetHotspotHost,
     )
     private var mTextViewIp: TextView? = null
 
-    override fun onCreate(
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
-    ) {
-        super.onCreate(
-            savedInstanceState
-        )
+    ): View? {
+        val context = context
+            ?: return null
 
-        val context = this
-
-        LinearLayout(
+        val root = LinearLayout(
             context
         ).apply {
             orientation = LinearLayout
@@ -121,23 +123,27 @@ MSListenerOnGetHotspotHost,
                 )
             }
 
-            setContentView(
-                this
-            )
         }
 
         MSServiceHotspotCompat(
             context
         ).apply {
-            delegate = this@MSActivityServer
+            delegate = this@MSFragmentServer
             start()
         }
+
+        return root
     }
+
 
     override fun onGetHotspotIP(
         addressList: String
     ) {
-        mTextViewIp?.text = "Host: $addressList\n\nPort: 5555"
+        MSApp.ui {
+            mTextViewIp?.text = "Host: $addressList\n\n" +
+                "Port: 5555 (Audio)\n" +
+                "Port: 5556 (Camera)"
+        }
     }
 
     override fun onStop() {

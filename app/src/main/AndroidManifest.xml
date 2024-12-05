@@ -36,9 +36,6 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".MSActivityClient"/>
-        <activity android:name=".MSActivityServer"/>
-
     </application>
 
 </manifest>

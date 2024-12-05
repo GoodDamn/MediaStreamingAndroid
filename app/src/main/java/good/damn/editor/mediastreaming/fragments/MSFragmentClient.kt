@@ -1,13 +1,17 @@
-package good.damn.editor.mediastreaming
+package good.damn.editor.mediastreaming.fragments
 
 import android.Manifest
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.audio.stream.MSStreamAudioInput
 import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnUpdateCameraFrame
@@ -18,25 +22,22 @@ import good.damn.media.gles.gl.textures.GLTexture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
-import java.nio.ByteBuffer
 
-class MSActivityClient
-: AppCompatActivity(),
+class MSFragmentClient
+: Fragment(),
 MSListenerOnResultPermission,
 MSListenerOnUpdateCameraFrame {
 
     companion object {
-        private val TAG = MSActivityClient::class.simpleName
+        private val TAG = MSFragmentClient::class.simpleName
         private const val CAMERA_WIDTH = 640
         private const val CAMERA_HEIGHT = 480
     }
 
-    private val mLauncherPermission = MSPermission().apply {
-        onResultPermission = this@MSActivityClient
-    }
-
     private var mStreamInputAudio: MSStreamAudioInput? = null
     private var mStreamInputCamera: MSStreamCameraInput? = null
+
+    private var mLauncherPermission: MSPermission? = null
 
     private var mViewTexture: GLViewTexture? = null
     private val mTexture = GLTexture(
@@ -45,14 +46,13 @@ MSListenerOnUpdateCameraFrame {
     )
     private var mEditText: EditText? = null
 
-    override fun onCreate(
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
-    ) {
-        super.onCreate(
-            savedInstanceState
-        )
-
-        val context = this
+    ): View? {
+        val context = context
+            ?: return null
 
         mEditText = EditText(
             context
@@ -60,7 +60,7 @@ MSListenerOnUpdateCameraFrame {
             hint = "Host"
         }
 
-        LinearLayout(
+        val root = LinearLayout(
             context
         ).apply {
 
@@ -137,17 +137,12 @@ MSListenerOnUpdateCameraFrame {
                 -1
             )
 
-            setContentView(
-                this
-            )
         }
 
-        mLauncherPermission.apply {
-            register(context)
-            launch(
-                Manifest.permission.RECORD_AUDIO
-            )
-        }
+        mLauncherPermission = (activity as? MSActivityMain)
+            ?.launcherPermission
+
+        return root
     }
 
     override fun onStop() {
@@ -173,13 +168,13 @@ MSListenerOnUpdateCameraFrame {
 
         Manifest.permission.CAMERA -> {
             mStreamInputCamera = MSStreamCameraInput(
-                this,
+                requireContext(),
                 CoroutineScope(
                     Dispatchers.IO
                 ),
                 mTexture
             ).apply {
-                onUpdateCameraFrame = this@MSActivityClient
+                onUpdateCameraFrame = this@MSFragmentClient
                 mViewTexture?.rotationShade = rotation
             }
         }
@@ -191,7 +186,7 @@ MSListenerOnUpdateCameraFrame {
         btn: Button
     ) {
         if (mStreamInputCamera == null) {
-            mLauncherPermission.launch(
+            mLauncherPermission?.launch(
                 Manifest.permission.CAMERA
             )
             return
@@ -209,7 +204,7 @@ MSListenerOnUpdateCameraFrame {
     ) {
         Log.d(TAG, "onClickBtnCall: $mStreamInputAudio")
         if (mStreamInputAudio == null) {
-            mLauncherPermission.launch(
+            mLauncherPermission?.launch(
                 Manifest.permission.RECORD_AUDIO
             )
             return

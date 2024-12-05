@@ -47,19 +47,12 @@ open class MSServerUDP(
     }
 
     private suspend inline fun listen() {
-        Log.d(TAG, "listen: ")
         mSocket.receive(
             DatagramPacket(
                 mBuffer,
                 mBuffer.size
             )
         )
-
-        if (!mSocket.isConnected) {
-            return
-        }
-
-        Log.d(TAG, "listen: ${mBuffer.contentToString()}")
 
         onReceiveData.onReceiveData(
             mBuffer

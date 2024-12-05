@@ -1,13 +1,26 @@
 package good.damn.editor.mediastreaming
 
-import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import androidx.viewpager2.widget.ViewPager2
+import good.damn.editor.mediastreaming.fragments.MSFragmentClient
+import good.damn.editor.mediastreaming.fragments.MSFragmentServer
+import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
+import good.damn.editor.mediastreaming.system.permission.MSPermission
 
 class MSActivityMain
-: AppCompatActivity() {
+: AppCompatActivity(),
+MSListenerOnResultPermission {
+
+    val launcherPermission = MSPermission().apply {
+        onResultPermission = this@MSActivityMain
+    }
+
+    private val mFragments = arrayOf(
+        MSFragmentClient(),
+        MSFragmentServer()
+    )
 
     override fun onCreate(
         savedInstanceState: Bundle?
@@ -18,72 +31,43 @@ class MSActivityMain
 
         val context = this
 
-        LinearLayout(
+        ViewPager2(
             context
         ).apply {
+            adapter = object: FragmentStateAdapter(
+                supportFragmentManager,
+                lifecycle
+            ) {
+                override fun getItemCount() = mFragments.size
 
-            orientation = LinearLayout.VERTICAL
+                override fun createFragment(
+                    position: Int
+                ) = mFragments[position]
 
-            Button(
-                context
-            ).apply {
-
-                setOnClickListener {
-                    onClickBtnClient(this)
-                }
-
-                text = "Client"
-
-                addView(
-                    this,
-                    -1,
-                    -2
-                )
-            }
-
-            Button(
-                context
-            ).apply {
-
-                setOnClickListener {
-                    onClickBtnServer(this)
-                }
-
-                text = "Server"
-
-                addView(
-                    this,
-                    -1,
-                    -2
-                )
             }
 
             setContentView(
                 this
             )
         }
+
+        launcherPermission.register(
+            this@MSActivityMain
+        )
+
     }
 
-    private inline fun onClickBtnClient(
-        btn: Button
+    override fun onResultPermission(
+        permission: String,
+        result: Boolean
     ) {
-        startActivity(
-            Intent(
-                btn.context,
-                MSActivityClient::class.java
-            )
-        )
-    }
-
-    private inline fun onClickBtnServer(
-        btn: Button
-    ) {
-        startActivity(
-            Intent(
-                btn.context,
-                MSActivityServer::class.java
-            )
-        )
+        mFragments.forEach {
+            (it as? MSListenerOnResultPermission)
+                ?.onResultPermission(
+                    permission,
+                    result
+                )
+        }
     }
 
 }
