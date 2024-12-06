@@ -31,8 +31,8 @@ MSListenerOnUpdateCameraFrame {
 
     companion object {
         private val TAG = MSFragmentClient::class.simpleName
-        const val CAMERA_WIDTH = 320
-        const val CAMERA_HEIGHT = 240
+        const val PREVIEW_WIDTH = 360
+        const val PREVIEW_HEIGHT = 240
     }
 
     private var mStreamInputAudio: MSStreamAudioInput? = null
@@ -42,8 +42,8 @@ MSListenerOnUpdateCameraFrame {
 
     private var mViewTexture: GLViewTexture? = null
     private val mTexture = GLTextureBuffer(
-        CAMERA_WIDTH,
-        CAMERA_HEIGHT
+        PREVIEW_WIDTH,
+        PREVIEW_HEIGHT
     )
     private var mEditText: EditText? = null
 

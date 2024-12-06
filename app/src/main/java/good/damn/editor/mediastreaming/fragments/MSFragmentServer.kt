@@ -59,8 +59,8 @@ MSListenerOnReceiveFramePiece {
 
     private var mViewTexture: GLViewTexture? = null
     private val mTexture = GLTextureBitmap(
-        MSFragmentClient.CAMERA_WIDTH,
-        MSFragmentClient.CAMERA_HEIGHT
+        MSFragmentClient.PREVIEW_WIDTH,
+        MSFragmentClient.PREVIEW_HEIGHT
     )
     private var mTextViewIp: TextView? = null
 

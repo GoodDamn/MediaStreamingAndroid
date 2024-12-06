@@ -39,7 +39,7 @@ open class MSServerUDP(
 
     override fun stop() {
         isRunning = false
-        mSocket.close()
+        mSocket.disconnect()
     }
 
     override fun release() {

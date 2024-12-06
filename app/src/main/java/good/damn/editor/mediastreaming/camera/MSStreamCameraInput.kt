@@ -108,11 +108,11 @@ MSListenerOnGetCameraFrameData {
                     mScaleBuffer,
                     0,
                     scaleBufferSize
-                )
+                ) ?: return
 
                 val resultBitmap = Bitmap.createScaledBitmap(
                     bb,
-                    320,
+                    360,
                     240,
                     false
                 )
@@ -122,7 +122,7 @@ MSListenerOnGetCameraFrameData {
 
                 resultBitmap.compress(
                     Bitmap.CompressFormat.JPEG,
-                    100,
+                    85,
                     mScaleBufferStream
                 )
 

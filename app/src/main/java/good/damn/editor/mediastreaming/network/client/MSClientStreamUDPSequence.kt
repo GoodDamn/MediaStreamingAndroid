@@ -16,7 +16,7 @@ class MSClientStreamUDPSequence(
     private var mPosition = 0
 
     private val mBuffer = ByteArray(
-        60000
+        2048
     )
 
     override fun hasQueueData() {

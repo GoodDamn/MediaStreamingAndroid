@@ -61,7 +61,7 @@ ImageReader.OnImageAvailableListener {
     var onGetCameraFrame: MSListenerOnGetCameraFrameData? = null
 
     init {
-        val minRes = Size(1280, 720)
+        val minRes = Size(640, 480)
 
         Log.d(TAG, "init: $minRes RESOLUTIONS: ${mResolutionCamera?.contentToString()}")
 
