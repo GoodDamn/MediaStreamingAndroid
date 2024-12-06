@@ -25,13 +25,14 @@ import java.nio.ByteBuffer
 class MSStreamCameraInput(
     context: Context,
     scope: CoroutineScope,
+    scaledDownWidth: Int,
+    scaledDownHeight: Int,
     private val texture: GLTexture
-): MSStateable, MSListenerOnGetCameraFrameData {
+): MSStateable,
+MSListenerOnGetCameraFrameData {
 
     companion object {
         private val TAG = MSStreamCameraInput::class.simpleName
-        const val PIXEL_COUNT_SEND = 12000
-        const val PIXEL_COLORS_SEND = PIXEL_COUNT_SEND * 4
     }
 
     private val mClientCamera = MSClientStreamUDP(
@@ -47,9 +48,9 @@ class MSStreamCameraInput(
         onGetCameraFrame = this@MSStreamCameraInput
     }
 
-    private val mBuffer = ByteArray(
-        8 + PIXEL_COLORS_SEND
-    )
+    private val mIntervalPixel =
+        texture.width * texture.height /
+        (scaledDownWidth * scaledDownHeight)
 
     val rotation: Int
         get() = mCamera.rotation
@@ -88,6 +89,7 @@ class MSStreamCameraInput(
             uPlane.buffer,
             vPlane.buffer,
             texture.buffer,
+            mClientCamera,
             yPlane.rowStride,
             yPlane.pixelStride,
             uPlane.rowStride,
@@ -99,43 +101,6 @@ class MSStreamCameraInput(
         onUpdateCameraFrame?.apply {
             MSApp.ui {
                 onUpdateFrame()
-            }
-        }
-
-        texture.buffer.apply {
-            val capacity = capacity()
-            var bufIndex = 0
-            var fromIndex = 0
-            var toIndex = PIXEL_COLORS_SEND
-            var limit = PIXEL_COLORS_SEND
-
-            var i = 0
-            while (i < capacity) {
-                if (bufIndex >= limit) {
-                    mBuffer.setIntegerOnPosition(
-                        fromIndex,
-                        pos = 0
-                    )
-
-                    mBuffer.setIntegerOnPosition(
-                        toIndex,
-                        pos = 4
-                    )
-                    mClientCamera.sendToStream(
-                        mBuffer
-                    )
-
-                    fromIndex += bufIndex
-                    bufIndex = 0
-                    limit = if (capacity - i < PIXEL_COLORS_SEND)
-                        capacity - i
-                    else PIXEL_COLORS_SEND
-                    toIndex = i + limit
-                    continue
-                }
-
-                mBuffer[8 + bufIndex++] = get(i)
-                i++
             }
         }
     }

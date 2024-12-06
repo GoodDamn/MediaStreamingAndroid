@@ -4,6 +4,7 @@ import android.util.Log;
 
 import java.nio.ByteBuffer;
 
+import good.damn.editor.mediastreaming.network.client.MSClientStreamUDP;
 import good.damn.media.gles.gl.textures.GLTexture;
 
 public final class MSUtilsImage {
@@ -11,16 +12,17 @@ public final class MSUtilsImage {
     private static final String TAG = "MSUtilsImage";
 
     public static void fromYUVtoARGB(
-        final ByteBuffer yBuffer,
-        final ByteBuffer uBuffer,
-        final ByteBuffer vBuffer,
-        final ByteBuffer colorBuffer,
-        final int yRowStride,
-        final int yPixelStride,
-        final int uvRowStride,
-        final int uvPixelStride,
-        final int imageWidth,
-        final int imageHeight
+      final ByteBuffer yBuffer,
+      final ByteBuffer uBuffer,
+      final ByteBuffer vBuffer,
+      final ByteBuffer colorBuffer,
+      final MSClientStreamUDP client,
+      final int yRowStride,
+      final int yPixelStride,
+      final int uvRowStride,
+      final int uvPixelStride,
+      final int imageWidth,
+      final int imageHeight
     ) {
 
         int r,g,b;
@@ -52,6 +54,22 @@ public final class MSUtilsImage {
                     colorIndex,
                     (byte) 255
                 );
+
+                /*client.sendToStream(
+                  (byte) (0xff)
+                );
+
+                client.sendToStream(
+                  (byte) (r & 0xff)
+                );
+
+                client.sendToStream(
+                  (byte) (g & 0xff)
+                );
+
+                client.sendToStream(
+                  (byte) (b & 0xff)
+                );*/
 
                 colorIndex++;
 

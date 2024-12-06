@@ -54,9 +54,11 @@ MSListenerOnSamplesRecord {
         position: Int,
         len: Int
     ) {
-        mClientAudioStream.sendToStream(
-            samples
-        )
+        samples.forEach {
+            mClientAudioStream.sendToStream(
+                it
+            )
+        }
     }
 
 

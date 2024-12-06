@@ -15,13 +15,7 @@ class MSReceiverCameraFramePiece
     override suspend fun onReceiveData(
         data: ByteArray
     ) {
-        val fromIndex = data.integer(0)
-        val toIndex = data.integer(4)
-
         onReceiveFramePiece?.onReceiveFramePiece(
-            from = fromIndex,
-            to = toIndex,
-            8,
             data
         )
     }

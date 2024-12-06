@@ -24,14 +24,18 @@ class MSClientStreamUDP(
     var isStreamRunning = false
         private set
 
+    private val mBuffer = ByteArray(
+        60000
+    )
+
+    private var mPosition = 0
+
     private var mSocket = DatagramSocket()
 
-    private val mQueue = ConcurrentLinkedQueue<
-        ByteArray
-    >()
+    private val mQueue = ConcurrentLinkedQueue<Byte>()
 
     fun sendToStream(
-        data: ByteArray
+        data: Byte
     ) {
         if (isStreamRunning) {
             mQueue.add(
@@ -50,12 +54,18 @@ class MSClientStreamUDP(
                 continue
             }
 
-            val data = mQueue.remove()
+            if (mPosition < mBuffer.size) {
+                mBuffer[mPosition] = mQueue.remove()
+                mPosition++
+                continue
+            }
+
+            mPosition = 0
 
             val packet = DatagramPacket(
-                data,
+                mBuffer,
                 0,
-                data.size,
+                mBuffer.size,
                 host,
                 port
             )

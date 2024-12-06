@@ -38,7 +38,7 @@ MSListenerOnReceiveFramePiece {
 
     private val mServerFrame = MSServerUDP(
         5556,
-        8 + 12100 * 4,
+        60000,
         CoroutineScope(
             Dispatchers.IO
         ),
@@ -49,8 +49,8 @@ MSListenerOnReceiveFramePiece {
 
     private var mViewTexture: GLViewTexture? = null
     private val mTexture = GLTexture(
-        640,
-        480
+        MSFragmentClient.CAMERA_WIDTH,
+        MSFragmentClient.CAMERA_HEIGHT
     )
     private var mTextViewIp: TextView? = null
 
@@ -152,22 +152,22 @@ MSListenerOnReceiveFramePiece {
         super.onStop()
     }
 
+    private var mCurPosition = 0
+
     override suspend fun onReceiveFramePiece(
-        from: Int,
-        to: Int,
-        offsetPixels: Int,
         pixels: ByteArray
     ) {
-        val toIndex = if (to - from > pixels.size)
-            pixels.size
-        else to
-
-        var pixelsIndex = offsetPixels
-        for (i in from until toIndex) {
+        var pixelIndex = 0
+        while (pixelIndex < pixels.size) {
             mTexture.buffer.put(
-                i,
-                pixels[pixelsIndex++]
+                mCurPosition,
+                pixels[pixelIndex]
             )
+            pixelIndex++
+            mCurPosition++
+            if (mCurPosition >= mTexture.buffer.capacity()) {
+                mCurPosition = 0
+            }
         }
 
         withContext(

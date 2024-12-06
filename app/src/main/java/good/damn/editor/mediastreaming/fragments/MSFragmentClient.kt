@@ -30,8 +30,10 @@ MSListenerOnUpdateCameraFrame {
 
     companion object {
         private val TAG = MSFragmentClient::class.simpleName
-        private const val CAMERA_WIDTH = 640
-        private const val CAMERA_HEIGHT = 480
+        const val IMAGE_HEIGHT = 150
+        const val IMAGE_WIDTH = 133
+        const val CAMERA_WIDTH = 640
+        const val CAMERA_HEIGHT = 480
     }
 
     private var mStreamInputAudio: MSStreamAudioInput? = null
@@ -172,6 +174,8 @@ MSListenerOnUpdateCameraFrame {
                 CoroutineScope(
                     Dispatchers.IO
                 ),
+                IMAGE_WIDTH,
+                IMAGE_HEIGHT,
                 mTexture
             ).apply {
                 onUpdateCameraFrame = this@MSFragmentClient
