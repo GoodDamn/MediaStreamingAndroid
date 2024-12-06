@@ -2,11 +2,13 @@ package good.damn.editor.mediastreaming.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.ImageFormat
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.os.Handler
 import android.os.Looper
+import android.util.Size
 import java.util.LinkedList
 
 @SuppressLint("MissingPermission")
@@ -34,6 +36,25 @@ class MSManagerCamera(
         }
 
         return cameras
+    }
+
+    fun getOutputSizes(
+        cameraId: String,
+        format: Int
+    ): Array<Size>? {
+        manager.getCameraCharacteristics(
+            cameraId
+        ).apply {
+            val streamMap = get(
+                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP
+            )
+
+            return streamMap?.getOutputSizes(
+                format
+            )
+        }
+
+
     }
 
     fun getRotationInitial(

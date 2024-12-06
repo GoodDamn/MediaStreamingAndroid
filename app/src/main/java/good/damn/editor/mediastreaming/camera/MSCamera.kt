@@ -12,13 +12,12 @@ import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
+import android.util.Size
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnGetCameraFrameData
 import good.damn.editor.mediastreaming.misc.HandlerExecutor
 import java.util.LinkedList
 
 class MSCamera(
-    width: Int,
-    height: Int,
     context: Context
 ): CameraDevice.StateCallback(),
 ImageReader.OnImageAvailableListener {
@@ -33,20 +32,6 @@ ImageReader.OnImageAvailableListener {
         start()
     }
 
-    private val mReader = ImageReader.newInstance(
-        width,
-        height,
-        ImageFormat.YUV_420_888,
-        1
-    ).apply {
-        setOnImageAvailableListener(
-            this@MSCamera,
-            Handler(
-                thread.looper
-            )
-        )
-    }
-
     private val manager = MSManagerCamera(
         context
     )
@@ -58,6 +43,15 @@ ImageReader.OnImageAvailableListener {
 
     private val mCameraStream = MSCameraSession()
 
+    private val mResolutionCamera = mCameraId?.run {
+        manager.getOutputSizes(
+            this,
+            ImageFormat.JPEG
+        )
+    }
+
+    private val mReader: ImageReader
+
     val rotation = mCameraId?.run {
         manager.getRotationInitial(
             this
@@ -65,6 +59,26 @@ ImageReader.OnImageAvailableListener {
     } ?: 0
 
     var onGetCameraFrame: MSListenerOnGetCameraFrameData? = null
+
+    init {
+        val minRes = Size(1280, 720)
+
+        Log.d(TAG, "init: $minRes RESOLUTIONS: ${mResolutionCamera?.contentToString()}")
+
+        mReader = ImageReader.newInstance(
+            minRes.width,
+            minRes.height,
+            ImageFormat.JPEG,
+            1
+        ).apply {
+            setOnImageAvailableListener(
+                this@MSCamera,
+                Handler(
+                    thread.looper
+                )
+            )
+        }
+    }
 
     fun openCameraStream() {
         Log.d(TAG, "openCameraStream: $mCameraId ROT: $rotation")
@@ -131,13 +145,11 @@ ImageReader.OnImageAvailableListener {
 
     override fun onImageAvailable(
         reader: ImageReader?
-    ) = mReader.run {
-        val image = acquireLatestImage()
+    ) {
+        val image = mReader.acquireLatestImage()
 
         onGetCameraFrame?.onGetFrame(
-            image.planes[0],
-            image.planes[1],
-            image.planes[2]
+            image.planes[0]
         )
 
         image.close()

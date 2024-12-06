@@ -70,7 +70,7 @@ GLDrawable {
             GL_LINEAR
         )
 
-        glTexParameteri(
+        /*glTexParameteri(
             GL_TEXTURE_2D,
             GL_TEXTURE_SWIZZLE_R,
             GL_GREEN
@@ -94,7 +94,7 @@ GLDrawable {
             GL_RED
         )
 
-        /*val w = texture.width
+        val w = texture.width
         val h = texture.height
 
         var pixel = 0
@@ -113,13 +113,13 @@ GLDrawable {
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
-            GL_RGBA,
+            GL_RGB,
             texture.width,
             texture.height,
             0,
-            GL_RGBA,
+            GL_RGB,
             GL_UNSIGNED_BYTE,
-            texture.buffer
+            null
         )
 
         glBindTexture(
@@ -140,17 +140,7 @@ GLDrawable {
     override fun draw(
         program: Int
     ) {
-        glTexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RGBA,
-            texture.width,
-            texture.height,
-            0,
-            GL_RGBA,
-            GL_UNSIGNED_BYTE,
-            texture.buffer
-        )
+        texture.drawTexture()
 
         glActiveTexture(
             GL_TEXTURE0

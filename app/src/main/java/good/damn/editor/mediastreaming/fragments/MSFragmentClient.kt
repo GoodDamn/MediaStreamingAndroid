@@ -19,6 +19,7 @@ import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermi
 import good.damn.editor.mediastreaming.system.permission.MSPermission
 import good.damn.media.gles.GLViewTexture
 import good.damn.media.gles.gl.textures.GLTexture
+import good.damn.media.gles.gl.textures.GLTextureBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
@@ -30,10 +31,8 @@ MSListenerOnUpdateCameraFrame {
 
     companion object {
         private val TAG = MSFragmentClient::class.simpleName
-        const val IMAGE_HEIGHT = 150
-        const val IMAGE_WIDTH = 133
-        const val CAMERA_WIDTH = 640
-        const val CAMERA_HEIGHT = 480
+        const val CAMERA_WIDTH = 320
+        const val CAMERA_HEIGHT = 240
     }
 
     private var mStreamInputAudio: MSStreamAudioInput? = null
@@ -42,7 +41,7 @@ MSListenerOnUpdateCameraFrame {
     private var mLauncherPermission: MSPermission? = null
 
     private var mViewTexture: GLViewTexture? = null
-    private val mTexture = GLTexture(
+    private val mTexture = GLTextureBuffer(
         CAMERA_WIDTH,
         CAMERA_HEIGHT
     )
@@ -161,29 +160,32 @@ MSListenerOnUpdateCameraFrame {
     override fun onResultPermission(
         permission: String,
         result: Boolean
-    ) = when (
-        permission
     ) {
-        Manifest.permission.RECORD_AUDIO -> {
-            mStreamInputAudio = MSStreamAudioInput()
+        if (!result) {
+            return
         }
 
-        Manifest.permission.CAMERA -> {
-            mStreamInputCamera = MSStreamCameraInput(
-                requireContext(),
-                CoroutineScope(
-                    Dispatchers.IO
-                ),
-                IMAGE_WIDTH,
-                IMAGE_HEIGHT,
-                mTexture
-            ).apply {
-                onUpdateCameraFrame = this@MSFragmentClient
-                mViewTexture?.rotationShade = rotation
+        when (
+            permission
+        ) {
+            Manifest.permission.RECORD_AUDIO -> {
+                mStreamInputAudio = MSStreamAudioInput()
+            }
+
+            Manifest.permission.CAMERA -> {
+
+                mStreamInputCamera = MSStreamCameraInput(
+                    requireContext(),
+                    CoroutineScope(
+                        Dispatchers.IO
+                    ),
+                    mTexture
+                ).apply {
+                    onUpdateCameraFrame = this@MSFragmentClient
+                    mViewTexture?.rotationShade = rotation
+                }
             }
         }
-
-        else -> Unit
     }
 
     private inline fun onClickBtnVideoCall(

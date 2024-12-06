@@ -1,15 +1,20 @@
 package good.damn.editor.mediastreaming.fragments
 
+import android.graphics.BitmapFactory
+import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.audio.MSRecordAudio
+import good.damn.editor.mediastreaming.extensions.integer
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFramePiece
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
@@ -18,6 +23,7 @@ import good.damn.editor.mediastreaming.system.MSServiceHotspotCompat
 import good.damn.editor.mediastreaming.system.interfaces.MSListenerOnGetHotspotHost
 import good.damn.media.gles.GLViewTexture
 import good.damn.media.gles.gl.textures.GLTexture
+import good.damn.media.gles.gl.textures.GLTextureBitmap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -26,6 +32,10 @@ class MSFragmentServer
 : Fragment(),
 MSListenerOnGetHotspotHost,
 MSListenerOnReceiveFramePiece {
+
+    companion object {
+        private val TAG = MSFragmentServer::class.simpleName
+    }
 
     private val mServerAudio = MSServerUDP(
         5555,
@@ -48,7 +58,7 @@ MSListenerOnReceiveFramePiece {
     )
 
     private var mViewTexture: GLViewTexture? = null
-    private val mTexture = GLTexture(
+    private val mTexture = GLTextureBitmap(
         MSFragmentClient.CAMERA_WIDTH,
         MSFragmentClient.CAMERA_HEIGHT
     )
@@ -152,23 +162,17 @@ MSListenerOnReceiveFramePiece {
         super.onStop()
     }
 
-    private var mCurPosition = 0
-
     override suspend fun onReceiveFramePiece(
         pixels: ByteArray
     ) {
-        var pixelIndex = 0
-        while (pixelIndex < pixels.size) {
-            mTexture.buffer.put(
-                mCurPosition,
-                pixels[pixelIndex]
-            )
-            pixelIndex++
-            mCurPosition++
-            if (mCurPosition >= mTexture.buffer.capacity()) {
-                mCurPosition = 0
-            }
-        }
+        val bitmapSize = pixels.integer(0)
+        Log.d(TAG, "onReceiveFramePiece: $bitmapSize ${pixels.size}")
+
+        mTexture.bitmap = BitmapFactory.decodeByteArray(
+            pixels,
+            4,
+            bitmapSize
+        )
 
         withContext(
             Dispatchers.Main

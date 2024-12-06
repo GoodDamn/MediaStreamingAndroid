@@ -6,8 +6,6 @@ import java.nio.ByteBuffer
 
 interface MSListenerOnGetCameraFrameData {
     fun onGetFrame(
-        yPlane: Plane,
-        uPlane: Plane,
-        vPlane: Plane
+        jpegPlane: Plane
     )
 }

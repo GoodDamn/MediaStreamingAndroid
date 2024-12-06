@@ -3,14 +3,13 @@ package good.damn.editor.mediastreaming.network.client
 import good.damn.editor.mediastreaming.network.MSStateable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.util.concurrent.ConcurrentLinkedQueue
 
-class MSClientStreamUDP(
-    private val port: Int,
-    private val scope: CoroutineScope
+abstract class MSClientStreamUDP<DATA>(
+    val port: Int,
+    val scope: CoroutineScope
 ): MSStateable {
 
     companion object {
@@ -22,20 +21,14 @@ class MSClientStreamUDP(
     )
 
     var isStreamRunning = false
-        private set
+        protected set
 
-    private val mBuffer = ByteArray(
-        60000
-    )
+    protected var mSocket = DatagramSocket()
 
-    private var mPosition = 0
+    protected val mQueue = ConcurrentLinkedQueue<DATA>()
 
-    private var mSocket = DatagramSocket()
-
-    private val mQueue = ConcurrentLinkedQueue<Byte>()
-
-    fun sendToStream(
-        data: Byte
+    open fun sendToStream(
+        data: DATA
     ) {
         if (isStreamRunning) {
             mQueue.add(
@@ -54,25 +47,7 @@ class MSClientStreamUDP(
                 continue
             }
 
-            if (mPosition < mBuffer.size) {
-                mBuffer[mPosition] = mQueue.remove()
-                mPosition++
-                continue
-            }
-
-            mPosition = 0
-
-            val packet = DatagramPacket(
-                mBuffer,
-                0,
-                mBuffer.size,
-                host,
-                port
-            )
-
-            mSocket.send(
-                packet
-            )
+            hasQueueData()
         }
 
         mQueue.clear()
@@ -90,4 +65,5 @@ class MSClientStreamUDP(
         }
     }
 
+    abstract fun hasQueueData()
 }
