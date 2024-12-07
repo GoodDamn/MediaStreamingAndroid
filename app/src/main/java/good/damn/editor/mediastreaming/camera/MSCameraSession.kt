@@ -2,9 +2,11 @@ package good.damn.editor.mediastreaming.camera
 
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
+import android.hardware.camera2.CaptureRequest
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.util.Range
 import android.view.Surface
 
 class MSCameraSession
@@ -31,7 +33,24 @@ class MSCameraSession
 
         val request = session.device.createCaptureRequest(
             CameraDevice.TEMPLATE_PREVIEW
-        )
+        ).apply {
+            set(
+                CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
+                Range.create(24,24)
+            )
+
+            // automatic exposure
+            set(
+                CaptureRequest.CONTROL_AE_MODE,
+                CaptureRequest.CONTROL_AE_MODE_ON
+            )
+
+            // automatic white balance
+            set(
+                CaptureRequest.CONTROL_AWB_MODE,
+                CaptureRequest.CONTROL_AWB_MODE_AUTO
+            )
+        }
 
         targets?.forEach {
             request.addTarget(it)

@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.extensions.integer
+import good.damn.editor.mediastreaming.extensions.short
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFramePiece
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
@@ -165,12 +166,14 @@ MSListenerOnReceiveFramePiece {
     override suspend fun onReceiveFramePiece(
         pixels: ByteArray
     ) {
-        val bitmapSize = pixels.integer(0)
+        val bitmapSize = pixels.short(
+            offset = 0
+        )
         Log.d(TAG, "onReceiveFramePiece: $bitmapSize ${pixels.size}")
 
         mTexture.bitmap = BitmapFactory.decodeByteArray(
             pixels,
-            4,
+            2,
             bitmapSize
         )
 

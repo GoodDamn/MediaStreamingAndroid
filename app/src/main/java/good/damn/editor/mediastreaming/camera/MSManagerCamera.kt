@@ -2,14 +2,16 @@ package good.damn.editor.mediastreaming.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.ImageFormat
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Size
+import android.util.Log
+import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import java.util.LinkedList
+import kotlin.math.log
 
 @SuppressLint("MissingPermission")
 class MSManagerCamera(
@@ -20,63 +22,61 @@ class MSManagerCamera(
         Context.CAMERA_SERVICE
     ) as CameraManager
 
-    val cameraIds = manager.cameraIdList
+    fun getCameraIds(): List<MSCameraModelID> {
+        val list = LinkedList<MSCameraModelID>()
 
-    fun getCameraId(
-        characteristic: CameraCharacteristics.Key<Int>,
-        metadata: Int
-    ): List<String> {
-        val cameras = LinkedList<String>()
-        manager.cameraIdList.forEach {
-            manager.getCameraCharacteristics(
-                it
-            ).apply {
-                if (get(characteristic) == metadata) {
-                    cameras.add(it)
+        for (logicalId in manager.cameraIdList) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                getCharacteristics(
+                    logicalId
+                ).physicalCameraIds.apply {
+                    if (isEmpty()) {
+                        list.add(
+                            MSCameraModelID(
+                                logicalId
+                            )
+                        )
+                        return@apply
+                    }
+
+                    forEach {
+                        list.add(
+                            MSCameraModelID(
+                                logicalId,
+                                it
+                            )
+                        )
+                    }
                 }
+
+                continue
             }
-        }
 
-        return cameras
-    }
-
-    fun getOutputSizes(
-        cameraId: String,
-        format: Int
-    ): Array<Size>? {
-        manager.getCameraCharacteristics(
-            cameraId
-        ).apply {
-            val streamMap = get(
-                CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP
-            )
-
-            return streamMap?.getOutputSizes(
-                format
+            list.add(
+                MSCameraModelID(
+                    logicalId
+                )
             )
         }
 
-
+        return list
     }
 
-    fun getRotationInitial(
+    fun getCharacteristics(
         cameraId: String
     ) = manager.getCameraCharacteristics(
         cameraId
-    ).get(
-        CameraCharacteristics.SENSOR_ORIENTATION
     )
 
     fun openCamera(
         cameraId: String,
-        listener: CameraDevice.StateCallback
+        listener: CameraDevice.StateCallback,
+        handler: Handler
     ) {
         manager.openCamera(
             cameraId,
             listener,
-            Handler(
-                Looper.getMainLooper()
-            )
+            handler
         )
     }
 }

@@ -17,6 +17,7 @@ import good.damn.editor.mediastreaming.audio.stream.MSStreamAudioInput
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnUpdateCameraFrame
+import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
 import good.damn.editor.mediastreaming.extensions.hasPermissionMicrophone
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
@@ -148,11 +149,11 @@ MSListenerOnUpdateCameraFrame {
                 managerCamera?.apply {
                     val btnHeight = 100
                     var yPos = 0
-                    cameraIds.forEach { cameraId ->
+                    getCameraIds().forEach { model ->
                         Button(
                             context
                         ).apply {
-                            text = cameraId
+                            text = "${model.logical}_${model.physical ?: ""}"
                             setTextSize(
                                 TypedValue.COMPLEX_UNIT_PX,
                                 35f
@@ -160,7 +161,7 @@ MSListenerOnUpdateCameraFrame {
                             setOnClickListener {
                                 onClickBtnCamera(
                                     this,
-                                    cameraId
+                                    model
                                 )
                             }
                             layoutParams = FrameLayout.LayoutParams(
@@ -283,7 +284,7 @@ MSListenerOnUpdateCameraFrame {
 
     private inline fun onClickBtnCamera(
         btn: Button,
-        cameraId: String
+        cameraId: MSCameraModelID
     ) {
         mStreamInputCamera?.apply {
             stop()

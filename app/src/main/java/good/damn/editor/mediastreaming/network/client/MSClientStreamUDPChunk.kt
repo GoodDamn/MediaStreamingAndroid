@@ -21,22 +21,31 @@ class MSClientStreamUDPChunk(
             .simpleName
     }
 
+    private val mPacket = DatagramPacket(
+        ByteArray(1),
+        0,
+        1
+    )
+
     override fun sendToStream(
         data: MSModelChunkUDP
     ) {
+        mPacket.data = data.data
+        mPacket.length = data.len
+        mPacket.address = host
+        mPacket.port = port
+        mPacket.setData(
+            data.data,
+            0,
+            data.len
+        )
         Log.d(TAG, "sendToStream: $data")
+
         if (!isStreamRunning) {
             return
         }
-
         mSocket.send(
-            DatagramPacket(
-                data.data,
-                0,
-                data.len,
-                host,
-                port
-            )
+            mPacket
         )
     }
 

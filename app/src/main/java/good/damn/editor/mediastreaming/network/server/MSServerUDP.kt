@@ -30,6 +30,11 @@ open class MSServerUDP(
         port
     )
 
+    private val mPacket = DatagramPacket(
+        mBuffer,
+        mBuffer.size
+    )
+
     override fun start() {
         isRunning = true
         scope.launch {
@@ -41,7 +46,7 @@ open class MSServerUDP(
 
     override fun stop() {
         isRunning = false
-        mSocket.disconnect()
+        mSocket.close()
     }
 
     override fun release() {
@@ -49,12 +54,13 @@ open class MSServerUDP(
     }
 
     private suspend inline fun listen() {
-        mSocket.receive(
-            DatagramPacket(
-                mBuffer,
-                mBuffer.size
+        try {
+            mSocket.receive(
+                mPacket
             )
-        )
+        } catch (e: Exception) {
+            return
+        }
 
         onReceiveData.onReceiveData(
             mBuffer

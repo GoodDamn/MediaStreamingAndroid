@@ -10,7 +10,9 @@ import androidx.core.graphics.get
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnUpdateCameraFrame
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnGetCameraFrameData
+import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.extensions.setIntegerOnPosition
+import good.damn.editor.mediastreaming.extensions.setShortOnPosition
 import good.damn.editor.mediastreaming.network.MSStateable
 import good.damn.editor.mediastreaming.network.client.MSClientStreamUDP
 import good.damn.editor.mediastreaming.network.client.MSClientStreamUDPChunk
@@ -59,7 +61,7 @@ MSListenerOnGetCameraFrameData {
     val rotation: Int
         get() = mCamera.rotation
 
-    var cameraId: String?
+    var cameraId: MSCameraModelID?
         get() = mCamera.cameraId
         set(v) {
             mCamera.cameraId = v
@@ -95,7 +97,7 @@ MSListenerOnGetCameraFrameData {
         val buffer = jpegPlane.buffer
         val bufSize = buffer.capacity()
 
-        if (bufSize >= mBuffer.size-4) {
+        if (bufSize >= mBuffer.size-2) {
             if (bufSize >= mScaleBuffer.size) {
                 mScaleBuffer = ByteArray(
                     bufSize
@@ -110,7 +112,7 @@ MSListenerOnGetCameraFrameData {
             )
 
             var scaleBufferSize = mScaleBuffer.size
-            while (scaleBufferSize > mBuffer.size-4) {
+            while (scaleBufferSize > mBuffer.size-2) {
                 val bb = BitmapFactory.decodeByteArray(
                     mScaleBuffer,
                     0,
@@ -125,11 +127,11 @@ MSListenerOnGetCameraFrameData {
                 )
 
                 mScaleBufferStream.position = 0
-                mScaleBufferStream.offset = 4
+                mScaleBufferStream.offset = 2
 
                 resultBitmap.compress(
                     Bitmap.CompressFormat.JPEG,
-                    85,
+                    100,
                     mScaleBufferStream
                 )
 
@@ -140,7 +142,7 @@ MSListenerOnGetCameraFrameData {
 
             Log.d(TAG, "onGetFrame: $scaleBufferSize ${mScaleBuffer.size} ${mBuffer.size}")
 
-            mScaleBuffer.setIntegerOnPosition(
+            mScaleBuffer.setShortOnPosition(
                 scaleBufferSize,
                 pos = 0
             )
@@ -148,29 +150,30 @@ MSListenerOnGetCameraFrameData {
             mClientCamera.sendToStream(
                 MSModelChunkUDP(
                     mScaleBuffer,
-                    scaleBufferSize + 4
+                    scaleBufferSize + 2
                 )
             )
 
             return
         }
 
-        Log.d(TAG, "onGetFrame: STATIC: $bufSize")
-        mBuffer.setIntegerOnPosition(
+        mBuffer.setShortOnPosition(
             bufSize,
             pos = 0
         )
 
         buffer.get(
             mBuffer,
-            4,
+            2,
             bufSize
         )
+
+        Log.d(TAG, "onGetFrame: STATIC: $bufSize")
 
         mClientCamera.sendToStream(
             MSModelChunkUDP(
                 mBuffer,
-                bufSize + 4
+                bufSize + 2
             )
         )
     }

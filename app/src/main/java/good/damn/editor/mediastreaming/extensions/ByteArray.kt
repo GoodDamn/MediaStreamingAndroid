@@ -11,7 +11,7 @@ inline fun ByteArray.setShortOnPosition(
 inline fun ByteArray.short(
     offset: Int = 0
 ) = (get(offset).toInt() and 0xff shl 8) or
-    (get(offset).toInt() and 0xff)
+    (get(offset+1).toInt() and 0xff)
 
 inline fun ByteArray.integer(
     offset: Int
