@@ -1,12 +1,14 @@
 package good.damn.editor.mediastreaming.camera
 
 import android.content.Context
+import android.graphics.Camera
 import android.graphics.ImageFormat
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
+import android.media.Image
 import android.media.ImageReader
 import android.os.Build
 import android.os.Handler
@@ -49,7 +51,7 @@ ImageReader.OnImageAvailableListener {
 
     private val mCameraStream = MSCameraSession()
 
-    private val mReader: ImageReader
+    private var mCurrentDevice: Device? = null
 
     var rotation = 0
         private set
@@ -59,43 +61,59 @@ ImageReader.OnImageAvailableListener {
 
     var onGetCameraFrame: MSListenerOnGetCameraFrameData? = null
 
-    init {
+    fun openCameraStream(): Boolean {
+        Log.d(TAG, "openCameraStream: $cameraId ROT: $rotation")
+
+        val cameraId = cameraId
+            ?: return false
+
+        mCurrentDevice?.apply {
+            if (id == cameraId) {
+                Log.d(TAG, "openCameraStream: $cameraId is current opened device. Dismissed")
+                return false
+            }
+        }
+
         val minRes = Size(640, 480)
 
-        mReader = ImageReader.newInstance(
-            minRes.width,
-            minRes.height,
-            ImageFormat.JPEG,
-            1
-        ).apply {
-            setOnImageAvailableListener(
-                this@MSCamera,
-                Handler(
-                    thread.looper
+        mCurrentDevice = Device(
+            cameraId,
+            ImageReader.newInstance(
+                minRes.width,
+                minRes.height,
+                ImageFormat.JPEG,
+                1
+            ).apply {
+                setOnImageAvailableListener(
+                    this@MSCamera,
+                    Handler(
+                        thread.looper
+                    )
                 )
-            )
-        }
-    }
-
-    fun openCameraStream() {
-        Log.d(TAG, "openCameraStream: $cameraId ROT: $rotation")
-        cameraId?.apply {
+            }
+        ).apply {
             mCameraStream.targets = listOf(
-                mReader.surface
+                reader.surface
             )
             mCameraStream.handler = Handler(
                 thread.looper
             )
-
-            manager.openCamera(
-                this,
-                this@MSCamera
-            )
         }
+
+        manager.openCamera(
+            cameraId,
+            this@MSCamera
+        )
+
+        return true
     }
 
     fun stop() {
         mCameraStream.stop()
+        mCurrentDevice?.apply {
+            device?.close()
+            reader.close()
+        }
     }
 
     fun release() {
@@ -106,6 +124,7 @@ ImageReader.OnImageAvailableListener {
     override fun onOpened(
         camera: CameraDevice
     ) {
+        mCurrentDevice?.device = camera
         Log.d(TAG, "onOpened: ${mCameraStream.targets}")
         val targets = mCameraStream.targets
             ?: return
@@ -142,9 +161,10 @@ ImageReader.OnImageAvailableListener {
     }
 
     override fun onImageAvailable(
-        reader: ImageReader?
+        reader: ImageReader
     ) {
-        val image = mReader.acquireLatestImage()
+
+        val image = reader.acquireLatestImage()
 
         onGetCameraFrame?.onGetFrame(
             image.planes[0]
@@ -167,3 +187,9 @@ ImageReader.OnImageAvailableListener {
     }
 
 }
+
+private data class Device(
+    val id: String,
+    val reader: ImageReader,
+    var device: CameraDevice? = null
+)

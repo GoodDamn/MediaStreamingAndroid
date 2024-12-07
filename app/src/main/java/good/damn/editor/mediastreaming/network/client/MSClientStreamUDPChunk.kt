@@ -40,7 +40,7 @@ class MSClientStreamUDPChunk(
         )
     }
 
-    override fun start() = scope.launch {
+    override fun start() {
         isStreamRunning = true
     }
 

@@ -3,6 +3,7 @@ package good.damn.editor.mediastreaming.fragments
 import android.Manifest
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,7 +22,6 @@ import good.damn.editor.mediastreaming.extensions.hasPermissionMicrophone
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import good.damn.editor.mediastreaming.system.permission.MSPermission
 import good.damn.media.gles.GLViewTexture
-import good.damn.media.gles.gl.textures.GLTexture
 import good.damn.media.gles.gl.textures.GLTextureBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -131,16 +131,60 @@ MSListenerOnUpdateCameraFrame {
                 )
             }
 
-            mViewTexture = GLViewTexture(
-                context,
-                mTexture
-            ).apply {
+            FrameLayout(
+                context
+            ).let { surface ->
+                mViewTexture = GLViewTexture(
+                    context,
+                    mTexture
+                ).apply {
+                    surface.addView(
+                        this,
+                        -1,
+                        -1
+                    )
+                }
+
+                managerCamera?.apply {
+                    val btnHeight = 100
+                    var yPos = 0
+                    cameraIds.forEach { cameraId ->
+                        Button(
+                            context
+                        ).apply {
+                            text = cameraId
+                            setTextSize(
+                                TypedValue.COMPLEX_UNIT_PX,
+                                35f
+                            )
+                            setOnClickListener {
+                                onClickBtnCamera(
+                                    this,
+                                    cameraId
+                                )
+                            }
+                            layoutParams = FrameLayout.LayoutParams(
+                                -2,
+                                btnHeight
+                            ).apply {
+                                topMargin = yPos
+                            }
+                            yPos += (btnHeight * 1.001f).toInt()
+                            surface.addView(
+                                this
+                            )
+                        }
+                    }
+                }
+
                 addView(
-                    this,
+                    surface,
                     -1,
                     -1
                 )
             }
+
+
 
             layoutParams = FrameLayout.LayoutParams(
                 -1,
@@ -235,6 +279,17 @@ MSListenerOnUpdateCameraFrame {
     ) {
         mStreamInputAudio?.stop()
         mStreamInputCamera?.stop()
+    }
+
+    private inline fun onClickBtnCamera(
+        btn: Button,
+        cameraId: String
+    ) {
+        mStreamInputCamera?.apply {
+            stop()
+            this.cameraId = cameraId
+            start()
+        }
     }
 
     private inline fun initCamera() {

@@ -49,8 +49,21 @@ MSListenerOnGetCameraFrameData {
         onGetCameraFrame = this@MSStreamCameraInput
     }
 
+    private val mBuffer = ByteArray(
+        60000
+    )
+
+    private var mScaleBuffer = ByteArray(0)
+    private var mScaleBufferStream = MSOutputStreamBuffer()
+
     val rotation: Int
         get() = mCamera.rotation
+
+    var cameraId: String?
+        get() = mCamera.cameraId
+        set(v) {
+            mCamera.cameraId = v
+        }
 
     var host: InetAddress
         get() = mClientCamera.host
@@ -60,9 +73,10 @@ MSListenerOnGetCameraFrameData {
 
     var onUpdateCameraFrame: MSListenerOnUpdateCameraFrame? = null
 
-    override fun start(): Job {
-        mCamera.openCameraStream()
-        return mClientCamera.start()
+    override fun start() {
+        if (mCamera.openCameraStream()) {
+            mClientCamera.start()
+        }
     }
 
     override fun stop() {
@@ -74,13 +88,6 @@ MSListenerOnGetCameraFrameData {
         mCamera.release()
         mClientCamera.release()
     }
-
-    private val mBuffer = ByteArray(
-        60000
-    )
-
-    private var mScaleBuffer = ByteArray(0)
-    private var mScaleBufferStream = MSOutputStreamBuffer()
 
     override fun onGetFrame(
         jpegPlane: Image.Plane,

@@ -35,9 +35,9 @@ MSListenerOnSamplesRecord {
         )
     )
 
-    override fun start(): Job {
+    override fun start() {
         mAudioRecord.startRecording()
-        return mClientAudioStream.start()
+        mClientAudioStream.start()
     }
 
     override fun stop() {

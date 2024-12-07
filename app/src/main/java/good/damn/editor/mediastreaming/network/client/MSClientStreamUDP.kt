@@ -37,20 +37,22 @@ abstract class MSClientStreamUDP<DATA>(
         }
     }
 
-    override fun start() = scope.launch {
-        isStreamRunning = true
+    override fun start() {
+        scope.launch {
+            isStreamRunning = true
 
-        while (
-            isStreamRunning
-        ) {
-            if (mQueue.isEmpty()) {
-                continue
+            while (
+                isStreamRunning
+            ) {
+                if (mQueue.isEmpty()) {
+                    continue
+                }
+
+                hasQueueData()
             }
 
-            hasQueueData()
+            mQueue.clear()
         }
-
-        mQueue.clear()
     }
 
     override fun stop() {

@@ -30,11 +30,13 @@ open class MSServerUDP(
         port
     )
 
-    override fun start() = scope.launch {
+    override fun start() {
         isRunning = true
-        while (
-            isRunning
-        ) { listen() }
+        scope.launch {
+            while (
+                isRunning
+            ) { listen() }
+        }
     }
 
     override fun stop() {
