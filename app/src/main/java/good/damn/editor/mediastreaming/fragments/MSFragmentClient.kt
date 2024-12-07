@@ -13,8 +13,11 @@ import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.audio.stream.MSStreamAudioInput
+import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnUpdateCameraFrame
+import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
+import good.damn.editor.mediastreaming.extensions.hasPermissionMicrophone
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import good.damn.editor.mediastreaming.system.permission.MSPermission
 import good.damn.media.gles.GLViewTexture
@@ -35,6 +38,8 @@ MSListenerOnUpdateCameraFrame {
         const val PREVIEW_HEIGHT = 240
     }
 
+    private var managerCamera: MSManagerCamera? = null
+
     private var mStreamInputAudio: MSStreamAudioInput? = null
     private var mStreamInputCamera: MSStreamCameraInput? = null
 
@@ -54,6 +59,10 @@ MSListenerOnUpdateCameraFrame {
     ): View? {
         val context = context
             ?: return null
+
+        managerCamera = MSManagerCamera(
+            context
+        )
 
         mEditText = EditText(
             context
@@ -173,17 +182,7 @@ MSListenerOnUpdateCameraFrame {
             }
 
             Manifest.permission.CAMERA -> {
-
-                mStreamInputCamera = MSStreamCameraInput(
-                    requireContext(),
-                    CoroutineScope(
-                        Dispatchers.IO
-                    ),
-                    mTexture
-                ).apply {
-                    onUpdateCameraFrame = this@MSFragmentClient
-                    mViewTexture?.rotationShade = rotation
-                }
+                initCamera()
             }
         }
     }
@@ -192,10 +191,13 @@ MSListenerOnUpdateCameraFrame {
         btn: Button
     ) {
         if (mStreamInputCamera == null) {
-            mLauncherPermission?.launch(
-                Manifest.permission.CAMERA
-            )
-            return
+            if (!btn.context.hasPermissionCamera()) {
+                mLauncherPermission?.launch(
+                    Manifest.permission.CAMERA
+                )
+                return
+            }
+            initCamera()
         }
         mStreamInputCamera?.apply {
             host = InetAddress.getByName(
@@ -209,11 +211,15 @@ MSListenerOnUpdateCameraFrame {
         btn: Button
     ) {
         Log.d(TAG, "onClickBtnCall: $mStreamInputAudio")
+
         if (mStreamInputAudio == null) {
-            mLauncherPermission?.launch(
-                Manifest.permission.RECORD_AUDIO
-            )
-            return
+            if (!btn.context.hasPermissionMicrophone()) {
+                mLauncherPermission?.launch(
+                    Manifest.permission.RECORD_AUDIO
+                )
+                return
+            }
+            mStreamInputAudio = MSStreamAudioInput()
         }
 
         mStreamInputAudio?.apply {
@@ -231,4 +237,20 @@ MSListenerOnUpdateCameraFrame {
         mStreamInputCamera?.stop()
     }
 
+    private inline fun initCamera() {
+
+        val manager = managerCamera
+            ?: return
+
+        mStreamInputCamera = MSStreamCameraInput(
+            manager,
+            CoroutineScope(
+                Dispatchers.IO
+            ),
+            mTexture
+        ).apply {
+            onUpdateCameraFrame = this@MSFragmentClient
+            mViewTexture?.rotationShade = rotation
+        }
+    }
 }

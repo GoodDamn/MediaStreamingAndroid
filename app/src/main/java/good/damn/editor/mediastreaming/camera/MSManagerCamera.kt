@@ -20,6 +20,8 @@ class MSManagerCamera(
         Context.CAMERA_SERVICE
     ) as CameraManager
 
+    val cameraIds = manager.cameraIdList
+
     fun getCameraId(
         characteristic: CameraCharacteristics.Key<Int>,
         metadata: Int

@@ -18,7 +18,7 @@ import good.damn.editor.mediastreaming.misc.HandlerExecutor
 import java.util.LinkedList
 
 class MSCamera(
-    context: Context
+    private val manager: MSManagerCamera
 ): CameraDevice.StateCallback(),
 ImageReader.OnImageAvailableListener {
 
@@ -32,38 +32,35 @@ ImageReader.OnImageAvailableListener {
         start()
     }
 
-    private val manager = MSManagerCamera(
-        context
-    )
+    var cameraId: String? = null
+        set(v) {
+            field = v
+            v?.apply {
+                rotation = manager.getRotationInitial(
+                    this
+                ) ?: 0
 
-    private val mCameraId = manager.getCameraId(
-        CameraCharacteristics.LENS_FACING,
-        CameraMetadata.LENS_FACING_BACK
-    ).firstOrNull()
+                resolutions = manager.getOutputSizes(
+                    this,
+                    ImageFormat.JPEG
+                )
+            }
+        }
 
     private val mCameraStream = MSCameraSession()
 
-    private val mResolutionCamera = mCameraId?.run {
-        manager.getOutputSizes(
-            this,
-            ImageFormat.JPEG
-        )
-    }
-
     private val mReader: ImageReader
 
-    val rotation = mCameraId?.run {
-        manager.getRotationInitial(
-            this
-        )
-    } ?: 0
+    var rotation = 0
+        private set
+
+    var resolutions: Array<Size>? = null
+        private set
 
     var onGetCameraFrame: MSListenerOnGetCameraFrameData? = null
 
     init {
         val minRes = Size(640, 480)
-
-        Log.d(TAG, "init: $minRes RESOLUTIONS: ${mResolutionCamera?.contentToString()}")
 
         mReader = ImageReader.newInstance(
             minRes.width,
@@ -81,14 +78,15 @@ ImageReader.OnImageAvailableListener {
     }
 
     fun openCameraStream() {
-        Log.d(TAG, "openCameraStream: $mCameraId ROT: $rotation")
-        mCameraStream.targets = listOf(
-            mReader.surface
-        )
-        mCameraStream.handler = Handler(
-            thread.looper
-        )
-        mCameraId?.apply {
+        Log.d(TAG, "openCameraStream: $cameraId ROT: $rotation")
+        cameraId?.apply {
+            mCameraStream.targets = listOf(
+                mReader.surface
+            )
+            mCameraStream.handler = Handler(
+                thread.looper
+            )
+
             manager.openCamera(
                 this,
                 this@MSCamera

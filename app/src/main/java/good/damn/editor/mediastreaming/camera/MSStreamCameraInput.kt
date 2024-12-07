@@ -28,7 +28,7 @@ import java.nio.Buffer
 import java.nio.ByteBuffer
 
 class MSStreamCameraInput(
-    context: Context,
+    manager: MSManagerCamera,
     scope: CoroutineScope,
     private val texture: GLTexture
 ): MSStateable,
@@ -44,7 +44,7 @@ MSListenerOnGetCameraFrameData {
     )
 
     private val mCamera = MSCamera(
-        context
+        manager
     ).apply {
         onGetCameraFrame = this@MSStreamCameraInput
     }

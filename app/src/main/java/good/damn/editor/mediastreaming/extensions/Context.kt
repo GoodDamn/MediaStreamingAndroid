@@ -7,8 +7,19 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
-fun Context.hasPermissionMicrophone() = ContextCompat
-    .checkSelfPermission(
-        this,
+inline fun Context.hasPermissionCamera() =
+    hasPermission(
+        Manifest.permission.CAMERA
+    )
+
+inline fun Context.hasPermissionMicrophone() =
+    hasPermission(
         Manifest.permission.RECORD_AUDIO
-    ) == PackageManager.PERMISSION_GRANTED
+    )
+
+inline fun Context.hasPermission(
+    permission: String
+) = ContextCompat.checkSelfPermission(
+    this,
+    permission
+) == PackageManager.PERMISSION_GRANTED
