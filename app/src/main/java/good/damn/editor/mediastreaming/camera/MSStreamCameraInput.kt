@@ -46,7 +46,7 @@ MSListenerOnGetCameraFrameData {
     private var mScaleBufferStream = MSOutputStreamBuffer().apply {
         buffer = mScaleBuffer
     }
-    private val mBitmapOffset = 2
+    private val mBitmapOffset = 3
 
     val rotation: Int
         get() = mCamera.rotation
@@ -140,10 +140,14 @@ MSListenerOnGetCameraFrameData {
                 pos = 0
             )
 
+            mScaleBuffer[2] = (
+                rotation.toFloat() / 360f * 255
+            ).toInt().toByte()
+
             mClientCamera.sendToStream(
                 MSModelChunkUDP(
                     mScaleBuffer,
-                    scaleBufferSize + 2
+                    scaleBufferSize + mBitmapOffset
                 )
             )
 
@@ -155,9 +159,13 @@ MSListenerOnGetCameraFrameData {
             pos = 0
         )
 
+        mBuffer[2] = (
+            rotation / 360.toFloat() * 255
+        ).toInt().toByte()
+
         buffer.get(
             mBuffer,
-            2,
+            mBitmapOffset,
             bufSize
         )
 
@@ -166,7 +174,7 @@ MSListenerOnGetCameraFrameData {
         mClientCamera.sendToStream(
             MSModelChunkUDP(
                 mBuffer,
-                bufSize + 2
+                bufSize + mBitmapOffset
             )
         )
     }

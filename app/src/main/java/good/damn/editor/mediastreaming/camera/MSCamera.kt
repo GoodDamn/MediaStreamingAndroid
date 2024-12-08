@@ -153,7 +153,13 @@ ImageReader.OnImageAvailableListener {
                 listConfig.add(
                     OutputConfiguration(
                         it
-                    )
+                    ).apply {
+                        cameraId?.physical?.apply {
+                            setPhysicalCameraId(
+                                this
+                            )
+                        }
+                    }
                 )
             }
 
@@ -180,7 +186,6 @@ ImageReader.OnImageAvailableListener {
     override fun onImageAvailable(
         reader: ImageReader
     ) {
-
         val image = reader.acquireLatestImage()
 
         onGetCameraFrame?.onGetFrame(

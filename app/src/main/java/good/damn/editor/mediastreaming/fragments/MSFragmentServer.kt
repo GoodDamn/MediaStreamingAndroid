@@ -16,6 +16,7 @@ import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.extensions.integer
 import good.damn.editor.mediastreaming.extensions.short
+import good.damn.editor.mediastreaming.extensions.toFraction
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFramePiece
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
@@ -169,11 +170,16 @@ MSListenerOnReceiveFramePiece {
         val bitmapSize = pixels.short(
             offset = 0
         )
-        Log.d(TAG, "onReceiveFramePiece: $bitmapSize ${pixels.size}")
+
+        mViewTexture?.rotationShade = (
+            pixels[2].toFraction() * 360
+        ).toInt()
+
+        Log.d(TAG, "onReceiveFramePiece: $bitmapSize ${pixels.size} ${mViewTexture?.rotationShade}")
 
         mTexture.bitmap = BitmapFactory.decodeByteArray(
             pixels,
-            2,
+            3,
             bitmapSize
         )
 

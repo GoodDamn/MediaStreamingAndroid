@@ -50,7 +50,7 @@ GLDrawable {
 
         mUniRotation = glGetUniformLocation(
             program,
-            "u_rotation"
+            "u_rotationDeg"
         )
 
         glBindTexture(
