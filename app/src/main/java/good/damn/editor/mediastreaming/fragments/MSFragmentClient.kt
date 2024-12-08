@@ -13,6 +13,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
+import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.audio.stream.MSStreamAudioInput
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
@@ -27,6 +28,7 @@ import good.damn.media.gles.gl.textures.GLTextureBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
+import kotlin.math.log
 
 class MSFragmentClient
 : Fragment(),
@@ -103,21 +105,6 @@ MSListenerOnUpdateCameraFrame {
                 )
             }
 
-            Button(
-                context
-            ).apply {
-                text = "Video Call"
-
-                setOnClickListener {
-                    onClickBtnVideoCall(this)
-                }
-
-                addView(
-                    this,
-                    -1,
-                    -2
-                )
-            }
 
             Button(
                 context
@@ -150,29 +137,39 @@ MSListenerOnUpdateCameraFrame {
                 }
 
                 managerCamera?.apply {
-                    val btnHeight = 100
+                    val btnHeight = (
+                        50 * MSApp.dp
+                    ).toInt()
                     var yPos = 0
+                    Log.d(TAG, "onCreateView: $btnHeight")
                     getCameraIds().forEach { model ->
                         Button(
                             context
                         ).apply {
-                            text = "${model.logical}_${model.physical ?: ""}"
+
+                            text = (
+                                if (model.isLegacy)"!" else ""
+                            ) + "${model.logical}_${model.physical ?: ""}"
+
                             setTextSize(
                                 TypedValue.COMPLEX_UNIT_PX,
-                                35f
+                                17f * MSApp.dp
                             )
+
                             setOnClickListener {
                                 onClickBtnCamera(
                                     this,
                                     model
                                 )
                             }
+
                             layoutParams = FrameLayout.LayoutParams(
                                 -2,
                                 btnHeight
                             ).apply {
                                 topMargin = yPos
                             }
+
                             yPos += (btnHeight * 1.001f).toInt()
                             surface.addView(
                                 this
@@ -209,7 +206,6 @@ MSListenerOnUpdateCameraFrame {
         super.onStop()
     }
 
-
     override fun onUpdateFrame() {
         mViewTexture?.requestRender()
     }
@@ -232,26 +228,6 @@ MSListenerOnUpdateCameraFrame {
             Manifest.permission.CAMERA -> {
                 initCamera()
             }
-        }
-    }
-
-    private inline fun onClickBtnVideoCall(
-        btn: Button
-    ) {
-        if (mStreamInputCamera == null) {
-            if (!btn.context.hasPermissionCamera()) {
-                mLauncherPermission?.launch(
-                    Manifest.permission.CAMERA
-                )
-                return
-            }
-            initCamera()
-        }
-        mStreamInputCamera?.apply {
-            host = InetAddress.getByName(
-                mEditText?.text?.toString()
-            )
-            start()
         }
     }
 
@@ -289,7 +265,20 @@ MSListenerOnUpdateCameraFrame {
         btn: Button,
         cameraId: MSCameraModelID
     ) {
+        if (mStreamInputCamera == null) {
+            if (!btn.context.hasPermissionCamera()) {
+                mLauncherPermission?.launch(
+                    Manifest.permission.CAMERA
+                )
+                return
+            }
+            initCamera()
+        }
+
         mStreamInputCamera?.apply {
+            host = InetAddress.getByName(
+                mEditText?.text?.toString()
+            )
             stop()
             this.cameraId = cameraId
             start()

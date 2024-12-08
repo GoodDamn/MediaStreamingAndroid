@@ -117,7 +117,7 @@ ImageReader.OnImageAvailableListener {
         )
 
         manager.openCamera(
-            cameraId.logical,
+            cameraId,
             this@MSCamera,
             mCameraStream.handler
         )
