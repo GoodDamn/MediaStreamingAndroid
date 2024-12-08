@@ -34,6 +34,7 @@ class MSCameraSession
         val request = session.device.createCaptureRequest(
             CameraDevice.TEMPLATE_PREVIEW
         ).apply {
+            // set capture FPS
             set(
                 CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                 Range.create(24,24)
@@ -74,7 +75,10 @@ class MSCameraSession
     }
 
     fun release() {
-        mSession?.stopRepeating()
+        mSession?.apply {
+            stopRepeating()
+            close()
+        }
         mSession = null
     }
 

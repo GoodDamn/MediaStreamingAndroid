@@ -7,6 +7,7 @@ import kotlinx.coroutines.launch
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.math.log
 
 class MSClientStreamUDPChunk(
     port: Int,
@@ -21,32 +22,25 @@ class MSClientStreamUDPChunk(
             .simpleName
     }
 
-    private val mPacket = DatagramPacket(
-        ByteArray(1),
-        0,
-        1
-    )
-
     override fun sendToStream(
         data: MSModelChunkUDP
     ) {
-        mPacket.data = data.data
-        mPacket.length = data.len
-        mPacket.address = host
-        mPacket.port = port
-        mPacket.setData(
-            data.data,
-            0,
-            data.len
-        )
-        Log.d(TAG, "sendToStream: $data")
-
         if (!isStreamRunning) {
             return
         }
-        mSocket.send(
-            mPacket
-        )
+        
+        try {
+            mSocket.send(
+                DatagramPacket(
+                    data.data,
+                    data.len,
+                    host,
+                    port
+                )
+            )
+        } catch (e: Exception) {
+            Log.d(TAG, "sendToStream: ${e.message}")
+        }
     }
 
     override fun start() {

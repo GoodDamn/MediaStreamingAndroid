@@ -69,6 +69,9 @@ MSListenerOnUpdateCameraFrame {
             context
         ).apply {
             hint = "Host"
+            setText(
+                "127.0.0.1"
+            )
         }
 
         val root = LinearLayout(

@@ -5,10 +5,19 @@ uniform int u_rotationDeg;
 
 void main() {
 
-    vec2 n = vec2(
-        (u_res.y - gl_FragCoord.y) / u_res.y,
-        (u_res.x - gl_FragCoord.x) / u_res.x
-    );
+    // rotate by 90 degrees clockwise
+    vec2 n;
+    if (u_rotationDeg > 89.0) {
+        n = vec2(
+            (u_res.y - gl_FragCoord.y) / u_res.y,
+            (u_res.x - gl_FragCoord.x) / u_res.x
+        );
+    } else {
+        n = vec2(
+            gl_FragCoord.y / u_res.y,
+            (u_res.x - gl_FragCoord.x) / u_res.x
+        );
+    }
 
     vec4 pixel = texture2D(
         u_tex,

@@ -1,5 +1,6 @@
 package good.damn.editor.mediastreaming.network.server
 
+import android.system.ErrnoException
 import android.util.Log
 import good.damn.editor.mediastreaming.network.MSStateable
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveData
@@ -28,7 +29,9 @@ open class MSServerUDP(
 
     private val mSocket = DatagramSocket(
         port
-    )
+    ).apply {
+        reuseAddress = true
+    }
 
     private val mPacket = DatagramPacket(
         mBuffer,
@@ -58,6 +61,7 @@ open class MSServerUDP(
             mSocket.receive(
                 mPacket
             )
+
         } catch (e: Exception) {
             return
         }

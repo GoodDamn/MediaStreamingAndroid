@@ -9,6 +9,7 @@ import android.media.ImageReader
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.Looper
 import android.util.Log
 import android.util.Range
 import android.util.Size
@@ -58,7 +59,28 @@ ImageReader.OnImageAvailableListener {
             }
         }
 
-    private val mCameraStream = MSCameraSession()
+
+    private val mCameraStream = MSCameraSession().apply {
+        handler = Handler(
+            thread.looper
+        )
+    }
+
+    private val mReader = ImageReader.newInstance(
+        640,
+        480,
+        ImageFormat.JPEG,
+        1
+    ).apply {
+        setOnImageAvailableListener(
+            this@MSCamera,
+            mCameraStream.handler
+        )
+
+        mCameraStream.targets = listOf(
+            surface
+        )
+    }
 
     private var mCurrentDevice: Device? = null
 
@@ -89,30 +111,10 @@ ImageReader.OnImageAvailableListener {
             }
         }
 
-        val minRes = Size(640, 480)
-
-        mCameraStream.handler = Handler(
-            thread.looper
-        )
-
         mCurrentDevice = Device(
             cameraId,
-            ImageReader.newInstance(
-                minRes.width,
-                minRes.height,
-                ImageFormat.JPEG,
-                1
-            ).apply {
-                setOnImageAvailableListener(
-                    this@MSCamera,
-                    mCameraStream.handler
-                )
-            }
-        ).apply {
-            mCameraStream.targets = listOf(
-                reader.surface
-            )
-        }
+            mReader
+        )
 
         manager.openCamera(
             cameraId.logical,
@@ -127,12 +129,12 @@ ImageReader.OnImageAvailableListener {
         mCameraStream.stop()
         mCurrentDevice?.apply {
             device?.close()
-            reader.close()
         }
     }
 
     fun release() {
         mCameraStream.release()
+        mReader.close()
         thread.quitSafely()
     }
 
@@ -140,7 +142,7 @@ ImageReader.OnImageAvailableListener {
         camera: CameraDevice
     ) {
         mCurrentDevice?.device = camera
-        Log.d(TAG, "onOpened: ${mCameraStream.targets}")
+        Log.d(TAG, "onOpened: $cameraId")
         val targets = mCameraStream.targets
             ?: return
 
@@ -151,11 +153,7 @@ ImageReader.OnImageAvailableListener {
                 listConfig.add(
                     OutputConfiguration(
                         it
-                    ).apply {
-                        setPhysicalCameraId(
-                            cameraId?.physical
-                        )
-                    }
+                    )
                 )
             }
 

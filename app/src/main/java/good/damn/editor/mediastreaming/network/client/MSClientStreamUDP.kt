@@ -23,7 +23,7 @@ abstract class MSClientStreamUDP<DATA>(
     var isStreamRunning = false
         protected set
 
-    protected var mSocket = DatagramSocket()
+    protected val mSocket = DatagramSocket()
 
     protected val mQueue = ConcurrentLinkedQueue<DATA>()
 

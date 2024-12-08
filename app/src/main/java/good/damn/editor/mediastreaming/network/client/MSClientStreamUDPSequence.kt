@@ -1,5 +1,6 @@
 package good.damn.editor.mediastreaming.network.client
 
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -13,10 +14,19 @@ class MSClientStreamUDPSequence(
     scope
 ) {
 
+    companion object {
+        private const val TAG = "MSClientStreamUDPSequen"
+    }
+
     private var mPosition = 0
 
     private val mBuffer = ByteArray(
         2048
+    )
+
+    private val mPacket = DatagramPacket(
+        mBuffer,
+        mBuffer.size
     )
 
     override fun hasQueueData() {
@@ -26,16 +36,17 @@ class MSClientStreamUDPSequence(
             return
         }
 
+        mPacket.address = host
+        mPacket.port = port
+
         mPosition = 0
 
-        mSocket.send(
-            DatagramPacket(
-                mBuffer,
-                0,
-                mBuffer.size,
-                host,
-                port
+        try {
+            mSocket.send(
+                mPacket
             )
-        )
+        } catch (e: Exception) {
+            Log.d(TAG, "hasQueueData: ${e.message}")
+        }
     }
 }

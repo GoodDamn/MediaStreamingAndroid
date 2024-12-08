@@ -1,33 +1,20 @@
 package good.damn.editor.mediastreaming.camera
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.YuvImage
 import android.media.Image
 import android.util.Log
-import androidx.core.graphics.get
-import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnUpdateCameraFrame
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnGetCameraFrameData
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
-import good.damn.editor.mediastreaming.extensions.setIntegerOnPosition
 import good.damn.editor.mediastreaming.extensions.setShortOnPosition
 import good.damn.editor.mediastreaming.network.MSStateable
-import good.damn.editor.mediastreaming.network.client.MSClientStreamUDP
 import good.damn.editor.mediastreaming.network.client.MSClientStreamUDPChunk
 import good.damn.editor.mediastreaming.network.client.MSModelChunkUDP
 import good.damn.editor.mediastreaming.out.stream.MSOutputStreamBuffer
-import good.damn.editor.mediastreaming.utils.MSUtilsImage
 import good.damn.media.gles.gl.textures.GLTexture
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import java.io.ByteArrayOutputStream
 import java.net.InetAddress
-import java.nio.Buffer
-import java.nio.ByteBuffer
 
 class MSStreamCameraInput(
     manager: MSManagerCamera,
@@ -55,8 +42,11 @@ MSListenerOnGetCameraFrameData {
         60000
     )
 
-    private var mScaleBuffer = ByteArray(0)
-    private var mScaleBufferStream = MSOutputStreamBuffer()
+    private var mScaleBuffer = ByteArray(1024 * 1024)
+    private var mScaleBufferStream = MSOutputStreamBuffer().apply {
+        buffer = mScaleBuffer
+    }
+    private val mBitmapOffset = 2
 
     val rotation: Int
         get() = mCamera.rotation
@@ -97,7 +87,7 @@ MSListenerOnGetCameraFrameData {
         val buffer = jpegPlane.buffer
         val bufSize = buffer.capacity()
 
-        if (bufSize >= mBuffer.size-2) {
+        if (bufSize >= mBuffer.size-mBitmapOffset) {
             if (bufSize >= mScaleBuffer.size) {
                 mScaleBuffer = ByteArray(
                     bufSize
@@ -112,26 +102,29 @@ MSListenerOnGetCameraFrameData {
             )
 
             var scaleBufferSize = mScaleBuffer.size
-            while (scaleBufferSize > mBuffer.size-2) {
+            var scaleBufferOffset = 0
+
+            while (scaleBufferSize > mBuffer.size-mBitmapOffset) {
                 val bb = BitmapFactory.decodeByteArray(
                     mScaleBuffer,
-                    0,
+                    scaleBufferOffset,
                     scaleBufferSize
-                ) ?: return
+                )
 
                 val resultBitmap = Bitmap.createScaledBitmap(
                     bb,
                     360,
                     240,
-                    false
+                    true
                 )
 
+                scaleBufferOffset = mBitmapOffset
                 mScaleBufferStream.position = 0
-                mScaleBufferStream.offset = 2
+                mScaleBufferStream.offset = mBitmapOffset
 
                 resultBitmap.compress(
                     Bitmap.CompressFormat.JPEG,
-                    100,
+                    75,
                     mScaleBufferStream
                 )
 
