@@ -60,6 +60,7 @@ MSListenerOnUpdateCameraFrame {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
+
         val context = context
             ?: return null
 
