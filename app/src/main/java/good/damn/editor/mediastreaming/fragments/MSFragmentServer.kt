@@ -16,6 +16,8 @@ import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFrameRoom
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
+import good.damn.editor.mediastreaming.network.server.accepters.MSAccepterGetRoomList
+import good.damn.editor.mediastreaming.network.server.guild.MSServerTCP
 import good.damn.editor.mediastreaming.network.server.room.MSRoom
 import good.damn.editor.mediastreaming.network.server.room.MSRoomUser
 import good.damn.editor.mediastreaming.network.server.room.MSRooms
@@ -38,6 +40,16 @@ MSListenerOnGetHotspotHost {
             MSRoom()
         )
     }
+
+    private val mServerGuild = MSServerTCP(
+        8080,
+        CoroutineScope(
+            Dispatchers.IO
+        ),
+        MSAccepterGetRoomList(
+            mRooms
+        )
+    )
 
     /*private val mServerAudio = MSServerUDP(
         5555,
@@ -160,9 +172,11 @@ MSListenerOnGetHotspotHost {
         mServerFrameRoom.apply {
             btn.text = if (isRunning) {
                 stop()
+                mServerGuild.stop()
                 "Start server"
             } else {
                 start()
+                mServerGuild.start()
                 "Stop Server"
             }
         }
