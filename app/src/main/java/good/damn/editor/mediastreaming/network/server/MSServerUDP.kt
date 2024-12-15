@@ -1,5 +1,6 @@
 package good.damn.editor.mediastreaming.network.server
 
+import android.provider.ContactsContract.Data
 import android.system.ErrnoException
 import android.util.Log
 import good.damn.editor.mediastreaming.network.MSStateable
@@ -27,7 +28,7 @@ open class MSServerUDP(
         bufferSize
     )
 
-    private val mSocket = DatagramSocket(
+    private var mSocket = DatagramSocket(
         port
     ).apply {
         reuseAddress = true
@@ -40,6 +41,15 @@ open class MSServerUDP(
 
     override fun start() {
         isRunning = true
+
+        if (mSocket.isClosed) {
+            mSocket = DatagramSocket(
+                mSocket.port
+            ).apply {
+                reuseAddress = true
+            }
+        }
+
         scope.launch {
             while (
                 isRunning

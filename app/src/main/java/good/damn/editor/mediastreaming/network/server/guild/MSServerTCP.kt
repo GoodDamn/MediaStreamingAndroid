@@ -1,13 +1,15 @@
 package good.damn.editor.mediastreaming.network.server.guild
 
 import good.damn.editor.mediastreaming.network.MSStateable
+import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnAcceptClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.net.ServerSocket
 
 class MSServerTCP(
     private val port: Int,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val accepter: MSListenerOnAcceptClient
 ): MSStateable {
 
     private var mSocket: ServerSocket? = null
@@ -35,17 +37,17 @@ class MSServerTCP(
         mSocket = null
     }
 
-
     private inline fun listen(
         socket: ServerSocket
     ) {
         val user = socket.accept()
         user.soTimeout = 4000
 
-        val inp = user.getInputStream()
-
-
-
+        accepter.onAcceptClient(
+            user.inetAddress,
+            user.getInputStream(),
+            user.getOutputStream()
+        )
 
         user.close()
     }
