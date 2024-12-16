@@ -12,14 +12,14 @@ import good.damn.editor.mediastreaming.network.MSStateable
 import good.damn.editor.mediastreaming.network.client.MSClientStreamUDPChunk
 import good.damn.editor.mediastreaming.network.client.MSModelChunkUDP
 import good.damn.editor.mediastreaming.out.stream.MSOutputStreamBuffer
-import good.damn.media.gles.gl.textures.GLTexture
 import kotlinx.coroutines.CoroutineScope
 import java.net.InetAddress
 
 class MSStreamCameraInput(
     manager: MSManagerCamera,
+    private val mRoomId: Byte,
     scope: CoroutineScope,
-    private val texture: GLTexture
+    private val mUserId: Byte
 ): MSStateable,
 MSListenerOnGetCameraFrameData {
 
@@ -46,7 +46,7 @@ MSListenerOnGetCameraFrameData {
     private var mScaleBufferStream = MSOutputStreamBuffer().apply {
         buffer = mScaleBuffer
     }
-    private val mBitmapOffset = 3
+    private val mBitmapOffset = 5
 
     val rotation: Int
         get() = mCamera.rotation
@@ -140,9 +140,7 @@ MSListenerOnGetCameraFrameData {
                 pos = 0
             )
 
-            mScaleBuffer[2] = (
-                rotation.toFloat() / 360f * 255
-            ).toInt().toByte()
+            setMeta(mScaleBuffer)
 
             mClientCamera.sendToStream(
                 MSModelChunkUDP(
@@ -159,9 +157,9 @@ MSListenerOnGetCameraFrameData {
             pos = 0
         )
 
-        mBuffer[2] = (
-            rotation / 360.toFloat() * 255
-        ).toInt().toByte()
+        setMeta(
+            mBuffer
+        )
 
         buffer.get(
             mBuffer,
@@ -177,6 +175,17 @@ MSListenerOnGetCameraFrameData {
                 bufSize + mBitmapOffset
             )
         )
+    }
+
+    private inline fun setMeta(
+        buffer: ByteArray
+    ) {
+        buffer[2] = (
+            rotation.toFloat() / 360f * 255
+        ).toInt().toByte()
+
+        buffer[3] = mUserId;
+        buffer[4] = mRoomId;
     }
 
 }

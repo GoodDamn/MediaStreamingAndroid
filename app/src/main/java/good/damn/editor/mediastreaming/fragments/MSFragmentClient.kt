@@ -30,8 +30,6 @@ MSListenerOnClickRoom {
 
     companion object {
         private val TAG = MSFragmentClient::class.simpleName
-        const val PREVIEW_WIDTH = 360
-        const val PREVIEW_HEIGHT = 240
     }
 
     private var mEditTextHost: EditText? = null

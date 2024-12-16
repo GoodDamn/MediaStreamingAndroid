@@ -1,5 +1,6 @@
 package good.damn.editor.mediastreaming.network.server
 
+import android.util.Log
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveData
 import good.damn.editor.mediastreaming.network.server.room.MSRooms
 import kotlinx.coroutines.Dispatchers
@@ -11,17 +12,24 @@ class MSReceiverCameraFrameRoom(
     private val rooms: MSRooms
 ): MSListenerOnReceiveData {
 
+    companion object {
+        private const val TAG = "MSReceiverCameraFrameRo"
+    }
+
     override suspend fun onReceiveData(
         data: ByteArray
     ) {
-        val roomId = data[0].toInt() and 0xff
-        val userRoomId = data[1].toInt() and 0xff
+        val roomId = data[3].toInt() and 0xff
+        val userRoomId = data[4].toInt() and 0xff
+
+        Log.d(TAG, "onReceiveData: $roomId $userRoomId")
 
         val users = rooms.getRoomById(
             roomId
         )?.users ?: return
 
         for (it in users) {
+            Log.d(TAG, "onReceiveData: ${it.id} ${it.host}")
             if (userRoomId == it.id) {
                 continue
             }
