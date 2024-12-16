@@ -3,19 +3,16 @@ package good.damn.editor.mediastreaming.network.client.tcp
 import android.util.Log
 import good.damn.editor.mediastreaming.extensions.readString
 import good.damn.editor.mediastreaming.extensions.readU
-import good.damn.editor.mediastreaming.network.MSStateable
-import good.damn.editor.mediastreaming.network.server.room.MSRoom
+import good.damn.editor.mediastreaming.network.client.tcp.listeners.MSListenerOnGetRooms
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.net.InetSocketAddress
 import java.net.Socket
-import java.net.SocketAddress
 
 class MSClientGuildTCP(
     private val scope: CoroutineScope
-) {
+): MSClientBaseTCP() {
     
     companion object {
         private val TAG = MSClientGuildTCP::class
@@ -23,10 +20,6 @@ class MSClientGuildTCP(
     }
     
     var onGetRooms: MSListenerOnGetRooms? = null
-
-    var host: InetSocketAddress? = null
-
-    private var mSocket: Socket? = null
 
     fun getRoomsAsync() = scope.launch {
         val host = host
@@ -45,9 +38,7 @@ class MSClientGuildTCP(
             }
 
             getInputStream().apply {
-                Log.d(TAG, "getRoomsAsync: ")
                 val countRooms = readU()
-                Log.d(TAG, "getRoomsAsync: countRooms $countRooms")
                 val rooms = Array(
                     countRooms
                 ) {
@@ -64,7 +55,6 @@ class MSClientGuildTCP(
                         countUsers
                     )
                 }
-                Log.d(TAG, "getRoomsAsync: ROOMS $rooms")
 
                 withContext(
                     Dispatchers.Main
