@@ -162,6 +162,7 @@ MSListenerOnGetHotspotHost {
     }
 
     override fun onStop() {
+        mServerGuild.release()
         mServerFrameRoom.release()
         super.onStop()
     }

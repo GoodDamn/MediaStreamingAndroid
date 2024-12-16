@@ -1,5 +1,6 @@
 package good.damn.editor.mediastreaming.network.server.guild
 
+import android.util.Log
 import good.damn.editor.mediastreaming.network.MSStateable
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnAcceptClient
 import kotlinx.coroutines.CoroutineScope
@@ -12,18 +13,24 @@ class MSServerTCP(
     private val accepter: MSListenerOnAcceptClient
 ): MSStateable {
 
+    companion object {
+        private val TAG = MSServerTCP::class.simpleName
+    }
+    
     private var mSocket: ServerSocket? = null
 
     var isRunning = false
         private set
 
     override fun start() {
+        isRunning = true
         scope.launch {
             mSocket = ServerSocket(
                 port
             ).apply {
-                soTimeout = 3000
-                listen(this)
+                while (
+                    isRunning
+                ) { listen(this) }
             }
         }
     }
@@ -33,6 +40,7 @@ class MSServerTCP(
     }
 
     override fun release() {
+        isRunning = false
         mSocket?.close()
         mSocket = null
     }
@@ -40,7 +48,9 @@ class MSServerTCP(
     private inline fun listen(
         socket: ServerSocket
     ) {
+        Log.d(TAG, "listen: ")
         val user = socket.accept()
+        Log.d(TAG, "listen: accept")
         user.soTimeout = 4000
 
         accepter.onAcceptClient(
@@ -48,7 +58,5 @@ class MSServerTCP(
             user.getInputStream(),
             user.getOutputStream()
         )
-
-        user.close()
     }
 }
