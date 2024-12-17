@@ -37,8 +37,6 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".MSActivityCall"/>
-
     </application>
 
 </manifest>

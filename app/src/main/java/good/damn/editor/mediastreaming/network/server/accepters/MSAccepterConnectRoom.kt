@@ -34,6 +34,14 @@ class MSAccepterConnectRoom(
                 newUserId
             )
 
+            users.add(
+                MSRoomUser(
+                    newUserId,
+                    fromAddress,
+                    7777
+                )
+            )
+
             out.write(
                 users.size
             )
@@ -43,15 +51,6 @@ class MSAccepterConnectRoom(
                     it.id
                 )
             }
-
-            users.add(
-                MSRoomUser(
-                    newUserId,
-                    fromAddress,
-                    7777
-                )
-            )
-
         }
 
     }

@@ -19,8 +19,8 @@ class MSReceiverCameraFrameRoom(
     override suspend fun onReceiveData(
         data: ByteArray
     ) {
-        val roomId = data[3].toInt() and 0xff
-        val userRoomId = data[4].toInt() and 0xff
+        val roomId = data[4].toInt() and 0xff
+        val userRoomId = data[3].toInt() and 0xff
 
         Log.d(TAG, "onReceiveData: $roomId $userRoomId")
 
@@ -30,9 +30,9 @@ class MSReceiverCameraFrameRoom(
 
         for (it in users) {
             Log.d(TAG, "onReceiveData: ${it.id} ${it.host}")
-            if (userRoomId == it.id) {
+            /*if (userRoomId == it.id) {
                 continue
-            }
+            }*/
 
             DatagramSocket().apply {
                 send(

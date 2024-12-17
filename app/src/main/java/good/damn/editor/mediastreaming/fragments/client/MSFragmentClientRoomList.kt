@@ -1,6 +1,5 @@
-package good.damn.editor.mediastreaming.fragments
+package good.damn.editor.mediastreaming.fragments.client
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -12,25 +11,26 @@ import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import good.damn.editor.mediastreaming.MSActivityCall
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.adapters.MSAdapterRoomsClient
 import good.damn.editor.mediastreaming.adapters.listeners.MSListenerOnClickRoom
 import good.damn.editor.mediastreaming.network.client.tcp.MSClientGuildTCP
-import good.damn.editor.mediastreaming.network.client.tcp.listeners.MSListenerOnGetRooms
 import good.damn.editor.mediastreaming.network.client.tcp.MSModelRoomClient
+import good.damn.editor.mediastreaming.network.client.tcp.listeners.MSListenerOnGetRooms
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.net.InetSocketAddress
 
-class MSFragmentClient
+class MSFragmentClientRoomList
 : Fragment(),
-    MSListenerOnGetRooms,
+MSListenerOnGetRooms,
 MSListenerOnClickRoom {
 
     companion object {
-        private val TAG = MSFragmentClient::class.simpleName
+        private val TAG = MSFragmentClientRoomList::class.simpleName
     }
+
+    var rootFragment: MSFragmentClient? = null
 
     private var mEditTextHost: EditText? = null
     private var mBtnConnect: Button? = null
@@ -41,7 +41,7 @@ MSListenerOnClickRoom {
             Dispatchers.IO
         )
     ).apply {
-        onGetRooms = this@MSFragmentClient
+        onGetRooms = this@MSFragmentClientRoomList
     }
 
     override fun onCreateView(
@@ -104,7 +104,7 @@ MSListenerOnClickRoom {
                 )
 
                 mAdapterRooms = MSAdapterRoomsClient().apply {
-                    onClickRoom = this@MSFragmentClient
+                    onClickRoom = this@MSFragmentClientRoomList
                 }
                 it.adapter = mAdapterRooms
 
@@ -151,21 +151,11 @@ MSListenerOnClickRoom {
     override fun onClickRoom(
         room: MSModelRoomClient
     ) {
-        (activity as? MSActivityMain)?.apply {
-            startActivity(
-                Intent(
-                    this,
-                    MSActivityCall::class.java
-                ).apply {
-                    putExtra(
-                        MSActivityCall.INTENT_KEY_ROOM_ID,
-                        room.id
-                    )
-
-                    putExtra(
-                        MSActivityCall.INTENT_KEY_ROOM_HOST,
-                        mEditTextHost?.text?.toString()
-                    )
+        rootFragment?.apply {
+            setFragment(
+                fragmentCall.apply {
+                    hostIp = mEditTextHost?.text?.toString()
+                    roomId = room.id
                 }
             )
         }

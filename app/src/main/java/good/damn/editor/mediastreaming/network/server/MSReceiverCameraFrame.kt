@@ -20,25 +20,26 @@ class MSReceiverCameraFrame
     override suspend fun onReceiveData(
         data: ByteArray
     ) {
+        val bitmapSize = data.short(
+            offset = 0
+        )
 
-//        val bitmapSize = data.short(
-//            offset = 0
-//        )
-//
-//        val rotation = (
-//            data[2].toFraction() * 360
-//        ).toInt()
-//
-//        Log.d(TAG, "onReceiveData: $bitmapSize ${data.size} $rotation")
-//
-//        onReceiveFramePiece?.onReceiveFrame(
-//            BitmapFactory.decodeByteArray(
-//                data,
-//                3,
-//                bitmapSize
-//            ),
-//            rotation
-//        )
+        val rotation = (
+            data[2].toFraction() * 360
+        ).toInt()
+
+        Log.d(TAG, "onReceiveData: $bitmapSize ${data.size} $rotation")
+
+        onReceiveFramePiece?.onReceiveFrame(
+            data[3],
+            data[4],
+            BitmapFactory.decodeByteArray(
+                data,
+                5,
+                bitmapSize
+            ),
+            rotation
+        )
     }
 
 }

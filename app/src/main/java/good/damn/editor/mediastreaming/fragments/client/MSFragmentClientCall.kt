@@ -1,14 +1,15 @@
-package good.damn.editor.mediastreaming
+package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
-import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
-import androidx.appcompat.app.AppCompatActivity
-import good.damn.editor.mediastreaming.audio.stream.MSStreamAudioInput
+import androidx.fragment.app.Fragment
+import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
@@ -17,36 +18,35 @@ import good.damn.editor.mediastreaming.network.client.tcp.MSClientConnectRoomTCP
 import good.damn.editor.mediastreaming.network.client.tcp.listeners.MSListenerOnConnectRoom
 import good.damn.editor.mediastreaming.network.client.tcp.listeners.MSListenerOnError
 import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFrame
-import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFrameRoom
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveFramePiece
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
-import good.damn.editor.mediastreaming.system.permission.MSPermission
 import good.damn.media.gles.GLViewTexture
-import good.damn.media.gles.gl.textures.GLTexture
 import good.damn.media.gles.gl.textures.GLTextureBitmap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.InetSocketAddress
 
-class MSActivityCall
-: AppCompatActivity(),
+class MSFragmentClientCall
+: Fragment(),
 MSListenerOnError,
 MSListenerOnConnectRoom,
 MSListenerOnReceiveFramePiece,
 MSListenerOnResultPermission {
 
     companion object {
-        private val TAG = MSActivityCall::class
+        private val TAG = MSFragmentClientCall::class
             .simpleName
-
-        const val INTENT_KEY_ROOM_ID = "roomID"
-        const val INTENT_KEY_ROOM_HOST = "host"
 
         const val PREVIEW_WIDTH = 360
         const val PREVIEW_HEIGHT = 240
     }
+
+    var rootFragment: MSFragmentClient? = null
+
+    var roomId = -1
+    var hostIp: String? = null
 
     private var managerCamera: MSManagerCamera? = null
     private var mStreamCamera: MSStreamCameraInput? = null
@@ -58,18 +58,28 @@ MSListenerOnResultPermission {
             Dispatchers.IO
         ),
         MSReceiverCameraFrame().apply {
-            onReceiveFramePiece = this@MSActivityCall
+            onReceiveFramePiece = this@MSFragmentClientCall
         }
     )
 
-    private val mPermission = MSPermission().apply {
-        onResultPermission = this@MSActivityCall
-    }
-
     private val mUsersMap = HashMap<Byte, MSModelCall>()
 
-    private var mRoomId = -1
     private var mUserRoomId = -1
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val context = context
+            ?: return null
+
+        return LinearLayout(
+            context
+        ).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+    }
 
     override fun onCreate(
         savedInstanceState: Bundle?
@@ -78,46 +88,36 @@ MSListenerOnResultPermission {
             savedInstanceState
         )
 
+        val context = context
+            ?: return
+
         managerCamera = MSManagerCamera(
-            this
+            context
         )
-
-        mRoomId = intent.getIntExtra(
-            INTENT_KEY_ROOM_ID,
-            -1
-        )
-
-        val host = intent.getStringExtra(
-            INTENT_KEY_ROOM_HOST
-        ) ?: return
 
         MSClientConnectRoomTCP(
             CoroutineScope(
                 Dispatchers.IO
             )
         ).apply {
-            onError = this@MSActivityCall
-            onConnectRoom = this@MSActivityCall
+            onError = this@MSFragmentClientCall
+            onConnectRoom = this@MSFragmentClientCall
 
             this.host = InetSocketAddress(
-                host,
+                hostIp,
                 8081
             )
 
             connectToRoomAsync(
-                mRoomId
+                roomId
             )
         }
 
-        mPermission.apply {
-            register(
-                this@MSActivityCall
-            )
-            launch(
+        (activity as? MSActivityMain)
+            ?.launcherPermission
+            ?.launch(
                 Manifest.permission.CAMERA
             )
-        }
-
     }
 
     override fun onStop() {
@@ -128,24 +128,24 @@ MSListenerOnResultPermission {
 
     override suspend fun onError(
         msg: String
-    ) = toast(msg)
+    ) = context?.toast(msg) ?: Unit
 
     override suspend fun onConnectRoom(
         userId: Int,
         users: Array<Int>?
     ) {
-        toast(
+        val context = context
+            ?: return
+
+        context.toast(
             "Connected as $userId"
         )
+
+        mServerFrame.start()
+
         mUserRoomId = userId
 
-        val context = this
-        LinearLayout(
-            context
-        ).apply {
-            orientation = LinearLayout
-                .HORIZONTAL
-
+        (view as? ViewGroup)?.apply {
             users?.forEach {
                 val texture = GLTextureBitmap(
                     PREVIEW_WIDTH,
@@ -157,7 +157,11 @@ MSListenerOnResultPermission {
                     texture
                 )
 
-                addView(view)
+                addView(
+                    view,
+                    PREVIEW_WIDTH,
+                    PREVIEW_HEIGHT
+                )
 
                 mUsersMap[
                     it.toByte()
@@ -166,10 +170,6 @@ MSListenerOnResultPermission {
                     view
                 )
             }
-
-            setContentView(
-                this
-            )
         }
     }
 
@@ -179,6 +179,7 @@ MSListenerOnResultPermission {
         frame: Bitmap,
         rotation: Int
     ) {
+        Log.d(TAG, "onReceiveFrame: $userId $roomId ${mUsersMap.size}")
         mUsersMap[
             userId
         ]?.apply {
@@ -216,7 +217,7 @@ MSListenerOnResultPermission {
     private inline fun initCamera() = managerCamera?.run {
         mStreamCamera = MSStreamCameraInput(
             this,
-            mRoomId.toByte(),
+            roomId.toByte(),
             CoroutineScope(
                 Dispatchers.IO
             ),
