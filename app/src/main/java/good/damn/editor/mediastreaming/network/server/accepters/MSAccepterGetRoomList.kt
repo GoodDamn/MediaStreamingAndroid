@@ -2,9 +2,11 @@ package good.damn.editor.mediastreaming.network.server.accepters
 
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnAcceptClient
 import good.damn.editor.mediastreaming.network.server.room.MSRooms
+import kotlinx.coroutines.CoroutineScope
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.InetAddress
+import java.net.Socket
 import java.nio.charset.Charset
 
 class MSAccepterGetRoomList(
@@ -12,10 +14,12 @@ class MSAccepterGetRoomList(
 ): MSListenerOnAcceptClient {
 
     override fun onAcceptClient(
-        fromAddress: InetAddress,
-        inp: InputStream,
-        out: OutputStream
+        socket: Socket,
+        scope: CoroutineScope
     ) {
+        val inp = socket.getInputStream()
+        val out = socket.getOutputStream()
+
         if (inp.read() != 0xf) {
             inp.close()
             out.close()

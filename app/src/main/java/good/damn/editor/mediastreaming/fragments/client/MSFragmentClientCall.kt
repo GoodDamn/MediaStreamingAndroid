@@ -3,22 +3,28 @@ package good.damn.editor.mediastreaming.fragments.client
 import android.Manifest
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
+import com.google.android.material.color.utilities.DislikeAnalyzer
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.extensions.toast
 import good.damn.editor.mediastreaming.network.client.tcp.MSClientConnectRoomTCP
+import good.damn.editor.mediastreaming.network.client.tcp.accepters.MSAccepterGetNewUserClient
+import good.damn.editor.mediastreaming.network.client.tcp.listeners.MSListenerOnAcceptNewUser
 import good.damn.editor.mediastreaming.network.client.tcp.listeners.MSListenerOnConnectRoom
 import good.damn.editor.mediastreaming.network.client.tcp.listeners.MSListenerOnError
 import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFrame
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
+import good.damn.editor.mediastreaming.network.server.guild.MSServerTCP
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveFramePiece
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import good.damn.media.gles.GLViewTexture
@@ -27,13 +33,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.InetSocketAddress
+import java.util.concurrent.ConcurrentHashMap
 
 class MSFragmentClientCall
 : Fragment(),
 MSListenerOnError,
 MSListenerOnConnectRoom,
 MSListenerOnReceiveFramePiece,
-MSListenerOnResultPermission {
+MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
 
     companion object {
         private val TAG = MSFragmentClientCall::class
@@ -51,6 +58,16 @@ MSListenerOnResultPermission {
     private var managerCamera: MSManagerCamera? = null
     private var mStreamCamera: MSStreamCameraInput? = null
 
+    private val mServerNewUser = MSServerTCP(
+        7780,
+        CoroutineScope(
+            Dispatchers.IO
+        ),
+        MSAccepterGetNewUserClient().apply {
+            onAcceptNewUser = this@MSFragmentClientCall
+        }
+    )
+
     private val mServerFrame = MSServerUDP(
         7777,
         61000,
@@ -62,7 +79,7 @@ MSListenerOnResultPermission {
         }
     )
 
-    private val mUsersMap = HashMap<Byte, MSModelCall>()
+    private val mUsersMap = ConcurrentHashMap<Byte, MSModelCall>()
 
     private var mUserRoomId = -1
 
@@ -124,6 +141,7 @@ MSListenerOnResultPermission {
         super.onStop()
         mStreamCamera?.release()
         mServerFrame.release()
+        mServerNewUser.release()
     }
 
     override suspend fun onError(
@@ -142,6 +160,7 @@ MSListenerOnResultPermission {
         )
 
         mServerFrame.start()
+        mServerNewUser.start()
 
         mUserRoomId = userId
 
@@ -159,8 +178,8 @@ MSListenerOnResultPermission {
 
                 addView(
                     view,
-                    PREVIEW_WIDTH,
-                    PREVIEW_HEIGHT
+                    PREVIEW_HEIGHT,
+                    PREVIEW_WIDTH
                 )
 
                 mUsersMap[
@@ -212,6 +231,40 @@ MSListenerOnResultPermission {
             }
         }
 
+    }
+
+    override fun onAcceptNewUser(
+        userId: Int
+    ) {
+        Handler(
+            Looper.getMainLooper()
+        ).post {
+            val context = context
+                ?: return@post
+
+            val texture = GLTextureBitmap(
+                PREVIEW_WIDTH,
+                PREVIEW_HEIGHT
+            )
+
+            val viewTexture = GLViewTexture(
+                context,
+                texture
+            )
+
+            mUsersMap[
+                userId.toByte()
+            ] = MSModelCall(
+                texture,
+                viewTexture
+            )
+
+            (view as? ViewGroup)?.addView(
+                viewTexture,
+                PREVIEW_HEIGHT,
+                PREVIEW_WIDTH
+            )
+        }
     }
 
     private inline fun initCamera() = managerCamera?.run {

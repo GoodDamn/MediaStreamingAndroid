@@ -54,9 +54,8 @@ class MSServerTCP(
         user.soTimeout = 4000
 
         accepter.onAcceptClient(
-            user.inetAddress,
-            user.getInputStream(),
-            user.getOutputStream()
+            user,
+            scope
         )
     }
 }
