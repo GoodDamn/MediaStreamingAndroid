@@ -17,9 +17,7 @@ import java.net.InetAddress
 
 class MSStreamCameraInput(
     manager: MSManagerCamera,
-    private val mRoomId: Byte,
-    scope: CoroutineScope,
-    private val mUserId: Byte
+    scope: CoroutineScope
 ): MSStateable,
 MSListenerOnGetCameraFrameData {
 
@@ -47,6 +45,9 @@ MSListenerOnGetCameraFrameData {
         buffer = mScaleBuffer
     }
     private val mBitmapOffset = 5
+
+    var userId: Byte = -1
+    var roomId: Byte = -1
 
     val rotation: Int
         get() = mCamera.rotation
@@ -184,8 +185,8 @@ MSListenerOnGetCameraFrameData {
             rotation.toFloat() / 360f * 255
         ).toInt().toByte()
 
-        buffer[3] = mUserId;
-        buffer[4] = mRoomId;
+        buffer[3] = userId;
+        buffer[4] = roomId;
     }
 
 }

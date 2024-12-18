@@ -70,7 +70,7 @@ ImageReader.OnImageAvailableListener {
         640,
         480,
         ImageFormat.JPEG,
-        1
+        3
     ).apply {
         setOnImageAvailableListener(
             this@MSCamera,
@@ -153,13 +153,7 @@ ImageReader.OnImageAvailableListener {
                 listConfig.add(
                     OutputConfiguration(
                         it
-                    ).apply {
-                        cameraId?.physical?.apply {
-                            setPhysicalCameraId(
-                                this
-                            )
-                        }
-                    }
+                    )
                 )
             }
 

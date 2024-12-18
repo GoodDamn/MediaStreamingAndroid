@@ -3,11 +3,9 @@ package good.damn.editor.mediastreaming.audio.stream
 import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.audio.MSListenerOnSamplesRecord
 import good.damn.editor.mediastreaming.network.MSStateable
-import good.damn.editor.mediastreaming.network.client.MSClientStreamUDP
-import good.damn.editor.mediastreaming.network.client.MSClientStreamUDPSequence
+import good.damn.editor.mediastreaming.network.client.MSClientStreamUDPAudio
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import java.net.InetAddress
 
 class MSStreamAudioInput
@@ -24,15 +22,28 @@ MSListenerOnSamplesRecord {
             mClientAudioStream.host = v
         }
 
+    var roomId: Byte
+        get() = mClientAudioStream.roomId
+        set(v) {
+            mClientAudioStream.roomId = v
+        }
+
+    var userId: Byte
+        get() = mClientAudioStream.userId
+        set(v) {
+            mClientAudioStream.userId = v
+        }
+
     private val mAudioRecord = MSRecordAudio().apply {
         onSampleListener = this@MSStreamAudioInput
     }
 
-    private val mClientAudioStream = MSClientStreamUDPSequence(
+    private val mClientAudioStream = MSClientStreamUDPAudio(
         port = 5555,
         CoroutineScope(
             Dispatchers.IO
-        )
+        ),
+        2048
     )
 
     override fun start() {

@@ -10,6 +10,10 @@ import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnRece
 class MSReceiverAudio
 : MSListenerOnReceiveData {
 
+    companion object {
+        const val BUFFER_SIZE = 2048
+    }
+
     private val mAudioTrack = AudioTrack(
         AudioAttributes.Builder()
             .setLegacyStreamType(
@@ -25,7 +29,7 @@ class MSReceiverAudio
             ).setChannelMask(
                 AudioFormat.CHANNEL_OUT_MONO
             ).build(),
-        MSRecordAudio.DEFAULT_BUFFER_SIZE,
+        BUFFER_SIZE,
         AudioTrack.MODE_STREAM,
         AudioManager.AUDIO_SESSION_ID_GENERATE
     )
@@ -35,8 +39,8 @@ class MSReceiverAudio
     ) = mAudioTrack.run {
         write(
             data,
-            0,
-            data.size
+            2,
+            BUFFER_SIZE - 2
         )
         play()
     }

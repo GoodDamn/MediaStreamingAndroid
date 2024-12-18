@@ -12,6 +12,8 @@ class MSApp: Application() {
         )
 
         var dp = 0f
+        var width = 0
+        var height = 0
 
         inline fun ui(
             run: Runnable
@@ -23,6 +25,8 @@ class MSApp: Application() {
 
         resources.displayMetrics.apply {
             dp = density
+            width = widthPixels
+            height = heightPixels
         }
     }
 }

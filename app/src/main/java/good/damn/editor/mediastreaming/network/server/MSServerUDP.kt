@@ -32,6 +32,9 @@ open class MSServerUDP(
         port
     ).apply {
         reuseAddress = true
+        soTimeout = 100
+        receiveBufferSize = 1
+        sendBufferSize = 1
     }
 
     private val mPacket = DatagramPacket(
@@ -47,6 +50,9 @@ open class MSServerUDP(
                 mSocket.port
             ).apply {
                 reuseAddress = true
+                soTimeout = 100
+                receiveBufferSize = 1
+                sendBufferSize = 1
             }
         }
 
@@ -71,7 +77,6 @@ open class MSServerUDP(
             mSocket.receive(
                 mPacket
             )
-
         } catch (e: Exception) {
             return
         }

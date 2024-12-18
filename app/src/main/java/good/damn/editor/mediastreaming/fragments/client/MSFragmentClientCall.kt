@@ -9,10 +9,14 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.color.utilities.DislikeAnalyzer
 import good.damn.editor.mediastreaming.MSActivityMain
+import good.damn.editor.mediastreaming.MSApp
+import good.damn.editor.mediastreaming.audio.MSRecordAudio
+import good.damn.editor.mediastreaming.audio.stream.MSStreamAudioInput
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
@@ -22,6 +26,7 @@ import good.damn.editor.mediastreaming.network.client.tcp.accepters.MSAccepterGe
 import good.damn.editor.mediastreaming.network.client.tcp.listeners.MSListenerOnAcceptNewUser
 import good.damn.editor.mediastreaming.network.client.tcp.listeners.MSListenerOnConnectRoom
 import good.damn.editor.mediastreaming.network.client.tcp.listeners.MSListenerOnError
+import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFrame
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
 import good.damn.editor.mediastreaming.network.server.guild.MSServerTCP
@@ -34,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.InetSocketAddress
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.random.Random
 
 class MSFragmentClientCall
 : Fragment(),
@@ -55,8 +61,7 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
     var roomId = -1
     var hostIp: String? = null
 
-    private var managerCamera: MSManagerCamera? = null
-    private var mStreamCamera: MSStreamCameraInput? = null
+    private var mStreamAudio: MSStreamAudioInput? = null
 
     private val mServerNewUser = MSServerTCP(
         7780,
@@ -68,15 +73,13 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
         }
     )
 
-    private val mServerFrame = MSServerUDP(
+    private val mServerAudio = MSServerUDP(
         7777,
-        61000,
+        MSReceiverAudio.BUFFER_SIZE,
         CoroutineScope(
             Dispatchers.IO
         ),
-        MSReceiverCameraFrame().apply {
-            onReceiveFramePiece = this@MSFragmentClientCall
-        }
+        MSReceiverAudio()
     )
 
     private val mUsersMap = ConcurrentHashMap<Byte, MSModelCall>()
@@ -108,10 +111,6 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
         val context = context
             ?: return
 
-        managerCamera = MSManagerCamera(
-            context
-        )
-
         MSClientConnectRoomTCP(
             CoroutineScope(
                 Dispatchers.IO
@@ -122,7 +121,7 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
 
             this.host = InetSocketAddress(
                 hostIp,
-                8081
+                8080
             )
 
             connectToRoomAsync(
@@ -133,14 +132,14 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
         (activity as? MSActivityMain)
             ?.launcherPermission
             ?.launch(
-                Manifest.permission.CAMERA
+                Manifest.permission.RECORD_AUDIO
             )
     }
 
     override fun onStop() {
         super.onStop()
-        mStreamCamera?.release()
-        mServerFrame.release()
+        mStreamAudio?.release()
+        mServerAudio.release()
         mServerNewUser.release()
     }
 
@@ -159,36 +158,20 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
             "Connected as $userId"
         )
 
-        mServerFrame.start()
+        mServerAudio.start()
         mServerNewUser.start()
 
         mUserRoomId = userId
 
-        (view as? ViewGroup)?.apply {
-            users?.forEach {
-                val texture = GLTextureBitmap(
-                    PREVIEW_WIDTH,
-                    PREVIEW_HEIGHT
-                )
+        mStreamAudio?.apply {
+            roomId = this@MSFragmentClientCall.roomId.toByte()
+            this.userId = mUserRoomId.toByte()
+        }
 
-                val view = GLViewTexture(
-                    context,
-                    texture
-                )
-
-                addView(
-                    view,
-                    PREVIEW_HEIGHT,
-                    PREVIEW_WIDTH
-                )
-
-                mUsersMap[
-                    it.toByte()
-                ] = MSModelCall(
-                    texture,
-                    view
-                )
-            }
+        users?.forEach {
+            createNewUserView(
+                it.toByte()
+            )
         }
     }
 
@@ -198,19 +181,20 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
         frame: Bitmap,
         rotation: Int
     ) {
-        Log.d(TAG, "onReceiveFrame: $userId $roomId ${mUsersMap.size}")
-        mUsersMap[
-            userId
-        ]?.apply {
-            texture.bitmap = frame
-            view.rotationShade = rotation
-
-            withContext(
-                Dispatchers.Main
-            ) {
-                view.requestRender()
-            }
-        }
+//        Log.d(TAG, "onReceiveFrame: ${mUserRoomId.toByte()} $userId;;;; ${this.roomId.toByte()} $roomId")
+//        mUsersMap[
+//            userId
+//        ]?.apply {
+//            Log.d(TAG, "onReceiveFrame: BITMAP: $frame")
+//            texture.bitmap = frame
+//            view.rotationShade = rotation
+//
+//            withContext(
+//                Dispatchers.Main
+//            ) {
+//                view.requestRender()
+//            }
+//        }
     }
 
     override fun onResultPermission(
@@ -223,11 +207,11 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
 
         when (permission) {
             Manifest.permission.CAMERA -> {
-                initCamera()
+                //initCamera()
             }
 
             Manifest.permission.RECORD_AUDIO -> {
-
+                initMicrophone()
             }
         }
 
@@ -239,43 +223,56 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
         Handler(
             Looper.getMainLooper()
         ).post {
-            val context = context
-                ?: return@post
-
-            val texture = GLTextureBitmap(
-                PREVIEW_WIDTH,
-                PREVIEW_HEIGHT
-            )
-
-            val viewTexture = GLViewTexture(
-                context,
-                texture
-            )
-
-            mUsersMap[
+            createNewUserView(
                 userId.toByte()
-            ] = MSModelCall(
-                texture,
-                viewTexture
-            )
-
-            (view as? ViewGroup)?.addView(
-                viewTexture,
-                PREVIEW_HEIGHT,
-                PREVIEW_WIDTH
             )
         }
     }
 
+    private inline fun createNewUserView(
+        userId: Byte
+    ) {
+        val context = context
+            ?: return
+
+        val layout = FrameLayout(
+            context
+        ).apply {
+            setBackgroundColor(
+                Random.nextInt()
+            )
+        }
+
+        mUsersMap[
+            userId
+        ] = MSModelCall(
+            layout
+        )
+
+        (view as? ViewGroup)?.addView(
+            layout,
+            (MSApp.width * 0.3f).toInt(),
+            (MSApp.height * 0.3f).toInt()
+        )
+    }
+
+    private inline fun initMicrophone() {
+        mStreamAudio = MSStreamAudioInput().apply {
+            start()
+        }
+    }
+
+/*
     private inline fun initCamera() = managerCamera?.run {
         mStreamCamera = MSStreamCameraInput(
             this,
-            roomId.toByte(),
             CoroutineScope(
                 Dispatchers.IO
-            ),
-            mUserRoomId.toByte()
+            )
         ).apply {
+            roomId = this@MSFragmentClientCall.roomId.toByte()
+            userId = mUserRoomId.toByte()
+
             getCameraIds().firstOrNull()?.let {
                 cameraId = MSCameraModelID(
                     it.logical,
@@ -285,11 +282,10 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
 
             start()
         }
-    }
+    }*/
 
 }
 
 private data class MSModelCall(
-    val texture: GLTextureBitmap,
-    val view: GLViewTexture
+    val view: FrameLayout
 )

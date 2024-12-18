@@ -3,12 +3,11 @@ package good.damn.editor.mediastreaming.network.client
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.util.concurrent.ConcurrentLinkedQueue
 
-class MSClientStreamUDPSequence(
+class MSClientStreamUDPAudio(
     port: Int,
-    scope: CoroutineScope
+    scope: CoroutineScope,
+    bufferSize: Int
 ): MSClientStreamUDP<Byte>(
     port,
     scope
@@ -18,10 +17,13 @@ class MSClientStreamUDPSequence(
         private const val TAG = "MSClientStreamUDPSequen"
     }
 
+    var roomId: Byte = -1
+    var userId: Byte = -1
+
     private var mPosition = 0
 
     private val mBuffer = ByteArray(
-        2048
+        bufferSize
     )
 
     private val mPacket = DatagramPacket(
@@ -35,6 +37,9 @@ class MSClientStreamUDPSequence(
             mPosition++
             return
         }
+
+        mBuffer[0] = roomId
+        mBuffer[1] = userId
 
         mPacket.address = host
         mPacket.port = port

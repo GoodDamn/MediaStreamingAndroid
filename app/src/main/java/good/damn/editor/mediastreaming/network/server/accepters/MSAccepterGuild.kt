@@ -2,7 +2,6 @@ package good.damn.editor.mediastreaming.network.server.accepters
 
 import good.damn.editor.mediastreaming.extensions.readU
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnAcceptClient
-import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveData
 import good.damn.editor.mediastreaming.network.server.room.MSRoomUser
 import good.damn.editor.mediastreaming.network.server.room.MSRooms
 import kotlinx.coroutines.CoroutineScope
@@ -12,9 +11,10 @@ import java.io.OutputStream
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.nio.charset.Charset
 import kotlin.random.Random
 
-class MSAccepterConnectRoom(
+class MSAccepterGuild(
     private val mRooms: MSRooms
 ): MSListenerOnAcceptClient {
 
@@ -25,13 +25,34 @@ class MSAccepterConnectRoom(
         val inp = socket.getInputStream()
         val out = socket.getOutputStream()
 
-        if (inp.read() != 0xA) {
-            inp.close()
-            out.close()
-            socket.close()
-            return
-        }
+        when (inp.read()) {
 
+            0xf -> sendRoomsList(
+                inp,
+                out
+            )
+
+            0xA -> createNewUserSendUsers(
+                inp,
+                out,
+                scope,
+                socket.inetAddress
+            )
+
+            else -> {
+                inp.close()
+                out.close()
+                socket.close()
+            }
+        }
+    }
+
+    private inline fun createNewUserSendUsers(
+        inp: InputStream,
+        out: OutputStream,
+        scope: CoroutineScope,
+        fromAddress: InetAddress
+    ) {
         mRooms.getRoomById(
             inp.readU()
         )?.apply {
@@ -44,7 +65,7 @@ class MSAccepterConnectRoom(
             users.add(
                 MSRoomUser(
                     newUserId,
-                    socket.inetAddress,
+                    fromAddress,
                     7777
                 )
             )
@@ -96,4 +117,38 @@ class MSAccepterConnectRoom(
             }
         }
     }
+
+    private inline fun sendRoomsList(
+        inp: InputStream,
+        out: OutputStream
+    ) {
+        out.write(
+            mRooms.size
+        )
+
+        for (it in mRooms.entries) {
+            out.write(
+                it.key
+            )
+
+            val roomName = it.value.toString().toByteArray(
+                Charset.forName(
+                    "UTF-8"
+                )
+            )
+
+            out.write(
+                roomName.size
+            )
+
+            out.write(
+                roomName
+            )
+
+            out.write(
+                it.value.users.size
+            )
+        }
+    }
+
 }

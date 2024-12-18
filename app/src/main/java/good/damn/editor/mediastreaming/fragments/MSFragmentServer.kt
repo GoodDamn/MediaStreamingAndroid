@@ -14,19 +14,16 @@ import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.adapters.MSAdapterRooms
 import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
-import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFrameRoom
+import good.damn.editor.mediastreaming.network.server.MSReceiverAudioRoom
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
-import good.damn.editor.mediastreaming.network.server.accepters.MSAccepterConnectRoom
-import good.damn.editor.mediastreaming.network.server.accepters.MSAccepterGetRoomList
+import good.damn.editor.mediastreaming.network.server.accepters.MSAccepterGuild
 import good.damn.editor.mediastreaming.network.server.guild.MSServerTCP
 import good.damn.editor.mediastreaming.network.server.room.MSRoom
-import good.damn.editor.mediastreaming.network.server.room.MSRoomUser
 import good.damn.editor.mediastreaming.network.server.room.MSRooms
 import good.damn.editor.mediastreaming.system.MSServiceHotspotCompat
 import good.damn.editor.mediastreaming.system.interfaces.MSListenerOnGetHotspotHost
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import java.util.LinkedList
 
 class MSFragmentServer
 : Fragment(),
@@ -47,37 +44,18 @@ MSListenerOnGetHotspotHost {
         CoroutineScope(
             Dispatchers.IO
         ),
-        MSAccepterGetRoomList(
+        MSAccepterGuild(
             mRooms
         )
     )
 
-    private val mServerGuildRoom = MSServerTCP(
-        8081,
-        CoroutineScope(
-            Dispatchers.IO
-        ),
-        MSAccepterConnectRoom(
-            mRooms
-        )
-    )
-
-    /*private val mServerAudio = MSServerUDP(
+    private val mServerAudioRoom = MSServerUDP(
         5555,
-        MSRecordAudio.DEFAULT_BUFFER_SIZE,
+        MSReceiverAudio.BUFFER_SIZE,
         CoroutineScope(
             Dispatchers.IO
         ),
-        MSReceiverAudio()
-    )*/
-
-    private val mServerFrameRoom = MSServerUDP(
-        5556,
-        61000,
-        CoroutineScope(
-            Dispatchers.IO
-        ),
-        MSReceiverCameraFrameRoom(
+        MSReceiverAudioRoom(
             mRooms
         )
     )
@@ -174,24 +152,21 @@ MSListenerOnGetHotspotHost {
 
     override fun onStop() {
         mServerGuild.release()
-        mServerGuildRoom.release()
-        mServerFrameRoom.release()
+        mServerAudioRoom.release()
         super.onStop()
     }
 
     private inline fun onClickBtnStartServer(
         btn: Button
     ) {
-        mServerFrameRoom.apply {
+        mServerAudioRoom.apply {
             btn.text = if (isRunning) {
                 stop()
                 mServerGuild.stop()
-                mServerGuildRoom.stop()
                 "Start server"
             } else {
                 start()
                 mServerGuild.start()
-                mServerGuildRoom.start()
                 "Stop Server"
             }
         }

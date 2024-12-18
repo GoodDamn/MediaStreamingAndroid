@@ -21,8 +21,9 @@ class MSRecordAudio
 
     companion object {
         private val TAG = MSRecordAudio::class.simpleName
+        private const val DEFAULT_BUFFER_SIZE = 256
+
         const val DEFAULT_SAMPLE_RATE = 44100
-        const val DEFAULT_BUFFER_SIZE = 2048
         const val DEFAULT_CHANNEL = AudioFormat.CHANNEL_IN_MONO
         const val DEFAULT_ENCODING = AudioFormat.ENCODING_PCM_16BIT
     }
@@ -35,7 +36,9 @@ class MSRecordAudio
 
     private var mIsPaused = false
 
-    private val mSampleData = ByteArray(DEFAULT_BUFFER_SIZE)
+    private val mSampleData = ByteArray(
+        DEFAULT_BUFFER_SIZE
+    )
 
     private val mScope = CoroutineScope(
         Dispatchers.IO
