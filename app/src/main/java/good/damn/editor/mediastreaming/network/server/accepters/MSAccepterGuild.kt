@@ -62,14 +62,6 @@ class MSAccepterGuild(
                 newUserId
             )
 
-            users.add(
-                MSRoomUser(
-                    newUserId,
-                    fromAddress,
-                    7777
-                )
-            )
-
             out.write(
                 users.size
             )
@@ -79,6 +71,14 @@ class MSAccepterGuild(
                     it.id
                 )
             }
+
+            users.add(
+                MSRoomUser(
+                    newUserId,
+                    fromAddress,
+                    7777
+                )
+            )
 
             scope.launch {
                 val lastId = users.lastOrNull()

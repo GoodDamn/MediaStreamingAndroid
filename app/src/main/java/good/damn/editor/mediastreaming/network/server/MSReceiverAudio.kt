@@ -4,6 +4,7 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.util.Log
 import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveData
 
@@ -11,6 +12,7 @@ class MSReceiverAudio
 : MSListenerOnReceiveData {
 
     companion object {
+        private const val TAG = "MSReceiverAudio"
         const val BUFFER_SIZE = 2048
     }
 

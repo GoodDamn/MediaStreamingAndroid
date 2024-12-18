@@ -154,14 +154,14 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
         val context = context
             ?: return
 
+        mUserRoomId = userId
+
         context.toast(
             "Connected as $userId"
         )
 
         mServerAudio.start()
         mServerNewUser.start()
-
-        mUserRoomId = userId
 
         mStreamAudio?.apply {
             roomId = this@MSFragmentClientCall.roomId.toByte()
@@ -258,6 +258,8 @@ MSListenerOnResultPermission, MSListenerOnAcceptNewUser {
 
     private inline fun initMicrophone() {
         mStreamAudio = MSStreamAudioInput().apply {
+            roomId = this@MSFragmentClientCall.roomId.toByte()
+            userId = mUserRoomId.toByte()
             start()
         }
     }
