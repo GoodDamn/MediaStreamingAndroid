@@ -6,6 +6,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import good.damn.editor.mediastreaming.fragments.client.MSFragmentClient
 import good.damn.editor.mediastreaming.fragments.MSFragmentServer
+import good.damn.editor.mediastreaming.fragments.client.MSFragmentTestH264
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import good.damn.editor.mediastreaming.system.permission.MSPermission
 
@@ -18,7 +19,7 @@ MSListenerOnResultPermission {
     }
 
     private val mFragments = arrayOf(
-        MSFragmentClient(),
+        MSFragmentTestH264(),
         MSFragmentServer()
     )
 

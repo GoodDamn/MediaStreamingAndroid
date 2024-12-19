@@ -18,8 +18,7 @@ import java.net.InetAddress
 class MSStreamCameraInput(
     manager: MSManagerCamera,
     scope: CoroutineScope
-): MSStateable,
-MSListenerOnGetCameraFrameData {
+): MSStateable {
 
     companion object {
         private val TAG = MSStreamCameraInput::class.simpleName
@@ -32,9 +31,7 @@ MSListenerOnGetCameraFrameData {
 
     private val mCamera = MSCamera(
         manager
-    ).apply {
-        onGetCameraFrame = this@MSStreamCameraInput
-    }
+    )
 
     private val mBuffer = ByteArray(
         60000
@@ -82,7 +79,7 @@ MSListenerOnGetCameraFrameData {
         mClientCamera.release()
     }
 
-    override fun onGetFrame(
+    /*override fun onGetFrame(
         jpegPlane: Image.Plane,
     ) {
         val buffer = jpegPlane.buffer
@@ -176,7 +173,7 @@ MSListenerOnGetCameraFrameData {
                 bufSize + mBitmapOffset
             )
         )
-    }
+    }*/
 
     private inline fun setMeta(
         buffer: ByteArray

@@ -5,27 +5,23 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
-import android.media.ImageReader
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.Looper
 import android.util.Log
 import android.util.Range
 import android.util.Size
-import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnGetCameraFrameData
+import android.view.Surface
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.extensions.camera2.getConfigurationMap
 import good.damn.editor.mediastreaming.extensions.camera2.getRangeFps
 import good.damn.editor.mediastreaming.extensions.camera2.getRotation
 import good.damn.editor.mediastreaming.misc.HandlerExecutor
 import java.util.LinkedList
-import kotlin.math.log
 
 class MSCamera(
     private val manager: MSManagerCamera
-): CameraDevice.StateCallback(),
-ImageReader.OnImageAvailableListener {
+): CameraDevice.StateCallback() {
 
     companion object {
         private val TAG = MSCamera::class.simpleName
@@ -36,6 +32,32 @@ ImageReader.OnImageAvailableListener {
     ).apply {
         start()
     }
+
+    private val mCameraSession = MSCameraSession().apply {
+        handler = Handler(
+            thread.looper
+        )
+    }
+
+    private var mCurrentDevice: Device? = null
+
+    var surfaces: List<Surface>?
+        get() = mCameraSession.targets
+        set(v) {
+            mCameraSession.targets = v
+        }
+
+    var rotation = 0
+        private set
+
+    var resolutions: Array<Size>? = null
+        private set
+
+    var fpsRanges: Array<Range<Int>>? = null
+        private set
+
+    var characteristics: CameraCharacteristics? = null
+        private set
 
     var cameraId: MSCameraModelID? = null
         set(v) {
@@ -59,45 +81,6 @@ ImageReader.OnImageAvailableListener {
             }
         }
 
-
-    private val mCameraStream = MSCameraSession().apply {
-        handler = Handler(
-            thread.looper
-        )
-    }
-
-    private val mReader = ImageReader.newInstance(
-        640,
-        480,
-        ImageFormat.JPEG,
-        3
-    ).apply {
-        setOnImageAvailableListener(
-            this@MSCamera,
-            mCameraStream.handler
-        )
-
-        mCameraStream.targets = listOf(
-            surface
-        )
-    }
-
-    private var mCurrentDevice: Device? = null
-
-    var rotation = 0
-        private set
-
-    var resolutions: Array<Size>? = null
-        private set
-
-    var fpsRanges: Array<Range<Int>>? = null
-        private set
-
-    var characteristics: CameraCharacteristics? = null
-        private set
-
-    var onGetCameraFrame: MSListenerOnGetCameraFrameData? = null
-
     fun openCameraStream(): Boolean {
         Log.d(TAG, "openCameraStream: $cameraId")
 
@@ -112,29 +95,27 @@ ImageReader.OnImageAvailableListener {
         }
 
         mCurrentDevice = Device(
-            cameraId,
-            mReader
+            cameraId
         )
 
         manager.openCamera(
             cameraId,
             this@MSCamera,
-            mCameraStream.handler
+            mCameraSession.handler
         )
 
         return true
     }
 
     fun stop() {
-        mCameraStream.stop()
+        mCameraSession.stop()
         mCurrentDevice?.apply {
             device?.close()
         }
     }
 
     fun release() {
-        mCameraStream.release()
-        mReader.close()
+        mCameraSession.release()
         thread.quitSafely()
     }
 
@@ -143,7 +124,7 @@ ImageReader.OnImageAvailableListener {
     ) {
         mCurrentDevice?.device = camera
         Log.d(TAG, "onOpened: $cameraId")
-        val targets = mCameraStream.targets
+        val targets = mCameraSession.targets
             ?: return
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -162,9 +143,9 @@ ImageReader.OnImageAvailableListener {
                     SessionConfiguration.SESSION_REGULAR,
                     listConfig,
                     HandlerExecutor(
-                        mCameraStream.handler
+                        mCameraSession.handler
                     ),
-                    mCameraStream
+                    mCameraSession
                 )
             )
             return
@@ -172,21 +153,9 @@ ImageReader.OnImageAvailableListener {
 
         camera.createCaptureSession(
             targets,
-            mCameraStream,
-            mCameraStream.handler
+            mCameraSession,
+            mCameraSession.handler
         )
-    }
-
-    override fun onImageAvailable(
-        reader: ImageReader
-    ) {
-        val image = reader.acquireLatestImage()
-
-        onGetCameraFrame?.onGetFrame(
-            image.planes[0]
-        )
-
-        image.close()
     }
 
     override fun onDisconnected(
@@ -206,6 +175,5 @@ ImageReader.OnImageAvailableListener {
 
 private data class Device(
     val id: MSCameraModelID,
-    val reader: ImageReader,
     var device: CameraDevice? = null
 )

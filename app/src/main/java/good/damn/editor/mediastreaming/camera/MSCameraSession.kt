@@ -17,6 +17,7 @@ class MSCameraSession
     }
 
     var targets: List<Surface>? = null
+
     var handler = Handler(
         Looper.getMainLooper()
     )
@@ -33,7 +34,7 @@ class MSCameraSession
 
         val request = session.device.createCaptureRequest(
             CameraDevice.TEMPLATE_PREVIEW
-        ).apply {
+        )/*.apply {
             // set capture FPS
             set(
                 CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
@@ -51,7 +52,7 @@ class MSCameraSession
                 CaptureRequest.CONTROL_AWB_MODE,
                 CaptureRequest.CONTROL_AWB_MODE_AUTO
             )
-        }
+        }*/
 
         targets?.forEach {
             request.addTarget(it)
