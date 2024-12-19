@@ -41,7 +41,7 @@ class MSCamera(
 
     private var mCurrentDevice: Device? = null
 
-    var surfaces: List<Surface>?
+    var surfaces: MutableList<Surface>?
         get() = mCameraSession.targets
         set(v) {
             mCameraSession.targets = v

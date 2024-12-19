@@ -16,7 +16,7 @@ class MSCameraSession
         private val TAG = MSCameraSession::class.simpleName
     }
 
-    var targets: List<Surface>? = null
+    var targets: MutableList<Surface>? = null
 
     var handler = Handler(
         Looper.getMainLooper()

@@ -1,8 +1,11 @@
 package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
+import android.graphics.SurfaceTexture
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Surface
+import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -17,12 +20,13 @@ import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermi
 
 class MSFragmentTestH264
 : Fragment(),
-MSListenerOnResultPermission {
+MSListenerOnResultPermission, TextureView.SurfaceTextureListener {
 
     private var managerCamera: MSManagerCamera? = null
     private var mCamera: MSCamera? = null
     private var mCameraAvc: MSCameraAVC? = null
 
+    private var mSurfaceTexture: Surface? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -51,6 +55,19 @@ MSListenerOnResultPermission {
                 -2
             )
         }
+
+
+        TextureView(
+            context
+        ).apply {
+
+            surfaceTextureListener = this@MSFragmentTestH264
+
+            addView(
+                this
+            )
+        }
+
     }
 
     override fun onResultPermission(
@@ -101,13 +118,50 @@ MSListenerOnResultPermission {
             mCamera = MSCamera(
                 this
             ).apply {
-                cameraId = getCameraIds().firstOrNull()
+                cameraId = getCameraIds().lastOrNull()
                 mCameraAvc = MSCameraAVC(
                     640,
                     480,
-                    this
-                )
+                    this,
+                    mSurfaceTexture!!
+                ).apply {
+                    start()
+                }
             }
         }
     }
+
+    override fun onSurfaceTextureAvailable(
+        surface: SurfaceTexture,
+        width: Int,
+        height: Int
+    ) {
+        surface.setDefaultBufferSize(
+            480, 640
+        )
+        mSurfaceTexture = Surface(
+            surface
+        )
+    }
+
+    override fun onSurfaceTextureSizeChanged(
+        surface: SurfaceTexture,
+        width: Int,
+        height: Int
+    ) {
+        mSurfaceTexture = Surface(
+            surface
+        )
+    }
+
+    override fun onSurfaceTextureDestroyed(
+        surface: SurfaceTexture
+    ): Boolean {
+        mSurfaceTexture = null
+        return true
+    }
+
+    override fun onSurfaceTextureUpdated(
+        surface: SurfaceTexture
+    ) {}
 }
