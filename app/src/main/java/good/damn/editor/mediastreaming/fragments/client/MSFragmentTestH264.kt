@@ -5,11 +5,13 @@ import android.graphics.SurfaceTexture
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Surface
+import android.view.SurfaceView
 import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
+import androidx.core.view.drawToBitmap
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.camera.MSCamera
@@ -20,13 +22,13 @@ import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermi
 
 class MSFragmentTestH264
 : Fragment(),
-MSListenerOnResultPermission, TextureView.SurfaceTextureListener {
+MSListenerOnResultPermission {
 
     private var managerCamera: MSManagerCamera? = null
     private var mCamera: MSCamera? = null
     private var mCameraAvc: MSCameraAVC? = null
 
-    private var mSurfaceTexture: Surface? = null
+    private var mSurface: Surface? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -57,15 +59,15 @@ MSListenerOnResultPermission, TextureView.SurfaceTextureListener {
         }
 
 
-        TextureView(
+        SurfaceView(
             context
         ).apply {
-
-            surfaceTextureListener = this@MSFragmentTestH264
-
             addView(
                 this
             )
+            post {
+                mSurface = holder.surface
+            }
         }
 
     }
@@ -73,7 +75,7 @@ MSListenerOnResultPermission, TextureView.SurfaceTextureListener {
     override fun onStop() {
         mCameraAvc?.release()
         mCamera?.release()
-        mSurfaceTexture?.release()
+        mSurface?.release()
         super.onStop()
     }
 
@@ -87,11 +89,9 @@ MSListenerOnResultPermission, TextureView.SurfaceTextureListener {
 
 
         when (permission) {
-
             Manifest.permission.CAMERA -> {
                 initCamera()
             }
-
         }
     }
 
@@ -125,12 +125,12 @@ MSListenerOnResultPermission, TextureView.SurfaceTextureListener {
             mCamera = MSCamera(
                 this
             ).apply {
-                cameraId = getCameraIds().lastOrNull()
+                cameraId = getCameraIds().firstOrNull()
                 mCameraAvc = MSCameraAVC(
                     640,
                     480,
                     this,
-                    mSurfaceTexture!!
+                    mSurface!!
                 ).apply {
                     start()
                 }
@@ -139,38 +139,4 @@ MSListenerOnResultPermission, TextureView.SurfaceTextureListener {
             }
         }
     }
-
-    override fun onSurfaceTextureAvailable(
-        surface: SurfaceTexture,
-        width: Int,
-        height: Int
-    ) {
-        surface.setDefaultBufferSize(
-            480, 640
-        )
-        mSurfaceTexture = Surface(
-            surface
-        )
-    }
-
-    override fun onSurfaceTextureSizeChanged(
-        surface: SurfaceTexture,
-        width: Int,
-        height: Int
-    ) {
-        mSurfaceTexture = Surface(
-            surface
-        )
-    }
-
-    override fun onSurfaceTextureDestroyed(
-        surface: SurfaceTexture
-    ): Boolean {
-        mSurfaceTexture = null
-        return true
-    }
-
-    override fun onSurfaceTextureUpdated(
-        surface: SurfaceTexture
-    ) {}
 }

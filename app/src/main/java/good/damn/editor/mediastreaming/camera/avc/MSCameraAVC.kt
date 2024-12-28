@@ -12,7 +12,7 @@ class MSCameraAVC(
     width: Int,
     height: Int,
     camera: MSCamera,
-    surfacePreview: Surface
+    surface: Surface
 ) {
 
     companion object {
@@ -29,7 +29,7 @@ class MSCameraAVC(
         width,
         height,
         camera.rotation,
-        surfacePreview
+        surface
     )
 
     init {

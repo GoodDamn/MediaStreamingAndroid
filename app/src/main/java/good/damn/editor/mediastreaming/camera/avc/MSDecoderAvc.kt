@@ -1,9 +1,13 @@
 package good.damn.editor.mediastreaming.camera.avc
 
+import android.graphics.SurfaceTexture
 import android.media.MediaCodec
 import android.media.MediaFormat
+import android.opengl.GLSurfaceView
 import android.util.Log
 import android.view.Surface
+import android.view.SurfaceView
+import android.view.TextureView
 import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrameData
 import java.io.ByteArrayOutputStream
 
@@ -11,7 +15,7 @@ class MSDecoderAvc(
     width: Int,
     height: Int,
     rotation: Int,
-    surfacePreview: Surface
+    surface: Surface
 ): MediaCodec.Callback(),
 MSListenerOnGetFrameData {
 
@@ -41,13 +45,9 @@ MSListenerOnGetFrameData {
 
         configure(
             format,
-            surfacePreview,
+            surface,
             null,
             0
-        )
-
-        setOutputSurface(
-            surfacePreview
         )
 
         setCallback(
