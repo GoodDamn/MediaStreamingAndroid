@@ -1,6 +1,5 @@
 package good.damn.editor.mediastreaming.camera
 
-import android.graphics.ImageFormat
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
@@ -10,9 +9,6 @@ import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
-import good.damn.editor.mediastreaming.extensions.camera2.getConfigurationMap
-import good.damn.editor.mediastreaming.extensions.camera2.getRangeFps
-import good.damn.editor.mediastreaming.extensions.camera2.getRotation
 import good.damn.editor.mediastreaming.misc.HandlerExecutor
 import java.util.LinkedList
 
@@ -24,17 +20,10 @@ class MSCamera(
         private val TAG = MSCamera::class.simpleName
     }
 
-    private val thread = HandlerThread(
-        "cameraDamn"
-    ).apply {
-        start()
-    }
+    private var mThread: HandlerThread? = null
+    private var mHandler: Handler? = null
 
-    private val mCameraSession = MSCameraSession().apply {
-        handler = Handler(
-            thread.looper
-        )
-    }
+    private val mCameraSession = MSCameraSession()
 
     private var mCurrentDevice: Device? = null
 
@@ -50,6 +39,18 @@ class MSCamera(
     fun openCameraStream(
         cameraId: MSCameraModelID
     ): Boolean {
+        mThread = HandlerThread(
+            "cameraThread"
+        ).apply {
+            start()
+
+            mHandler = Handler(
+                looper
+            ).apply {
+                mCameraSession.handler = this
+            }
+        }
+
         Log.d(TAG, "openCameraStream: $cameraId")
 
         if (mCurrentDevice?.id == cameraId) {
@@ -73,7 +74,7 @@ class MSCamera(
     }
 
     fun stop() {
-        mCameraSession.stop()
+        release()
         mCurrentDevice?.apply {
             device?.close()
         }
@@ -81,7 +82,7 @@ class MSCamera(
 
     fun release() {
         mCameraSession.release()
-        thread.quitSafely()
+        mThread?.quitSafely()
     }
 
     override fun onOpened(

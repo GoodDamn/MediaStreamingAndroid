@@ -6,49 +6,16 @@ import android.media.MediaFormat
 import android.util.Log
 import android.view.Surface
 import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrameData
+import good.damn.editor.mediastreaming.network.MSStateable
 import java.io.ByteArrayOutputStream
 
-class MSEncoderAvc(
-    width: Int,
-    height: Int,
-    rotation: Int
-): MediaCodec.Callback() {
+class MSEncoderAvc
+: MediaCodec.Callback(),
+MSStateable {
 
     companion object {
         private const val TAG = "MSEncoderAvc"
         const val TYPE_AVC = "video/avc"
-    }
-
-    private val mFormat = MediaFormat.createVideoFormat(
-        TYPE_AVC,
-        width,
-        height
-    ).apply {
-        setInteger(
-            MediaFormat.KEY_COLOR_FORMAT,
-            MediaCodecInfo.CodecCapabilities
-                .COLOR_FormatSurface
-        )
-
-        setInteger(
-            MediaFormat.KEY_BIT_RATE,
-            2_000_000
-        )
-
-        setInteger(
-            MediaFormat.KEY_FRAME_RATE,
-            24
-        )
-
-        setInteger(
-            MediaFormat.KEY_ROTATION,
-            rotation
-        )
-
-        setInteger(
-            MediaFormat.KEY_I_FRAME_INTERVAL,
-            1
-        )
     }
 
     // may throws Exception with no h264 codec
@@ -63,24 +30,36 @@ class MSEncoderAvc(
     private var mFrame = ByteArray(0)
     private var mRemaining = 0
 
+    private var mCurrentSurface: Surface? = null
+
     var onGetFrameData: MSListenerOnGetFrameData? = null
 
-    fun start() {
-        mEncoder.start()
-    }
-
-    fun configure() {
+    fun configure(
+        format: MediaFormat
+    ) {
         mEncoder.configure(
-            mFormat,
+            format,
             null,
             null,
             MediaCodec.CONFIGURE_FLAG_ENCODE
         )
     }
 
-    fun createInputSurface() = mEncoder.createInputSurface()
+    fun createInputSurface() = mEncoder.createInputSurface().apply {
+        mCurrentSurface = this
+    }
 
-    fun release() {
+    override fun start() {
+        mEncoder.start()
+    }
+
+    override fun stop() {
+        mCurrentSurface?.release()
+        mEncoder.stop()
+    }
+
+    override fun release() {
+        mCurrentSurface?.release()
         mEncoder.release()
     }
 

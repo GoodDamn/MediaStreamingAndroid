@@ -8,24 +8,45 @@ import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
+import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.camera.MSCamera
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.avc.MSCameraAVC
+import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
+import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
+import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 
 class MSFragmentTestH264
 : Fragment(),
-MSListenerOnResultPermission {
+MSListenerOnResultPermission, MSListenerOnSelectCamera {
 
     private var managerCamera: MSManagerCamera? = null
     private var mCamera: MSCamera? = null
     private var mCameraAvc: MSCameraAVC? = null
 
     private var mSurface: Surface? = null
+
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
+        super.onCreate(
+            savedInstanceState
+        )
+
+        val context = context
+            ?: return
+
+        managerCamera = MSManagerCamera(
+            context
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -38,42 +59,74 @@ MSListenerOnResultPermission {
         orientation = LinearLayout
             .VERTICAL
 
-        Button(
+        FrameLayout(
             context
-        ).apply {
+        ).let {
+            SurfaceView(
+                context
+            ).apply {
+                it.addView(
+                    this
+                )
+                post {
+                    mSurface = holder.surface
+                }
+            }
 
-            text = "Open camera"
+            LinearLayout(
+                context
+            ).apply {
 
-            setOnClickListener {
-                onClickBtnOpenCamera(it)
+                orientation = LinearLayout
+                    .VERTICAL
+
+                managerCamera?.getCameraIds()?.forEach {
+                    addView(
+                        Button(
+                            context
+                        ).apply {
+                            text = "${it.logical}_${it.physical ?: ""}"
+                            setOnClickListener(
+                                MSClickOnSelectCamera(
+                                    it
+                                ).apply {
+                                    onSelectCamera = this@MSFragmentTestH264
+                                }
+                            )
+                        },
+                        (0.15f * MSApp.width).toInt(),
+                        -2
+                    )
+                }
+
+
+                it.addView(
+                    this,
+                    -1,
+                    -2
+                )
             }
 
             addView(
-                this,
-                -1,
-                -2
+                it
             )
-        }
-
-
-        SurfaceView(
-            context
-        ).apply {
-            addView(
-                this
-            )
-            post {
-                mSurface = holder.surface
-            }
         }
 
     }
 
     override fun onStop() {
-        mCameraAvc?.release()
-        mCamera?.release()
-        mSurface?.release()
+        mCameraAvc?.stop()
+        mCamera?.stop()
         super.onStop()
+    }
+
+    override fun onDestroy() {
+        releaseCamera()
+
+        mSurface?.release()
+        mSurface = null
+
+        super.onDestroy()
     }
 
     override fun onResultPermission(
@@ -84,76 +137,73 @@ MSListenerOnResultPermission {
             return
         }
 
-
         when (permission) {
             Manifest.permission.CAMERA -> {
                 initCamera()
             }
         }
+
     }
 
-    private inline fun onClickBtnOpenCamera(
-        v: View
-    ) {
-        if (managerCamera == null) {
-            if (!v.context.hasPermissionCamera()) {
-                (activity as? MSActivityMain)
-                    ?.launcherPermission
-                    ?.launch(
-                        Manifest.permission.CAMERA
-                    )
-                return
-            }
+    private inline fun releaseCamera() {
+        mCamera?.release()
+        mCamera = null
 
-            initCamera()
-        }
-
-        mCamera?.apply {
-            val camera = camera
-                ?: return
-
-            openCameraStream(
-                camera
-            )
-        }
+        mCameraAvc?.release()
+        mCameraAvc = null
     }
-
 
     private inline fun initCamera() {
-        val context = context
+        val manager = managerCamera
             ?: return
 
-        managerCamera = MSManagerCamera(
-            context
-        ).apply {
-            mCamera = MSCamera(
-                this
-            ).apply {
-                val cameraId = getCameraIds()
-                    .firstOrNull()
-                    ?: return@apply
+        mCamera = MSCamera(
+            manager
+        )
 
-                mCameraAvc = MSCameraAVC(
+        mCameraAvc = MSCameraAVC()
+    }
+
+    override fun onSelectCamera(
+        cameraId: MSCameraModelID
+    ) {
+        val activity = activity as? MSActivityMain
+            ?: return
+
+        if (activity.hasPermissionCamera()) {
+            if (mCamera == null) {
+                initCamera()
+            }
+
+            mCameraAvc?.apply {
+
+                if (isRunning) {
+                    stop()
+                    mCamera?.stop()
+                }
+
+                configure(
                     640,
                     480,
-                    cameraId.characteristics
-                ).apply {
+                    cameraId.characteristics,
+                    mSurface!!
+                )
 
-                    configure(
-                        mSurface!!
-                    )
-
+                mCamera?.apply {
                     surfaces = arrayListOf(
                         createEncodeSurface()
                     )
-
-                    start()
+                    openCameraStream(cameraId)
                 }
 
-                openCameraStream(
-                    cameraId
-                )
+                start()
             }
+
+            return
         }
+
+        activity.launcherPermission.launch(
+            Manifest.permission.CAMERA
+        )
     }
 }
