@@ -29,18 +29,25 @@ class MSCameraAVC(
         width,
         height,
         camera.rotation,
-        surfacePreview,
-        mEncode.stream
+        surfacePreview
     )
 
     init {
         camera.surfaces = arrayListOf(
             mEncode.inputSurface
         )
+
+        mEncode.onGetFrameData = mDecoder
     }
 
     fun start() {
         mEncode.start()
+        mDecoder.start()
+    }
+
+    fun release() {
+        mEncode.release()
+        mDecoder.release()
     }
 
 }

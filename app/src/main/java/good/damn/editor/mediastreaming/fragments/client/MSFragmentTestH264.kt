@@ -70,6 +70,13 @@ MSListenerOnResultPermission, TextureView.SurfaceTextureListener {
 
     }
 
+    override fun onStop() {
+        mCameraAvc?.release()
+        mCamera?.release()
+        mSurfaceTexture?.release()
+        super.onStop()
+    }
+
     override fun onResultPermission(
         permission: String,
         result: Boolean
@@ -127,6 +134,8 @@ MSListenerOnResultPermission, TextureView.SurfaceTextureListener {
                 ).apply {
                     start()
                 }
+
+                openCameraStream()
             }
         }
     }

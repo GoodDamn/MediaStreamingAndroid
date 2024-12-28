@@ -5,6 +5,7 @@ import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.util.Log
 import android.view.Surface
+import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrameData
 import java.io.ByteArrayOutputStream
 
 class MSEncoderAvc(
@@ -67,11 +68,18 @@ class MSEncoderAvc(
         )
     }
 
+    private var mFrame = ByteArray(0)
+    private var mRemaining = 0
+
     val inputSurface = mEncoder.createInputSurface()
-    val stream = ByteArrayOutputStream()
+    var onGetFrameData: MSListenerOnGetFrameData? = null
 
     fun start() {
         mEncoder.start()
+    }
+
+    fun release() {
+        mEncoder.release()
     }
 
     override fun onInputBufferAvailable(
@@ -92,17 +100,25 @@ class MSEncoderAvc(
 
         Log.d(TAG, "onOutputBufferAvailable: $index ${info.size} ${buffer.capacity()}")
 
-        val f = ByteArray(
-            info.size
+        if (info.size > mFrame.size) {
+            mFrame = ByteArray(
+                info.size
+            )
+        }
+
+        mRemaining = buffer.remaining()
+
+        buffer.get(
+            mFrame,
+            0,
+            mRemaining
         )
 
-        buffer.get(f)
-
-        synchronized(
-            stream
-        ) {
-            stream.write(f)
-        }
+        onGetFrameData?.onGetFrameData(
+            mFrame,
+            0,
+            mRemaining
+        )
 
         codec.releaseOutputBuffer(
             index,

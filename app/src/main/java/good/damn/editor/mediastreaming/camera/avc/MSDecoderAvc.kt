@@ -1,26 +1,27 @@
 package good.damn.editor.mediastreaming.camera.avc
 
 import android.media.MediaCodec
-import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.util.Log
 import android.view.Surface
-import good.damn.editor.mediastreaming.camera.avc.MSCameraAVC.Companion
+import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrameData
 import java.io.ByteArrayOutputStream
 
 class MSDecoderAvc(
     width: Int,
     height: Int,
     rotation: Int,
-    surfacePreview: Surface,
-    private val stream: ByteArrayOutputStream
-): MediaCodec.Callback() {
+    surfacePreview: Surface
+): MediaCodec.Callback(),
+MSListenerOnGetFrameData {
 
     companion object {
-        private const val TAG = "MSEncoderAvc"
+        private const val TAG = "MSDecoderAvc"
     }
 
-    private var mFrame = ByteArray(0)
+    private var mBuffer = ByteArray(0)
+
+    private val mStream = ByteArrayOutputStream()
 
     // may throws Exception with no h264 codec
     private val mDecoder = MediaCodec.createDecoderByType(
@@ -52,36 +53,41 @@ class MSDecoderAvc(
         setCallback(
             this@MSDecoderAvc
         )
-
-        start()
     }
 
+    fun start() {
+        mDecoder.start()
+    }
+
+    fun release() {
+        mDecoder.release()
+    }
 
     override fun onInputBufferAvailable(
         codec: MediaCodec,
         index: Int
     ) {
+        Log.d(TAG, "onInputBufferAvailable: $index")
+
         val inp = codec.getInputBuffer(
             index
         ) ?: return
 
         inp.clear()
 
-        synchronized(
-            stream
-        ) {
-            mFrame = stream.toByteArray()
-            stream.reset()
-        }
+        mBuffer = mStream.toByteArray()
+        mStream.reset()
 
         inp.put(
-            mFrame
+            mBuffer,
+            0,
+            mBuffer.size
         )
 
         codec.queueInputBuffer(
             index,
             0,
-            mFrame.size,
+            mBuffer.size,
             0,
             0
         )
@@ -92,6 +98,7 @@ class MSDecoderAvc(
         index: Int,
         info: MediaCodec.BufferInfo
     ) {
+        Log.d(TAG, "onOutputBufferAvailable: $index")
         codec.getOutputBuffer(
             index
         )
@@ -114,6 +121,18 @@ class MSDecoderAvc(
         format: MediaFormat
     ) {
         Log.d(TAG, "onOutputFormatChanged: $format")
+    }
+
+    override fun onGetFrameData(
+        bufferData: ByteArray,
+        offset: Int,
+        len: Int
+    ) {
+        mStream.write(
+            bufferData,
+            offset,
+            len
+        )
     }
 
 }
