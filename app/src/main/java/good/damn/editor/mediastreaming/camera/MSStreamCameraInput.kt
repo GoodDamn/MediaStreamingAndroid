@@ -1,16 +1,9 @@
 package good.damn.editor.mediastreaming.camera
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.media.Image
-import android.util.Log
 import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnUpdateCameraFrame
-import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnGetCameraFrameData
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
-import good.damn.editor.mediastreaming.extensions.setShortOnPosition
 import good.damn.editor.mediastreaming.network.MSStateable
 import good.damn.editor.mediastreaming.network.client.MSClientStreamUDPChunk
-import good.damn.editor.mediastreaming.network.client.MSModelChunkUDP
 import good.damn.editor.mediastreaming.out.stream.MSOutputStreamBuffer
 import kotlinx.coroutines.CoroutineScope
 import java.net.InetAddress
@@ -41,19 +34,14 @@ class MSStreamCameraInput(
     private var mScaleBufferStream = MSOutputStreamBuffer().apply {
         buffer = mScaleBuffer
     }
+
     private val mBitmapOffset = 5
 
     var userId: Byte = -1
     var roomId: Byte = -1
 
-    val rotation: Int
-        get() = mCamera.rotation
-
-    var cameraId: MSCameraModelID?
-        get() = mCamera.cameraId
-        set(v) {
-            mCamera.cameraId = v
-        }
+    val cameraId: MSCameraModelID?
+        get() = mCamera.camera
 
     var host: InetAddress
         get() = mClientCamera.host
@@ -64,9 +52,9 @@ class MSStreamCameraInput(
     var onUpdateCameraFrame: MSListenerOnUpdateCameraFrame? = null
 
     override fun start() {
-        if (mCamera.openCameraStream()) {
+        /*if (mCamera.openCameraStream()) {
             mClientCamera.start()
-        }
+        }*/
     }
 
     override fun stop() {
@@ -178,12 +166,12 @@ class MSStreamCameraInput(
     private inline fun setMeta(
         buffer: ByteArray
     ) {
-        buffer[2] = (
+        /*buffer[2] = (
             rotation.toFloat() / 360f * 255
         ).toInt().toByte()
 
         buffer[3] = userId;
-        buffer[4] = roomId;
+        buffer[4] = roomId;*/
     }
 
 }

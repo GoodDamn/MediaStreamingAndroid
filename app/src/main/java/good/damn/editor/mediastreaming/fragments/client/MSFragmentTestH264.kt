@@ -1,17 +1,14 @@
 package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
-import android.graphics.SurfaceTexture
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Surface
 import android.view.SurfaceView
-import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
-import androidx.core.view.drawToBitmap
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.camera.MSCamera
@@ -111,7 +108,14 @@ MSListenerOnResultPermission {
             initCamera()
         }
 
-        mCamera?.openCameraStream()
+        mCamera?.apply {
+            val camera = camera
+                ?: return
+
+            openCameraStream(
+                camera
+            )
+        }
     }
 
 
@@ -125,17 +129,30 @@ MSListenerOnResultPermission {
             mCamera = MSCamera(
                 this
             ).apply {
-                cameraId = getCameraIds().firstOrNull()
+                val cameraId = getCameraIds()
+                    .firstOrNull()
+                    ?: return@apply
+
                 mCameraAvc = MSCameraAVC(
                     640,
                     480,
-                    this,
-                    mSurface!!
+                    cameraId.characteristics
                 ).apply {
+
+                    configure(
+                        mSurface!!
+                    )
+
+                    surfaces = arrayListOf(
+                        createEncodeSurface()
+                    )
+
                     start()
                 }
 
-                openCameraStream()
+                openCameraStream(
+                    cameraId
+                )
             }
         }
     }

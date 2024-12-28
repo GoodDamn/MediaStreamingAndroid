@@ -19,50 +19,42 @@ class MSEncoderAvc(
         const val TYPE_AVC = "video/avc"
     }
 
+    private val mFormat = MediaFormat.createVideoFormat(
+        TYPE_AVC,
+        width,
+        height
+    ).apply {
+        setInteger(
+            MediaFormat.KEY_COLOR_FORMAT,
+            MediaCodecInfo.CodecCapabilities
+                .COLOR_FormatSurface
+        )
+
+        setInteger(
+            MediaFormat.KEY_BIT_RATE,
+            2_000_000
+        )
+
+        setInteger(
+            MediaFormat.KEY_FRAME_RATE,
+            24
+        )
+
+        setInteger(
+            MediaFormat.KEY_ROTATION,
+            rotation
+        )
+
+        setInteger(
+            MediaFormat.KEY_I_FRAME_INTERVAL,
+            1
+        )
+    }
+
     // may throws Exception with no h264 codec
     private val mEncoder = MediaCodec.createEncoderByType(
         TYPE_AVC
     ).apply {
-
-        val format = MediaFormat.createVideoFormat(
-            TYPE_AVC,
-            width,
-            height
-        ).apply {
-            setInteger(
-                MediaFormat.KEY_COLOR_FORMAT,
-                MediaCodecInfo.CodecCapabilities
-                    .COLOR_FormatSurface
-            )
-
-            setInteger(
-                MediaFormat.KEY_BIT_RATE,
-                2_000_000
-            )
-
-            setInteger(
-                MediaFormat.KEY_FRAME_RATE,
-                24
-            )
-
-            setInteger(
-                MediaFormat.KEY_ROTATION,
-                rotation
-            )
-
-            setInteger(
-                MediaFormat.KEY_I_FRAME_INTERVAL,
-                1
-            )
-        }
-
-        configure(
-            format,
-            null,
-            null,
-            MediaCodec.CONFIGURE_FLAG_ENCODE
-        )
-
         setCallback(
             this@MSEncoderAvc
         )
@@ -71,12 +63,22 @@ class MSEncoderAvc(
     private var mFrame = ByteArray(0)
     private var mRemaining = 0
 
-    val inputSurface = mEncoder.createInputSurface()
     var onGetFrameData: MSListenerOnGetFrameData? = null
 
     fun start() {
         mEncoder.start()
     }
+
+    fun configure() {
+        mEncoder.configure(
+            mFormat,
+            null,
+            null,
+            MediaCodec.CONFIGURE_FLAG_ENCODE
+        )
+    }
+
+    fun createInputSurface() = mEncoder.createInputSurface()
 
     fun release() {
         mEncoder.release()

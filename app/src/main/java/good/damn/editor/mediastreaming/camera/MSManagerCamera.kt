@@ -38,7 +38,8 @@ class MSManagerCamera(
                 list.add(
                     MSCameraModelID(
                         logicalId,
-                        isLegacy = true
+                        isLegacy = true,
+                        characteristics = character
                     )
                 )
                 continue
@@ -49,7 +50,8 @@ class MSManagerCamera(
                     if (isEmpty()) {
                         list.add(
                             MSCameraModelID(
-                                logicalId
+                                logicalId,
+                                characteristics = character
                             )
                         )
                         return@apply
@@ -59,7 +61,8 @@ class MSManagerCamera(
                         list.add(
                             MSCameraModelID(
                                 logicalId,
-                                it
+                                it,
+                                characteristics = character
                             )
                         )
                     }
@@ -70,7 +73,8 @@ class MSManagerCamera(
 
             list.add(
                 MSCameraModelID(
-                    logicalId
+                    logicalId,
+                    characteristics = character
                 )
             )
         }

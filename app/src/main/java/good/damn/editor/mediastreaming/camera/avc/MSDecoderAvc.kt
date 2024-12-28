@@ -14,8 +14,7 @@ import java.io.ByteArrayOutputStream
 class MSDecoderAvc(
     width: Int,
     height: Int,
-    rotation: Int,
-    surface: Surface
+    rotation: Int
 ): MediaCodec.Callback(),
 MSListenerOnGetFrameData {
 
@@ -27,29 +26,21 @@ MSListenerOnGetFrameData {
 
     private val mStream = ByteArrayOutputStream()
 
+    private val mFormat = MediaFormat.createVideoFormat(
+        MSEncoderAvc.TYPE_AVC,
+        width,
+        height
+    ).apply {
+        setInteger(
+            MediaFormat.KEY_ROTATION,
+            rotation
+        )
+    }
+
     // may throws Exception with no h264 codec
     private val mDecoder = MediaCodec.createDecoderByType(
         MSEncoderAvc.TYPE_AVC
     ).apply {
-
-        val format = MediaFormat.createVideoFormat(
-            MSEncoderAvc.TYPE_AVC,
-            width,
-            height
-        ).apply {
-            setInteger(
-                MediaFormat.KEY_ROTATION,
-                rotation
-            )
-        }
-
-        configure(
-            format,
-            surface,
-            null,
-            0
-        )
-
         setCallback(
             this@MSDecoderAvc
         )
@@ -57,6 +48,17 @@ MSListenerOnGetFrameData {
 
     fun start() {
         mDecoder.start()
+    }
+
+    fun configure(
+        decodeSurface: Surface
+    ) {
+        mDecoder.configure(
+            mFormat,
+            decodeSurface,
+            null,
+            0
+        )
     }
 
     fun release() {

@@ -1,7 +1,6 @@
 package good.damn.editor.mediastreaming.camera
 
 import android.graphics.ImageFormat
-import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
@@ -9,8 +8,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
-import android.util.Range
-import android.util.Size
 import android.view.Surface
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.extensions.camera2.getConfigurationMap
@@ -47,52 +44,20 @@ class MSCamera(
             mCameraSession.targets = v
         }
 
-    var rotation = 0
+    var camera: MSCameraModelID? = null
         private set
 
-    var resolutions: Array<Size>? = null
-        private set
-
-    var fpsRanges: Array<Range<Int>>? = null
-        private set
-
-    var characteristics: CameraCharacteristics? = null
-        private set
-
-    var cameraId: MSCameraModelID? = null
-        set(v) {
-            field = v
-            v?.apply {
-                characteristics = manager.getCharacteristics(
-                    physical ?: logical
-                ).apply {
-                    rotation = getRotation() ?: 0
-
-                    resolutions = getConfigurationMap()?.getOutputSizes(
-                        ImageFormat.JPEG
-                    )
-
-                    fpsRanges = getRangeFps()
-
-                    Log.d(TAG, "CAMERA_ID: ROTATION: $rotation")
-                    Log.d(TAG, "CAMERA_ID: RES: ${resolutions.contentToString()}")
-                    Log.d(TAG, "CAMERA_ID: FPS_RANGES: ${fpsRanges.contentToString()}")
-                }
-            }
-        }
-
-    fun openCameraStream(): Boolean {
+    fun openCameraStream(
+        cameraId: MSCameraModelID
+    ): Boolean {
         Log.d(TAG, "openCameraStream: $cameraId")
 
-        val cameraId = cameraId
-            ?: return false
-
-        mCurrentDevice?.apply {
-            if (id == cameraId) {
-                Log.d(TAG, "openCameraStream: $cameraId is current opened device. Dismissed")
-                return false
-            }
+        if (mCurrentDevice?.id == cameraId) {
+            Log.d(TAG, "openCameraStream: $cameraId is current opened device. Dismissed")
+            return false
         }
+
+        camera = cameraId
 
         mCurrentDevice = Device(
             cameraId
@@ -123,18 +88,24 @@ class MSCamera(
         camera: CameraDevice
     ) {
         mCurrentDevice?.device = camera
-        Log.d(TAG, "onOpened: $cameraId")
+        Log.d(TAG, "onOpened: ${this.camera}")
         val targets = mCameraSession.targets
             ?: return
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val listConfig = LinkedList<OutputConfiguration>()
+            val listConfig = LinkedList<
+                OutputConfiguration
+            >()
 
             targets.forEach {
                 listConfig.add(
                     OutputConfiguration(
                         it
-                    )
+                    ).apply {
+                        setPhysicalCameraId(
+                            this@MSCamera.camera?.physical
+                        )
+                    }
                 )
             }
 

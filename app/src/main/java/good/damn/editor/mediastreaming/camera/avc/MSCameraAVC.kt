@@ -1,52 +1,63 @@
 package good.damn.editor.mediastreaming.camera.avc
 
-import android.media.MediaCodec
-import android.media.MediaCodecInfo
-import android.media.MediaFormat
-import android.util.Log
+import android.hardware.camera2.CameraCharacteristics
 import android.view.Surface
 import good.damn.editor.mediastreaming.camera.MSCamera
-import java.io.ByteArrayOutputStream
+import good.damn.editor.mediastreaming.extensions.camera2.getRotation
 
 class MSCameraAVC(
     width: Int,
     height: Int,
-    camera: MSCamera,
-    surface: Surface
+    camera: CameraCharacteristics
 ) {
 
     companion object {
         private const val TAG = "MSCameraAVC"
     }
 
-    private val mEncode = MSEncoderAvc(
-        width,
-        height,
-        camera.rotation
-    )
+    private val mEncoder: MSEncoderAvc
 
-    private val mDecoder = MSDecoderAvc(
-        width,
-        height,
-        camera.rotation,
-        surface
-    )
+    private val mDecoder: MSDecoderAvc
 
     init {
-        camera.surfaces = arrayListOf(
-            mEncode.inputSurface
+        val rotation = camera.getRotation()
+            ?: 0
+
+        mEncoder = MSEncoderAvc(
+            width,
+            height,
+            rotation
         )
 
-        mEncode.onGetFrameData = mDecoder
+        mDecoder = MSDecoderAvc(
+            width,
+            height,
+            rotation
+        )
+
+        mEncoder.onGetFrameData = mDecoder
     }
 
+    fun configure(
+        decodeSurface: Surface
+    ) {
+        mEncoder.configure()
+
+        mDecoder.configure(
+            decodeSurface
+        )
+    }
+
+    fun createEncodeSurface() =
+        mEncoder.createInputSurface()
+
     fun start() {
-        mEncode.start()
+        mEncoder.start()
         mDecoder.start()
     }
 
     fun release() {
-        mEncode.release()
+        mEncoder.release()
         mDecoder.release()
     }
 
