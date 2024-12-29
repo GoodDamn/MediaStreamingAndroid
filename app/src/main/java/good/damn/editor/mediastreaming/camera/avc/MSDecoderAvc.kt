@@ -28,22 +28,23 @@ MSStateable {
     // may throws Exception with no h264 codec
     private val mDecoder = MediaCodec.createDecoderByType(
         MSEncoderAvc.TYPE_AVC
-    ).apply {
-        setCallback(
-            this@MSDecoderAvc
-        )
-    }
+    )
 
     fun configure(
         decodeSurface: Surface,
         format: MediaFormat
     ) {
-        mDecoder.configure(
-            format,
-            decodeSurface,
-            null,
-            0
-        )
+        mDecoder.apply {
+            setCallback(
+                this@MSDecoderAvc
+            )
+            configure(
+                format,
+                decodeSurface,
+                null,
+                0
+            )
+        }
     }
 
     override fun stop() {

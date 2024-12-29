@@ -21,45 +21,41 @@ MSStateable {
     // may throws Exception with no h264 codec
     private val mEncoder = MediaCodec.createEncoderByType(
         TYPE_AVC
-    ).apply {
-        setCallback(
-            this@MSEncoderAvc
-        )
-    }
+    )
 
     private var mFrame = ByteArray(0)
     private var mRemaining = 0
-
-    private var mCurrentSurface: Surface? = null
 
     var onGetFrameData: MSListenerOnGetFrameData? = null
 
     fun configure(
         format: MediaFormat
     ) {
-        mEncoder.configure(
-            format,
-            null,
-            null,
-            MediaCodec.CONFIGURE_FLAG_ENCODE
-        )
+        mEncoder.apply {
+            setCallback(
+                this@MSEncoderAvc
+            )
+
+            mEncoder.configure(
+                format,
+                null,
+                null,
+                MediaCodec.CONFIGURE_FLAG_ENCODE
+            )
+        }
     }
 
-    fun createInputSurface() = mEncoder.createInputSurface().apply {
-        mCurrentSurface = this
-    }
+    fun createInputSurface() = mEncoder.createInputSurface()
 
     override fun start() {
         mEncoder.start()
     }
 
     override fun stop() {
-        mCurrentSurface?.release()
         mEncoder.stop()
     }
 
     override fun release() {
-        mCurrentSurface?.release()
         mEncoder.release()
     }
 

@@ -82,7 +82,7 @@ class MSCamera(
 
     fun release() {
         mCameraSession.release()
-        mThread?.quitSafely()
+        mThread?.interrupt()
     }
 
     override fun onOpened(

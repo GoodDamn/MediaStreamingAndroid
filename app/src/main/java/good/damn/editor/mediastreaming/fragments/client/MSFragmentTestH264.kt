@@ -5,16 +5,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Surface
 import android.view.SurfaceView
-import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.MSApp
-import good.damn.editor.mediastreaming.camera.MSCamera
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.avc.MSCameraAVC
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
@@ -28,10 +25,9 @@ class MSFragmentTestH264
 MSListenerOnResultPermission, MSListenerOnSelectCamera {
 
     private var managerCamera: MSManagerCamera? = null
-    private var mCamera: MSCamera? = null
     private var mCameraAvc: MSCameraAVC? = null
 
-    private var mSurface: Surface? = null
+    private var mSurfaceDecoded: Surface? = null
 
     override fun onCreate(
         savedInstanceState: Bundle?
@@ -69,7 +65,7 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
                     this
                 )
                 post {
-                    mSurface = holder.surface
+                    mSurfaceDecoded = holder.surface
                 }
             }
 
@@ -79,6 +75,23 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
 
                 orientation = LinearLayout
                     .VERTICAL
+
+                Button(
+                    context
+                ).apply {
+
+                    text = "Stop"
+
+                    setOnClickListener {
+                        mCameraAvc?.stop()
+                    }
+
+                    addView(
+                        this,
+                        -1,
+                        -2
+                    )
+                }
 
                 managerCamera?.getCameraIds()?.forEach {
                     addView(
@@ -116,15 +129,15 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
 
     override fun onStop() {
         mCameraAvc?.stop()
-        mCamera?.stop()
         super.onStop()
     }
 
     override fun onDestroy() {
-        releaseCamera()
+        mCameraAvc?.release()
+        mCameraAvc = null
 
-        mSurface?.release()
-        mSurface = null
+        mSurfaceDecoded?.release()
+        mSurfaceDecoded = null
 
         super.onDestroy()
     }
@@ -145,23 +158,12 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
 
     }
 
-    private inline fun releaseCamera() {
-        mCamera?.release()
-        mCamera = null
-
-        mCameraAvc?.release()
-        mCameraAvc = null
-    }
-
     private inline fun initCamera() {
-        val manager = managerCamera
-            ?: return
-
-        mCamera = MSCamera(
-            manager
-        )
-
-        mCameraAvc = MSCameraAVC()
+        managerCamera?.apply {
+            mCameraAvc = MSCameraAVC(
+                this
+            )
+        }
     }
 
     override fun onSelectCamera(
@@ -171,32 +173,19 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
             ?: return
 
         if (activity.hasPermissionCamera()) {
-            if (mCamera == null) {
+            if (mCameraAvc == null) {
                 initCamera()
             }
 
             mCameraAvc?.apply {
-
-                if (isRunning) {
-                    stop()
-                    mCamera?.stop()
-                }
-
                 configure(
                     640,
                     480,
                     cameraId.characteristics,
-                    mSurface!!
+                    mSurfaceDecoded!!
                 )
 
-                mCamera?.apply {
-                    surfaces = arrayListOf(
-                        createEncodeSurface()
-                    )
-                    openCameraStream(cameraId)
-                }
-
-                start()
+                start(cameraId)
             }
 
             return

@@ -5,18 +5,25 @@ import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.view.Surface
 import good.damn.editor.mediastreaming.camera.MSCamera
+import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.avc.MSEncoderAvc.Companion.TYPE_AVC
+import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.extensions.camera2.getRotation
 import good.damn.editor.mediastreaming.network.MSStateable
 
-class MSCameraAVC: MSStateable {
+class MSCameraAVC(
+    manager: MSManagerCamera
+) {
 
     companion object {
         private const val TAG = "MSCameraAVC"
     }
 
-    private val mDecoder = MSDecoderAvc()
+    private val mCamera = MSCamera(
+        manager
+    )
 
+    private val mDecoder = MSDecoderAvc()
     private val mEncoder = MSEncoderAvc().apply {
         onGetFrameData = mDecoder
     }
@@ -79,25 +86,48 @@ class MSCameraAVC: MSStateable {
         )
     }
 
-    fun createEncodeSurface() =
-        mEncoder.createInputSurface()
-
-    override fun stop() {
+    fun stop() {
         isRunning = false
+
+        mCamera.stop()
         mEncoder.stop()
         mDecoder.stop()
+
+        mCamera.surfaces?.forEach {
+            it.release()
+        }
+
     }
 
-    override fun start() {
+    fun start(
+        cameraId: MSCameraModelID
+    ) {
         isRunning = true
+        mCamera.apply {
+            surfaces = arrayListOf(
+                mEncoder.createInputSurface()
+            )
+            openCameraStream(
+                cameraId
+            )
+        }
+
         mEncoder.start()
         mDecoder.start()
     }
 
-    override fun release() {
+    fun release() {
         isRunning = false
         mEncoder.release()
         mDecoder.release()
+
+        mCamera.apply {
+            surfaces?.forEach {
+                it.release()
+            }
+
+            release()
+        }
     }
 
 }
