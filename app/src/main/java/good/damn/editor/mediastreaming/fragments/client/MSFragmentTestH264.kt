@@ -1,9 +1,13 @@
 package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
+import android.graphics.ImageFormat
+import android.media.Image
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Size
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Surface
 import android.view.SurfaceView
@@ -11,6 +15,8 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView
+import androidx.core.view.forEach
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.MSApp
@@ -18,18 +24,30 @@ import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.avc.MSCameraAVC
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
+import good.damn.editor.mediastreaming.clicks.MSClickOnSelectResolution
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
+import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectResolution
+import good.damn.editor.mediastreaming.extensions.camera2.getConfigurationMap
+import good.damn.editor.mediastreaming.extensions.camera2.getRangeFps
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 
 class MSFragmentTestH264
 : Fragment(),
-MSListenerOnResultPermission, MSListenerOnSelectCamera {
+MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolution {
 
     private var managerCamera: MSManagerCamera? = null
     private var mCameraAvc: MSCameraAVC? = null
 
     private var mLayoutContent: FrameLayout? = null
+
+    private val mResolutions = arrayOf(
+        Size(176, 144),
+        Size(320,240),
+        Size(640, 480),
+        Size(1280, 720),
+        Size(1920, 1080)
+    )
 
     override fun onCreate(
         savedInstanceState: Bundle?
@@ -61,6 +79,7 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
             context
         ).let {
             mLayoutContent = it
+
             LinearLayout(
                 context
             ).apply {
@@ -148,35 +167,57 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
                 initCamera()
             }
 
-            mCameraAvc?.apply {
-                if (isRunning) {
-                    stop()
-                    mLayoutContent?.apply {
-                        removeViewAt(0)
-                    }
+            mLayoutContent?.apply {
+                if (mCameraAvc?.isRunning == true) {
+                    removeViewAt(
+                        childCount - 1
+                    )
                 }
+            }
 
-                mLayoutContent?.let {
-                    SurfaceView(
+            LinearLayout(
+                context
+            ).apply {
+
+                orientation = LinearLayout
+                    .VERTICAL
+
+                setBackgroundColor(0)
+
+                mResolutions.forEach {
+                    Button(
                         context
                     ).apply {
-                        it.addView(
-                            this,
-                            0
+
+                        text = "${it.width}x${it.height}"
+
+                        setOnClickListener(
+                            MSClickOnSelectResolution(
+                                it,
+                                cameraId
+                            ).apply {
+                                onSelectResolution = this@MSFragmentTestH264
+                            }
                         )
 
-                        post {
-                            configure(
-                                640,
-                                480,
-                                cameraId.characteristics,
-                                holder.surface
-                            )
-
-                            start(cameraId)
-                        }
+                        addView(
+                            this,
+                            -2,
+                            -2
+                        )
                     }
                 }
+
+                layoutParams = FrameLayout.LayoutParams(
+                    -2,
+                    -2
+                ).apply {
+                    gravity = Gravity.END or Gravity.TOP
+                }
+
+                mLayoutContent?.addView(
+                    this
+                )
             }
 
             return
@@ -186,4 +227,40 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
             Manifest.permission.CAMERA
         )
     }
+
+    override fun onSelectResolution(
+        resolution: Size,
+        cameraId: MSCameraModelID
+    ) = mCameraAvc?.run {
+        if (isRunning) {
+            stop()
+            mLayoutContent?.apply {
+                removeViewAt(0)
+            }
+        }
+
+        mLayoutContent?.apply {
+            SurfaceView(
+                context
+            ).let {
+                addView(
+                    it,
+                    0
+                )
+
+                post {
+                    configure(
+                        resolution.width,
+                        resolution.height,
+                        cameraId.characteristics,
+                        it.holder.surface
+                    )
+
+                    start(cameraId)
+                }
+            }
+        }
+
+        Unit
+    } ?: Unit
 }

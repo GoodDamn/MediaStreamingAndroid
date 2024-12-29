@@ -39,6 +39,13 @@ class MSCamera(
     fun openCameraStream(
         cameraId: MSCameraModelID
     ): Boolean {
+        Log.d(TAG, "openCameraStream: $cameraId")
+
+        if (mCurrentDevice?.id == cameraId) {
+            Log.d(TAG, "openCameraStream: $cameraId is current opened device. Dismissed")
+            stop()
+        }
+
         mThread = HandlerThread(
             "cameraThread"
         ).apply {
@@ -49,13 +56,6 @@ class MSCamera(
             ).apply {
                 mCameraSession.handler = this
             }
-        }
-
-        Log.d(TAG, "openCameraStream: $cameraId")
-
-        if (mCurrentDevice?.id == cameraId) {
-            Log.d(TAG, "openCameraStream: $cameraId is current opened device. Dismissed")
-            return false
         }
 
         camera = cameraId
