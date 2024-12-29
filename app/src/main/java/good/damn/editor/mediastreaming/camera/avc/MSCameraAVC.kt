@@ -6,7 +6,6 @@ import android.media.MediaFormat
 import android.view.Surface
 import good.damn.editor.mediastreaming.camera.MSCamera
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
-import good.damn.editor.mediastreaming.camera.avc.MSEncoderAvc.Companion.TYPE_AVC
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.extensions.camera2.getRotation
 import good.damn.editor.mediastreaming.network.MSStateable
@@ -39,7 +38,7 @@ class MSCameraAVC(
     ) {
         mEncoder.configure(
             MediaFormat.createVideoFormat(
-                TYPE_AVC,
+                MSCoder.TYPE_AVC,
                 width,
                 height
             ).apply {
@@ -74,7 +73,7 @@ class MSCameraAVC(
         mDecoder.configure(
             decodeSurface,
             MediaFormat.createVideoFormat(
-                TYPE_AVC,
+                MSCoder.TYPE_AVC,
                 width,
                 height
             ).apply {
@@ -96,7 +95,6 @@ class MSCameraAVC(
         mCamera.surfaces?.forEach {
             it.release()
         }
-
     }
 
     fun start(

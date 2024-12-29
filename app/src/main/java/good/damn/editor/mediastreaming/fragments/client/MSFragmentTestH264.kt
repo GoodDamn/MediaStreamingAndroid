@@ -2,6 +2,8 @@ package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.Surface
 import android.view.SurfaceView
@@ -27,7 +29,7 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
     private var managerCamera: MSManagerCamera? = null
     private var mCameraAvc: MSCameraAVC? = null
 
-    private var mSurfaceDecoded: Surface? = null
+    private var mLayoutContent: FrameLayout? = null
 
     override fun onCreate(
         savedInstanceState: Bundle?
@@ -58,40 +60,13 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
         FrameLayout(
             context
         ).let {
-            SurfaceView(
-                context
-            ).apply {
-                it.addView(
-                    this
-                )
-                post {
-                    mSurfaceDecoded = holder.surface
-                }
-            }
-
+            mLayoutContent = it
             LinearLayout(
                 context
             ).apply {
 
                 orientation = LinearLayout
                     .VERTICAL
-
-                Button(
-                    context
-                ).apply {
-
-                    text = "Stop"
-
-                    setOnClickListener {
-                        mCameraAvc?.stop()
-                    }
-
-                    addView(
-                        this,
-                        -1,
-                        -2
-                    )
-                }
 
                 managerCamera?.getCameraIds()?.forEach {
                     addView(
@@ -135,10 +110,6 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
     override fun onDestroy() {
         mCameraAvc?.release()
         mCameraAvc = null
-
-        mSurfaceDecoded?.release()
-        mSurfaceDecoded = null
-
         super.onDestroy()
     }
 
@@ -178,14 +149,34 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera {
             }
 
             mCameraAvc?.apply {
-                configure(
-                    640,
-                    480,
-                    cameraId.characteristics,
-                    mSurfaceDecoded!!
-                )
+                if (isRunning) {
+                    stop()
+                    mLayoutContent?.apply {
+                        removeViewAt(0)
+                    }
+                }
 
-                start(cameraId)
+                mLayoutContent?.let {
+                    SurfaceView(
+                        context
+                    ).apply {
+                        it.addView(
+                            this,
+                            0
+                        )
+
+                        post {
+                            configure(
+                                640,
+                                480,
+                                cameraId.characteristics,
+                                holder.surface
+                            )
+
+                            start(cameraId)
+                        }
+                    }
+                }
             }
 
             return

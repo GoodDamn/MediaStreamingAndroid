@@ -13,7 +13,7 @@ import good.damn.editor.mediastreaming.network.MSStateable
 import java.io.ByteArrayOutputStream
 
 class MSDecoderAvc
-: MediaCodec.Callback(),
+: MSCoder(),
 MSListenerOnGetFrameData,
 MSStateable {
 
@@ -26,37 +26,23 @@ MSStateable {
     private val mStream = ByteArrayOutputStream()
 
     // may throws Exception with no h264 codec
-    private val mDecoder = MediaCodec.createDecoderByType(
-        MSEncoderAvc.TYPE_AVC
+    override val mCoder = MediaCodec.createDecoderByType(
+        TYPE_AVC
     )
 
     fun configure(
         decodeSurface: Surface,
         format: MediaFormat
-    ) {
-        mDecoder.apply {
-            setCallback(
-                this@MSDecoderAvc
-            )
-            configure(
-                format,
-                decodeSurface,
-                null,
-                0
-            )
-        }
-    }
-
-    override fun stop() {
-        mDecoder.stop()
-    }
-
-    override fun start() {
-        mDecoder.start()
-    }
-
-    override fun release() {
-        mDecoder.release()
+    ) = mCoder.run {
+        setCallback(
+            this@MSDecoderAvc
+        )
+        configure(
+            format,
+            decodeSurface,
+            null,
+            0
+        )
     }
 
     override fun onInputBufferAvailable(
@@ -64,6 +50,10 @@ MSStateable {
         index: Int
     ) {
         Log.d(TAG, "onInputBufferAvailable: $index")
+
+        if (isUnitialized) {
+            return
+        }
 
         val inp = codec.getInputBuffer(
             index
@@ -73,6 +63,10 @@ MSStateable {
 
         mBuffer = mStream.toByteArray()
         mStream.reset()
+
+        if (mBuffer.size > inp.capacity()) {
+            return
+        }
 
         inp.put(
             mBuffer,
@@ -95,6 +89,11 @@ MSStateable {
         info: MediaCodec.BufferInfo
     ) {
         Log.d(TAG, "onOutputBufferAvailable: $index")
+
+        if (isUnitialized) {
+            return
+        }
+
         codec.getOutputBuffer(
             index
         )

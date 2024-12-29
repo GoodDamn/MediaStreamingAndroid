@@ -1,25 +1,21 @@
 package good.damn.editor.mediastreaming.camera.avc
 
 import android.media.MediaCodec
-import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.util.Log
-import android.view.Surface
 import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.editor.mediastreaming.network.MSStateable
-import java.io.ByteArrayOutputStream
 
 class MSEncoderAvc
-: MediaCodec.Callback(),
+: MSCoder(),
 MSStateable {
 
     companion object {
         private const val TAG = "MSEncoderAvc"
-        const val TYPE_AVC = "video/avc"
     }
 
     // may throws Exception with no h264 codec
-    private val mEncoder = MediaCodec.createEncoderByType(
+    override val mCoder = MediaCodec.createEncoderByType(
         TYPE_AVC
     )
 
@@ -30,34 +26,20 @@ MSStateable {
 
     fun configure(
         format: MediaFormat
-    ) {
-        mEncoder.apply {
-            setCallback(
-                this@MSEncoderAvc
-            )
+    ) = mCoder.run {
+        setCallback(
+            this@MSEncoderAvc
+        )
 
-            mEncoder.configure(
-                format,
-                null,
-                null,
-                MediaCodec.CONFIGURE_FLAG_ENCODE
-            )
-        }
+        configure(
+            format,
+            null,
+            null,
+            MediaCodec.CONFIGURE_FLAG_ENCODE
+        )
     }
 
-    fun createInputSurface() = mEncoder.createInputSurface()
-
-    override fun start() {
-        mEncoder.start()
-    }
-
-    override fun stop() {
-        mEncoder.stop()
-    }
-
-    override fun release() {
-        mEncoder.release()
-    }
+    fun createInputSurface() = mCoder.createInputSurface()
 
     override fun onInputBufferAvailable(
         codec: MediaCodec,
@@ -71,6 +53,10 @@ MSStateable {
         index: Int,
         info: MediaCodec.BufferInfo
     ) {
+        if (isUnitialized) {
+            return
+        }
+
         val buffer = codec.getOutputBuffer(
             index
         ) ?: return
