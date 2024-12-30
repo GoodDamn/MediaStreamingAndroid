@@ -53,7 +53,7 @@ MSStateable {
         index: Int,
         info: MediaCodec.BufferInfo
     ) {
-        if (isUnitialized) {
+        if (isUninitialized) {
             return
         }
 

@@ -2,6 +2,7 @@ package good.damn.editor.mediastreaming.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -15,6 +16,7 @@ import good.damn.editor.mediastreaming.adapters.MSAdapterRooms
 import good.damn.editor.mediastreaming.audio.MSRecordAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudioRoom
+import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFrame
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
 import good.damn.editor.mediastreaming.network.server.accepters.MSAccepterGuild
 import good.damn.editor.mediastreaming.network.server.guild.MSServerTCP
@@ -33,34 +35,19 @@ MSListenerOnGetHotspotHost {
         private val TAG = MSFragmentServer::class.simpleName
     }
 
-    private val mRooms = MSRooms().apply {
-        addRoom(
-            MSRoom()
-        )
-    }
+    private val mReceiverFrame = MSReceiverCameraFrame()
 
-    private val mServerGuild = MSServerTCP(
-        8080,
+    private val mServerFrame = MSServerUDP(
+        5556,
+        1034,
         CoroutineScope(
             Dispatchers.IO
         ),
-        MSAccepterGuild(
-            mRooms
-        )
-    )
-
-    private val mServerAudioRoom = MSServerUDP(
-        5555,
-        MSReceiverAudio.BUFFER_SIZE,
-        CoroutineScope(
-            Dispatchers.IO
-        ),
-        MSReceiverAudioRoom(
-            mRooms
-        )
+        mReceiverFrame
     )
 
     private var mTextViewIp: TextView? = null
+    private var mLayoutRoot: LinearLayout? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -82,6 +69,8 @@ MSListenerOnGetHotspotHost {
         ).apply {
             orientation = LinearLayout
                 .VERTICAL
+
+            mLayoutRoot = this
 
             mTextViewIp = TextView(
                 context
@@ -111,31 +100,6 @@ MSListenerOnGetHotspotHost {
                 )
             }
 
-            RecyclerView(
-                context
-            ).let {
-                it.layoutManager = LinearLayoutManager(
-                    context,
-                    LinearLayoutManager.VERTICAL,
-                    false
-                )
-
-                val list = ArrayList<MSRoom>(
-                    mRooms.size
-                )
-
-                for (entry in mRooms.entries) {
-                    list.add(
-                        entry.value
-                    )
-                }
-
-                it.adapter = MSAdapterRooms(
-                    list
-                )
-
-                addView(it)
-            }
         }
     }
 
@@ -150,23 +114,44 @@ MSListenerOnGetHotspotHost {
         }
     }
 
-    override fun onStop() {
-        mServerGuild.release()
-        mServerAudioRoom.release()
-        super.onStop()
+    override fun onDestroy() {
+        mReceiverFrame.release()
+        mServerFrame.release()
+        super.onDestroy()
     }
 
     private inline fun onClickBtnStartServer(
         btn: Button
     ) {
-        mServerAudioRoom.apply {
-            btn.text = if (isRunning) {
+        mServerFrame.apply {
+            btn.text = if (
+                isRunning
+            ) {
+                mLayoutRoot?.apply {
+                    removeViewAt(
+                        childCount - 1
+                    )
+                }
+                mReceiverFrame.stop()
                 stop()
-                mServerGuild.stop()
                 "Start server"
             } else {
-                start()
-                mServerGuild.start()
+                mLayoutRoot?.addView(
+                    SurfaceView(
+                        context
+                    ).apply {
+                        post {
+                            mReceiverFrame.configure(
+                                holder.surface,
+                                640,
+                                480,
+                                rotation = 90
+                            )
+                            mReceiverFrame.start()
+                            start()
+                        }
+                    }
+                )
                 "Stop Server"
             }
         }

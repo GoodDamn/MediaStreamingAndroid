@@ -1,45 +1,40 @@
 package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
-import android.graphics.ImageFormat
-import android.media.Image
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
-import android.view.Surface
-import android.view.SurfaceView
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.ScrollView
-import androidx.core.view.forEach
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
-import good.damn.editor.mediastreaming.camera.avc.MSCameraAVC
+import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectResolution
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectResolution
-import good.damn.editor.mediastreaming.extensions.camera2.getConfigurationMap
-import good.damn.editor.mediastreaming.extensions.camera2.getRangeFps
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import java.net.InetAddress
 
 class MSFragmentTestH264
 : Fragment(),
 MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolution {
 
     private var managerCamera: MSManagerCamera? = null
-    private var mCameraAvc: MSCameraAVC? = null
+    private var mCameraStream: MSStreamCameraInput? = null
 
     private var mLayoutContent: FrameLayout? = null
+    private var mEditTextHost: EditText? = null
 
     private val mResolutions = arrayOf(
         Size(176, 144),
@@ -75,11 +70,27 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
         orientation = LinearLayout
             .VERTICAL
 
+        EditText(
+            context
+        ).apply {
+
+            mEditTextHost = this
+
+            setText(
+                "127.0.0.1"
+            )
+
+            addView(
+                this,
+                -1,
+                -2
+            )
+        }
+
         FrameLayout(
             context
         ).let {
             mLayoutContent = it
-
             LinearLayout(
                 context
             ).apply {
@@ -121,14 +132,9 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
 
     }
 
-    override fun onStop() {
-        mCameraAvc?.stop()
-        super.onStop()
-    }
-
     override fun onDestroy() {
-        mCameraAvc?.release()
-        mCameraAvc = null
+        mCameraStream?.release()
+        mCameraStream = null
         super.onDestroy()
     }
 
@@ -150,8 +156,11 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
 
     private inline fun initCamera() {
         managerCamera?.apply {
-            mCameraAvc = MSCameraAVC(
-                this
+            mCameraStream = MSStreamCameraInput(
+                this,
+                CoroutineScope(
+                    Dispatchers.IO
+                )
             )
         }
     }
@@ -163,15 +172,19 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
             ?: return
 
         if (activity.hasPermissionCamera()) {
-            if (mCameraAvc == null) {
+            if (mCameraStream == null) {
                 initCamera()
             }
 
-            mLayoutContent?.apply {
-                if (mCameraAvc?.isRunning == true) {
-                    removeViewAt(
-                        childCount - 1
-                    )
+            mCameraStream?.apply {
+                if (isRunning) {
+                    stop()
+
+                    mLayoutContent?.apply {
+                        removeViewAt(
+                            childCount - 1
+                        )
+                    }
                 }
             }
 
@@ -231,36 +244,22 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
     override fun onSelectResolution(
         resolution: Size,
         cameraId: MSCameraModelID
-    ) = mCameraAvc?.run {
+    ) = mCameraStream?.run {
         if (isRunning) {
             stop()
-            mLayoutContent?.apply {
-                removeViewAt(0)
-            }
         }
 
-        mLayoutContent?.apply {
-            SurfaceView(
-                context
-            ).let {
-                addView(
-                    it,
-                    0
-                )
-
-                post {
-                    configure(
-                        resolution.width,
-                        resolution.height,
-                        cameraId.characteristics,
-                        it.holder.surface
-                    )
-
-                    start(cameraId)
-                }
-            }
+        mEditTextHost?.apply {
+            host = InetAddress.getByName(
+                text.toString()
+            )
         }
 
-        Unit
+        start(
+            cameraId,
+            640,
+            480
+        )
+
     } ?: Unit
 }

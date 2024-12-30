@@ -1,177 +1,165 @@
 package good.damn.editor.mediastreaming.camera
 
-import good.damn.editor.mediastreaming.camera.listeners.MSListenerOnUpdateCameraFrame
+import good.damn.editor.mediastreaming.camera.avc.MSCameraAVC
+import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
-import good.damn.editor.mediastreaming.network.MSStateable
+import good.damn.editor.mediastreaming.extensions.setIntegerOnPosition
+import good.damn.editor.mediastreaming.extensions.setShortOnPosition
 import good.damn.editor.mediastreaming.network.client.MSClientStreamUDPChunk
-import good.damn.editor.mediastreaming.out.stream.MSOutputStreamBuffer
+import good.damn.editor.mediastreaming.network.client.MSModelChunkUDP
 import kotlinx.coroutines.CoroutineScope
 import java.net.InetAddress
 
 class MSStreamCameraInput(
     manager: MSManagerCamera,
     scope: CoroutineScope
-): MSStateable {
+): MSListenerOnGetFrameData {
 
     companion object {
         private val TAG = MSStreamCameraInput::class.simpleName
     }
 
-    private val mClientCamera = MSClientStreamUDPChunk(
+    private val mStream = MSClientStreamUDPChunk(
         5556,
         scope
     )
 
-    private val mCamera = MSCamera(
-        manager
+    private val mCamera = MSCameraAVC(
+        manager,
+        this@MSStreamCameraInput
     )
 
-    private val mBuffer = ByteArray(
-        60000
-    )
-
-    private var mScaleBuffer = ByteArray(1024 * 1024)
-    private var mScaleBufferStream = MSOutputStreamBuffer().apply {
-        buffer = mScaleBuffer
-    }
-
-    private val mBitmapOffset = 5
-
-    var userId: Byte = -1
-    var roomId: Byte = -1
-
-    val cameraId: MSCameraModelID?
-        get() = mCamera.camera
+    val isRunning: Boolean
+        get() = mCamera.isRunning
 
     var host: InetAddress
-        get() = mClientCamera.host
+        get() = mStream.host
         set(v) {
-            mClientCamera.host = v
+            mStream.host = v
         }
 
-    var onUpdateCameraFrame: MSListenerOnUpdateCameraFrame? = null
+    private var mPacketId = 0
 
-    override fun start() {
-        /*if (mCamera.openCameraStream()) {
-            mClientCamera.start()
-        }*/
+    fun start(
+        cameraId: MSCameraModelID,
+        width: Int,
+        height: Int
+    ) {
+        mCamera.apply {
+            configure(
+                width,
+                height,
+                cameraId.characteristics
+            )
+
+            start(
+                cameraId
+            )
+        }
+
+        mStream.start()
     }
 
-    override fun stop() {
+    fun stop() {
         mCamera.stop()
-        mClientCamera.stop()
+        mStream.stop()
     }
 
-    override fun release() {
+    fun release() {
         mCamera.release()
-        mClientCamera.release()
+        mStream.release()
     }
 
-    /*override fun onGetFrame(
-        jpegPlane: Image.Plane,
+    override fun onGetFrameData(
+        bufferData: ByteArray,
+        offset: Int,
+        len: Int
     ) {
-        val buffer = jpegPlane.buffer
-        val bufSize = buffer.capacity()
+        var i = offset
 
-        if (bufSize >= mBuffer.size-mBitmapOffset) {
-            if (bufSize >= mScaleBuffer.size) {
-                mScaleBuffer = ByteArray(
-                    bufSize
-                )
-                mScaleBufferStream.buffer = mScaleBuffer
-            }
+        var chunkCount = len / 1024
+        val normLen = chunkCount * 1024
 
-            buffer.get(
-                mScaleBuffer,
-                0,
-                bufSize
-            )
+        val reminderDataSize = len - normLen
 
-            var scaleBufferSize = mScaleBuffer.size
-            var scaleBufferOffset = 0
-
-            while (scaleBufferSize > mBuffer.size-mBitmapOffset) {
-                val bb = BitmapFactory.decodeByteArray(
-                    mScaleBuffer,
-                    scaleBufferOffset,
-                    scaleBufferSize
-                )
-
-                val resultBitmap = Bitmap.createScaledBitmap(
-                    bb,
-                    360,
-                    240,
-                    true
-                )
-
-                scaleBufferOffset = mBitmapOffset
-                mScaleBufferStream.position = 0
-                mScaleBufferStream.offset = mBitmapOffset
-
-                resultBitmap.compress(
-                    Bitmap.CompressFormat.JPEG,
-                    75,
-                    mScaleBufferStream
-                )
-
-                scaleBufferSize = mScaleBufferStream.position
-
-                resultBitmap.recycle()
-            }
-
-            Log.d(TAG, "onGetFrame: $scaleBufferSize ${mScaleBuffer.size} ${mBuffer.size}")
-
-            mScaleBuffer.setShortOnPosition(
-                scaleBufferSize,
-                pos = 0
-            )
-
-            setMeta(mScaleBuffer)
-
-            mClientCamera.sendToStream(
-                MSModelChunkUDP(
-                    mScaleBuffer,
-                    scaleBufferSize + mBitmapOffset
-                )
-            )
-
-            return
+        if (reminderDataSize > 0) {
+            chunkCount++
         }
 
-        mBuffer.setShortOnPosition(
-            bufSize,
-            pos = 0
-        )
+        var chunkId = 0
+        while (i < normLen) {
+            val chunk = ByteArray(1034) // 1024 data + 10 meta
 
-        setMeta(
-            mBuffer
-        )
-
-        buffer.get(
-            mBuffer,
-            mBitmapOffset,
-            bufSize
-        )
-
-        Log.d(TAG, "onGetFrame: STATIC: $bufSize")
-
-        mClientCamera.sendToStream(
-            MSModelChunkUDP(
-                mBuffer,
-                bufSize + mBitmapOffset
+            chunk.setIntegerOnPosition(
+                mPacketId,
+                pos=0
             )
-        )
-    }*/
 
-    private inline fun setMeta(
-        buffer: ByteArray
-    ) {
-        /*buffer[2] = (
-            rotation.toFloat() / 360f * 255
-        ).toInt().toByte()
+            chunk.setShortOnPosition(
+                chunkId,
+                4
+            )
 
-        buffer[3] = userId;
-        buffer[4] = roomId;*/
+            chunk.setShortOnPosition(
+                chunkCount,
+                6
+            )
+
+            chunk.setShortOnPosition(
+                1024,
+                8
+            )
+
+            for (j in 10 until 1034) {
+                chunk[j] = bufferData[i+j]
+            }
+
+            mStream.sendToStream(
+                MSModelChunkUDP(
+                    chunk,
+                    0,
+                    chunk.size
+                )
+            )
+
+            i += 1024
+            chunkId++
+        }
+
+        if (reminderDataSize > 0) {
+            val chunk = ByteArray(
+                reminderDataSize + 10
+            )
+
+            chunk.setIntegerOnPosition(
+                mPacketId,
+                pos=0
+            )
+
+            chunk.setShortOnPosition(
+                chunkId,
+                4
+            )
+
+            chunk.setShortOnPosition(
+                chunkCount,
+                6
+            )
+
+            chunk.setShortOnPosition(
+                reminderDataSize,
+                8
+            )
+
+            mStream.sendToStream(
+                MSModelChunkUDP(
+                    chunk,
+                    0,
+                    chunk.size
+                )
+            )
+        }
+
+        mPacketId++
     }
-
 }

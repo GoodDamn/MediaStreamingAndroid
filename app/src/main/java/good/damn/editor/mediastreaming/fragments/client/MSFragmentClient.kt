@@ -16,10 +16,6 @@ MSListenerOnResultPermission {
         rootFragment = this@MSFragmentClient
     }
 
-    val fragmentCall = MSFragmentClientCall().apply {
-        rootFragment = this@MSFragmentClient
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -54,10 +50,7 @@ MSListenerOnResultPermission {
         permission: String,
         result: Boolean
     ) {
-        fragmentCall.onResultPermission(
-            permission,
-            result
-        )
+
     }
 
 }

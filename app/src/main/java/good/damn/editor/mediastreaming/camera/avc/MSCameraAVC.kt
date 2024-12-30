@@ -6,12 +6,14 @@ import android.media.MediaFormat
 import android.view.Surface
 import good.damn.editor.mediastreaming.camera.MSCamera
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
+import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.extensions.camera2.getRotation
 import good.damn.editor.mediastreaming.network.MSStateable
 
 class MSCameraAVC(
-    manager: MSManagerCamera
+    manager: MSManagerCamera,
+    callbackFrame: MSListenerOnGetFrameData
 ) {
 
     companion object {
@@ -22,9 +24,8 @@ class MSCameraAVC(
         manager
     )
 
-    private val mDecoder = MSDecoderAvc()
     private val mEncoder = MSEncoderAvc().apply {
-        onGetFrameData = mDecoder
+        onGetFrameData = callbackFrame
     }
 
     var isRunning = false
@@ -33,8 +34,7 @@ class MSCameraAVC(
     fun configure(
         width: Int,
         height: Int,
-        camera: CameraCharacteristics,
-        decodeSurface: Surface
+        camera: CameraCharacteristics
     ) {
         mEncoder.configure(
             MediaFormat.createVideoFormat(
@@ -69,20 +69,6 @@ class MSCameraAVC(
                 )
             }
         )
-
-        mDecoder.configure(
-            decodeSurface,
-            MediaFormat.createVideoFormat(
-                MSCoder.TYPE_AVC,
-                width,
-                height
-            ).apply {
-                setInteger(
-                    MediaFormat.KEY_ROTATION,
-                    camera.getRotation() ?: 0
-                )
-            }
-        )
     }
 
     fun stop() {
@@ -90,7 +76,6 @@ class MSCameraAVC(
 
         mCamera.stop()
         mEncoder.stop()
-        mDecoder.stop()
 
         mCamera.surfaces?.forEach {
             it.release()
@@ -111,13 +96,11 @@ class MSCameraAVC(
         }
 
         mEncoder.start()
-        mDecoder.start()
     }
 
     fun release() {
         isRunning = false
         mEncoder.release()
-        mDecoder.release()
 
         mCamera.apply {
             surfaces?.forEach {

@@ -11,7 +11,7 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 
 open class MSServerUDP(
-    port: Int,
+    private val port: Int,
     bufferSize: Int,
     private val scope: CoroutineScope,
     private val onReceiveData: MSListenerOnReceiveData
@@ -46,7 +46,7 @@ open class MSServerUDP(
 
         if (mSocket.isClosed) {
             mSocket = DatagramSocket(
-                mSocket.port
+                port
             ).apply {
                 reuseAddress = true
                 receiveBufferSize = 1

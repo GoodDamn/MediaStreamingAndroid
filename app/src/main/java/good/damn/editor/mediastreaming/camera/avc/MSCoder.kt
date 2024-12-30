@@ -1,6 +1,7 @@
 package good.damn.editor.mediastreaming.camera.avc
 
 import android.media.MediaCodec
+import android.util.Log
 import good.damn.editor.mediastreaming.network.MSStateable
 
 abstract class MSCoder
@@ -8,26 +9,28 @@ abstract class MSCoder
 MSStateable {
 
     companion object {
+        private const val TAG = "MSCoder"
         const val TYPE_AVC = "video/avc"
     }
 
     protected abstract val mCoder: MediaCodec
 
-    var isUnitialized = false
+    var isUninitialized = false
         private set
 
     override fun start() {
-        isUnitialized = false
+        isUninitialized = false
         mCoder.start()
     }
 
     override fun release() {
-        isUnitialized = true
+        isUninitialized = true
         mCoder.release()
+        Log.d(TAG, "release: ")
     }
 
     override fun stop() {
-        isUnitialized = true
+        isUninitialized = true
         mCoder.reset()
     }
 }

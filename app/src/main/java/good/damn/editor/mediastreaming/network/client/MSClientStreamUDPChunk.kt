@@ -28,19 +28,16 @@ class MSClientStreamUDPChunk(
         if (!isStreamRunning) {
             return
         }
-        
-        try {
-            mSocket.send(
-                DatagramPacket(
-                    data.data,
-                    data.len,
-                    host,
-                    port
-                )
+
+        mSocket.send(
+            DatagramPacket(
+                data.data,
+                data.offset,
+                data.len,
+                host,
+                port
             )
-        } catch (e: Exception) {
-            Log.d(TAG, "sendToStream: ${e.message}")
-        }
+        )
     }
 
     override fun start() {

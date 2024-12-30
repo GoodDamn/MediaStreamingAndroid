@@ -1,6 +1,7 @@
 package good.damn.editor.mediastreaming
 
 import android.os.Bundle
+import android.os.StrictMode
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
@@ -31,6 +32,13 @@ MSListenerOnResultPermission {
         )
 
         val context = this
+
+        StrictMode.setThreadPolicy(
+            StrictMode.ThreadPolicy
+                .Builder()
+                .permitNetwork()
+                .build()
+        )
 
         ViewPager2(
             context

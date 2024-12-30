@@ -151,13 +151,6 @@ MSListenerOnClickRoom {
     override fun onClickRoom(
         room: MSModelRoomClient
     ) {
-        rootFragment?.apply {
-            setFragment(
-                fragmentCall.apply {
-                    hostIp = mEditTextHost?.text?.toString()
-                    roomId = room.id
-                }
-            )
-        }
+
     }
 }
