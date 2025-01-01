@@ -3,6 +3,8 @@ package good.damn.editor.mediastreaming.camera.avc
 import android.hardware.camera2.CameraCharacteristics
 import android.media.MediaCodecInfo
 import android.media.MediaFormat
+import android.os.Handler
+import android.os.HandlerThread
 import android.view.Surface
 import good.damn.editor.mediastreaming.camera.MSCamera
 import good.damn.editor.mediastreaming.camera.MSManagerCamera

@@ -2,6 +2,7 @@ package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
 import android.os.Bundle
+import android.util.Log
 import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -170,6 +171,8 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
     ) {
         val activity = activity as? MSActivityMain
             ?: return
+
+        Log.d("MSFragmentTestH264", "onSelectCamera: ${Thread.currentThread().id} ${Thread.currentThread().name}")
 
         if (activity.hasPermissionCamera()) {
             if (mCameraStream == null) {

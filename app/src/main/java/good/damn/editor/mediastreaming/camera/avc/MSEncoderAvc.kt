@@ -2,9 +2,13 @@ package good.damn.editor.mediastreaming.camera.avc
 
 import android.media.MediaCodec
 import android.media.MediaFormat
+import android.os.Handler
 import android.util.Log
 import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.editor.mediastreaming.network.MSStateable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MSEncoderAvc
 : MSCoder(),
@@ -27,10 +31,6 @@ MSStateable {
     fun configure(
         format: MediaFormat
     ) = mCoder.run {
-        setCallback(
-            this@MSEncoderAvc
-        )
-
         configure(
             format,
             null,
@@ -41,66 +41,54 @@ MSStateable {
 
     fun createInputSurface() = mCoder.createInputSurface()
 
-    override fun onInputBufferAvailable(
-        codec: MediaCodec,
-        index: Int
-    ) {
-        Log.d(TAG, "onInputBufferAvailable: ")
+    override fun start() {
+        super.start()
+
+        CoroutineScope(
+            Dispatchers.IO
+        ).launch {
+            while (!isUninitialized) {
+                processEncodingBuffers()
+            }
+        }
     }
 
-    override fun onOutputBufferAvailable(
-        codec: MediaCodec,
-        index: Int,
-        info: MediaCodec.BufferInfo
-    ) {
-        if (isUninitialized) {
-            return
-        }
+    private inline fun processEncodingBuffers() {
 
-        val buffer = codec.getOutputBuffer(
-            index
-        ) ?: return
+        val outId = mCoder.dequeueOutputBuffer(
+            MediaCodec.BufferInfo(),
+            -1
+        )
 
-        Log.d(TAG, "onOutputBufferAvailable: $index ${info.size} ${buffer.capacity()}")
+        if (outId >= 0) {
+            val buffer = mCoder.getOutputBuffer(
+                outId
+            ) ?: return
 
-        if (info.size > mFrame.size) {
+            Log.d(TAG, "processEncodingBuffers: $outId ")
+
+            mRemaining = buffer.remaining()
+
             mFrame = ByteArray(
-                info.size
+                mRemaining
+            )
+
+            buffer.get(
+                mFrame,
+                0,
+                mRemaining
+            )
+
+            onGetFrameData?.onGetFrameData(
+                mFrame,
+                0,
+                mRemaining
+            )
+
+            mCoder.releaseOutputBuffer(
+                outId,
+                false
             )
         }
-
-        mRemaining = buffer.remaining()
-
-        buffer.get(
-            mFrame,
-            0,
-            mRemaining
-        )
-
-        onGetFrameData?.onGetFrameData(
-            mFrame,
-            0,
-            mRemaining
-        )
-
-        codec.releaseOutputBuffer(
-            index,
-            false
-        )
     }
-
-    override fun onError(
-        codec: MediaCodec,
-        e: MediaCodec.CodecException
-    ) {
-        Log.d(TAG, "onError: ${e.localizedMessage}")
-    }
-
-    override fun onOutputFormatChanged(
-        codec: MediaCodec,
-        format: MediaFormat
-    ) {
-        Log.d(TAG, "onOutputFormatChanged: $format")
-    }
-
 }

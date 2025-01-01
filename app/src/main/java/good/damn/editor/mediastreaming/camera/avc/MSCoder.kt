@@ -5,8 +5,7 @@ import android.util.Log
 import good.damn.editor.mediastreaming.network.MSStateable
 
 abstract class MSCoder
-: MediaCodec.Callback(),
-MSStateable {
+: MSStateable {
 
     companion object {
         private const val TAG = "MSCoder"
