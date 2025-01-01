@@ -2,13 +2,14 @@ package good.damn.editor.mediastreaming.camera.avc
 
 import android.media.MediaCodec
 import android.media.MediaFormat
-import android.os.Handler
+import android.provider.MediaStore.Audio.Media
 import android.util.Log
 import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.editor.mediastreaming.network.MSStateable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.nio.ByteBuffer
 
 class MSEncoderAvc
 : MSCoder(),
@@ -16,6 +17,7 @@ MSStateable {
 
     companion object {
         private const val TAG = "MSEncoderAvc"
+        private const val TIMEOUT_USAGE_MS = 10000L
     }
 
     // may throws Exception with no h264 codec
@@ -23,7 +25,8 @@ MSStateable {
         TYPE_AVC
     )
 
-    private var mFrame = ByteArray(0)
+    private val mBufferInfo = MediaCodec.BufferInfo()
+
     private var mRemaining = 0
 
     var onGetFrameData: MSListenerOnGetFrameData? = null
@@ -47,48 +50,78 @@ MSStateable {
         CoroutineScope(
             Dispatchers.IO
         ).launch {
-            while (!isUninitialized) {
-                processEncodingBuffers()
+            while (true) {
+                if (!isRunning) {
+                    mCoder.signalEndOfInputStream()
+                    break
+                }
+
+                var outputBuffers = mCoder.outputBuffers
+
+                while (true) {
+                    val status = mCoder.dequeueOutputBuffer(
+                        mBufferInfo,
+                        TIMEOUT_USAGE_MS
+                    )
+
+                    when (status) {
+                        MediaCodec.INFO_TRY_AGAIN_LATER -> {
+                            Log.d(TAG, "start: TRY_AGAIN")
+                            if (!isRunning) {
+                                break
+                            }
+                        }
+
+                        MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED -> {
+                            Log.d(TAG, "start: OUTPUT_BUFFERS_CHANGED")
+                            outputBuffers = mCoder.outputBuffers
+                        }
+
+                        in Int.MIN_VALUE until 0 -> {
+                            Log.d(TAG, "start: WAITING")
+                        }
+
+                        else -> {
+                            processEncodingBuffers(
+                                status,
+                                outputBuffers
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 
-    private inline fun processEncodingBuffers() {
+    private inline fun processEncodingBuffers(
+        id: Int,
+        outputBuffers: Array<ByteBuffer>
+    ) {
+        val buffer = outputBuffers[id]
 
-        val outId = mCoder.dequeueOutputBuffer(
-            MediaCodec.BufferInfo(),
-            -1
+        mRemaining = buffer.remaining()
+
+        val mFrame = ByteArray(
+            mRemaining
         )
 
-        if (outId >= 0) {
-            val buffer = mCoder.getOutputBuffer(
-                outId
-            ) ?: return
+        Log.d(TAG, "processEncodingBuffers: $id $mRemaining")
 
-            Log.d(TAG, "processEncodingBuffers: $outId ")
+        buffer.get(
+            mFrame,
+            0,
+            mRemaining
+        )
 
-            mRemaining = buffer.remaining()
+        onGetFrameData?.onGetFrameData(
+            mFrame,
+            0,
+            mRemaining
+        )
 
-            mFrame = ByteArray(
-                mRemaining
-            )
-
-            buffer.get(
-                mFrame,
-                0,
-                mRemaining
-            )
-
-            onGetFrameData?.onGetFrameData(
-                mFrame,
-                0,
-                mRemaining
-            )
-
-            mCoder.releaseOutputBuffer(
-                outId,
-                false
-            )
-        }
+        mCoder.releaseOutputBuffer(
+            id,
+            false
+        )
     }
 }

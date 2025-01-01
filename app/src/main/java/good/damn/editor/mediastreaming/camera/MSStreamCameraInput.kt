@@ -1,5 +1,6 @@
 package good.damn.editor.mediastreaming.camera
 
+import android.util.Log
 import good.damn.editor.mediastreaming.camera.avc.MSCameraAVC
 import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
@@ -110,8 +111,8 @@ class MSStreamCameraInput(
                 8
             )
 
-            for (j in 10 until 1034) {
-                chunk[j] = bufferData[i+j]
+            for (j in 0 until 1024) {
+                chunk[j+10] = bufferData[i+j]
             }
 
             mStream.sendToStream(
@@ -151,6 +152,10 @@ class MSStreamCameraInput(
                 8
             )
 
+            for (j in 0 until reminderDataSize) {
+                chunk[j+10] = bufferData[i+j]
+            }
+            
             mStream.sendToStream(
                 MSModelChunkUDP(
                     chunk,

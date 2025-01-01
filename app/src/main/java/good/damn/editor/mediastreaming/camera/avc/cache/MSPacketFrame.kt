@@ -3,7 +3,8 @@ package good.damn.editor.mediastreaming.camera.avc.cache
 import java.util.LinkedList
 
 data class MSPacketFrame(
-    val chunks: Array<MSPacket?>
+    val chunks: Array<MSPacket?>,
+    var chunkCountAdded: Int = 0
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

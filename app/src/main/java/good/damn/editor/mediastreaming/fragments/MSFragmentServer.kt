@@ -147,8 +147,8 @@ MSListenerOnGetHotspotHost {
                                 480,
                                 rotation = 90
                             )
-                            mReceiverFrame.start()
                             start()
+                            mReceiverFrame.start()
                         }
                     }
                 )

@@ -2,7 +2,6 @@ package good.damn.editor.mediastreaming.camera.avc
 
 import android.media.MediaCodec
 import android.media.MediaFormat
-import android.os.Handler
 import android.util.Log
 import android.view.Surface
 import good.damn.editor.mediastreaming.camera.avc.cache.MSListenerOnCombinePacket
@@ -15,7 +14,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
-import java.util.Arrays
 
 class MSDecoderAvc
 : MSCoder(),
@@ -23,6 +21,7 @@ MSStateable, MSListenerOnCombinePacket {
 
     companion object {
         private const val TAG = "MSDecoderAvc"
+        private const val TIMEOUT_USAGE_MS = 1_000_000L
     }
 
     private val mStream = ByteArrayOutputStream()
@@ -33,6 +32,8 @@ MSStateable, MSListenerOnCombinePacket {
     )
 
     private val mPacketCombiner = MSPacketCombiner()
+
+    private val mBufferInfo = MediaCodec.BufferInfo()
     
     fun writeData(
         data: ByteArray
@@ -73,45 +74,52 @@ MSStateable, MSListenerOnCombinePacket {
     override fun start() {
         super.start()
 
-        CoroutineScope(
+        /*CoroutineScope(
             Dispatchers.IO
         ).launch {
-            while (!isUninitialized) {
+            while (true) {
+                if (!isRunning) {
+                    mCoder.signalEndOfInputStream()
+                    break
+                }
+
                 processBuffer()
             }
-        }
+        }*/
     }
 
     override fun onCombinePacket(
         packetId: Int,
         frame: MSPacketFrame
     ) {
-        frame.chunks.forEach {
-            it?.apply {
+        frame.chunks.forEachIndexed { index, msPacket ->
+            msPacket?.apply {
+                Log.d(TAG, "onCombinePacket: ID: $packetId; $index/${frame.chunks.size} ${data.size}")
                 mStream.write(
                     data
                 )
             }
         }
-        Log.d(TAG, "onCombinePacket: ${frame.chunks.size}")
+
+        //processBuffer()
     }
+
+    private var mShitTime = 0L
 
     private inline fun processBuffer() {
         val inputBufferId = mCoder.dequeueInputBuffer(
-            0
+             TIMEOUT_USAGE_MS
         )
-        if (inputBufferId >= 0) {
 
-            val inp = mCoder.getInputBuffer(
+        if (inputBufferId >= 0) {
+            val inp = mCoder.inputBuffers[
                 inputBufferId
-            ) ?: return
+            ]
 
             inp.clear()
 
             val buffer = mStream.toByteArray()
             mStream.reset()
-
-            Log.d(TAG, "processBuffer: $inputBufferId")
 
             if (buffer.isNotEmpty()) {
                 Log.d(TAG, "processBuffer: BUFFER_SIZE: ${buffer.size}")
@@ -125,30 +133,25 @@ MSStateable, MSListenerOnCombinePacket {
                 inputBufferId,
                 0,
                 buffer.size,
-                0,
+                TIMEOUT_USAGE_MS,
                 0
             )
         }
 
         val outId = mCoder.dequeueOutputBuffer(
-            MediaCodec.BufferInfo(),
-            0
+            mBufferInfo,
+            TIMEOUT_USAGE_MS
         )
 
+        Log.d(TAG, "processBuffer: $outId $inputBufferId ${mBufferInfo.size}")
         if (outId >= 0) {
-            mCoder.getOutputBuffer(
-                outId
-            )
-
             mCoder.releaseOutputBuffer(
                 outId,
                 true
             )
         }
 
-        Log.d(TAG, "processBuffer: $outId $inputBufferId")
-
-
+        mShitTime += 66
     }
 
 }

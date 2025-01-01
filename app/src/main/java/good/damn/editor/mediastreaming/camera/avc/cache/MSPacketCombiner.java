@@ -1,16 +1,21 @@
 package good.damn.editor.mediastreaming.camera.avc.cache;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public final class MSPacketCombiner {
 
-    private final HashMap<
-        Integer,
-        MSPacketFrame
-    > mPackets = new HashMap<>();
+    private static final String TAG = "MSPacketCombiner";
+
+    private static final int CACHE_PACKET = 128;
+
+    private final MSPacketFrame[] mPackets =
+        new MSPacketFrame[CACHE_PACKET];
 
     public final void write(
         final int packetId,
@@ -21,9 +26,9 @@ public final class MSPacketCombiner {
     ) {
 
         @Nullable
-        final MSPacketFrame frame = mPackets.get(
-            packetId
-        );
+        final MSPacketFrame frame = mPackets[
+            packetId % CACHE_PACKET
+        ];
 
         if (frame == null) {
             mPackets.put(
@@ -31,7 +36,7 @@ public final class MSPacketCombiner {
                 new MSPacketFrame(
                     new MSPacket[
                         chunkCount
-                    ]
+                    ],1
                 )
             );
             return;
@@ -45,9 +50,12 @@ public final class MSPacketCombiner {
             chunks[chunkId] = new MSPacket(
                 data
             );
+            frame.setChunkCountAdded(
+                frame.getChunkCountAdded() + 1
+            );
         }
 
-        if (chunks.length == chunkCount) {
+        if (frame.getChunkCountAdded() >= chunkCount) {
             onCombinePacket.onCombinePacket(
                 packetId,
                 frame
