@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.adapters.MSAdapterRooms
 import good.damn.editor.mediastreaming.audio.MSRecordAudio
+import good.damn.editor.mediastreaming.camera.avc.MSUtilsAvc
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudioRoom
 import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFrame
@@ -143,8 +144,8 @@ MSListenerOnGetHotspotHost {
                         post {
                             mReceiverFrame.configure(
                                 holder.surface,
-                                640,
-                                480,
+                                MSUtilsAvc.VIDEO_WIDTH,
+                                MSUtilsAvc.VIDEO_HEIGHT,
                                 rotation = 90
                             )
                             start()

@@ -16,6 +16,7 @@ import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
+import good.damn.editor.mediastreaming.camera.avc.MSUtilsAvc
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectResolution
@@ -260,8 +261,8 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
 
         start(
             cameraId,
-            640,
-            480
+            MSUtilsAvc.VIDEO_WIDTH,
+            MSUtilsAvc.VIDEO_HEIGHT
         )
 
     } ?: Unit
