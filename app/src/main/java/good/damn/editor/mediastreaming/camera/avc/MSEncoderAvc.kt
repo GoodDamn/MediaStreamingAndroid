@@ -105,8 +105,6 @@ MSStateable {
             mRemaining
         )
 
-        Log.d(TAG, "processEncodingBuffers: $id $mRemaining")
-
         buffer.get(
             mFrame,
             0,

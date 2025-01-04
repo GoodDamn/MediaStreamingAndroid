@@ -4,20 +4,18 @@ import android.media.MediaCodec
 import android.media.MediaFormat
 import android.util.Log
 import android.view.Surface
-import good.damn.editor.mediastreaming.camera.avc.cache.MSListenerOnCombinePacket
-import good.damn.editor.mediastreaming.camera.avc.cache.MSPacketCombiner
-import good.damn.editor.mediastreaming.camera.avc.cache.MSPacketFrame
+import good.damn.editor.mediastreaming.camera.avc.cache.MSListenerOnGetOrderedPacket
+import good.damn.editor.mediastreaming.camera.avc.cache.MSPacket
+import good.damn.editor.mediastreaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.editor.mediastreaming.extensions.integer
 import good.damn.editor.mediastreaming.extensions.short
 import good.damn.editor.mediastreaming.network.MSStateable
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 
 class MSDecoderAvc
 : MSCoder(),
-MSStateable, MSListenerOnCombinePacket {
+MSStateable,
+MSListenerOnGetOrderedPacket {
 
     companion object {
         private const val TAG = "MSDecoderAvc"
@@ -31,7 +29,8 @@ MSStateable, MSListenerOnCombinePacket {
         TYPE_AVC
     )
 
-    private val mPacketCombiner = MSPacketCombiner()
+    private val mPacketCombiner =
+        MSPacketBufferizer()
 
     private val mBufferInfo = MediaCodec.BufferInfo()
     
@@ -39,21 +38,23 @@ MSStateable, MSListenerOnCombinePacket {
         data: ByteArray
     ) {
         val copied = ByteArray(
-            data.short(8)
+            data.short(
+                MSUtilsAvc.OFFSET_PACKET_SIZE
+            )
         )
 
         System.arraycopy(
             data,
-            10,
+            MSUtilsAvc.LEN_META,
             copied,
             0,
             copied.size
         )
 
         mPacketCombiner.write(
-            data.integer(0),
-            data.short(4).toShort(),
-            data.short(6).toShort(),
+            data.integer(
+                MSUtilsAvc.OFFSET_PACKET_ID
+            ),
             copied,
             this@MSDecoderAvc
         )
@@ -88,19 +89,10 @@ MSStateable, MSListenerOnCombinePacket {
         }*/
     }
 
-    override fun onCombinePacket(
-        packetId: Int,
-        frame: MSPacketFrame
+    override fun onGetOrderedPacket(
+        frame: MSPacket
     ) {
-        frame.chunks.forEachIndexed { index, msPacket ->
-            msPacket?.apply {
-                Log.d(TAG, "onCombinePacket: ID: $packetId; $index/${frame.chunks.size} ${data.size}")
-                mStream.write(
-                    data
-                )
-            }
-        }
-
+        Log.d(TAG, "onGetOrderedPacket: $frame")
         //processBuffer()
     }
 

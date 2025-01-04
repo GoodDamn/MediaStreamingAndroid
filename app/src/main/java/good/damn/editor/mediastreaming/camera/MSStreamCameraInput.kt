@@ -2,6 +2,8 @@ package good.damn.editor.mediastreaming.camera
 
 import android.util.Log
 import good.damn.editor.mediastreaming.camera.avc.MSCameraAVC
+import good.damn.editor.mediastreaming.camera.avc.MSUtilsAvc
+import good.damn.editor.mediastreaming.camera.avc.MSUtilsAvc.Companion.LEN_META
 import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.extensions.setIntegerOnPosition
@@ -78,43 +80,29 @@ class MSStreamCameraInput(
     ) {
         var i = offset
 
-        var chunkCount = len / 1024
-        val normLen = chunkCount * 1024
-
+        val normLen = len / 1024 * 1024
         val reminderDataSize = len - normLen
 
-        if (reminderDataSize > 0) {
-            chunkCount++
-        }
-
-        var chunkId = 0
         while (i < normLen) {
-            val chunk = ByteArray(1034) // 1024 data + 10 meta
+            val chunk = ByteArray(1024 + LEN_META) // 1024 data + 6 meta
+
+            Log.d(TAG, "onGetFrameData: $mPacketId=1024")
 
             chunk.setIntegerOnPosition(
                 mPacketId,
-                pos=0
-            )
-
-            chunk.setShortOnPosition(
-                chunkId,
-                4
-            )
-
-            chunk.setShortOnPosition(
-                chunkCount,
-                6
+                pos=MSUtilsAvc.OFFSET_PACKET_ID
             )
 
             chunk.setShortOnPosition(
                 1024,
-                8
+                MSUtilsAvc.OFFSET_PACKET_SIZE
             )
 
             for (j in 0 until 1024) {
-                chunk[j+10] = bufferData[i+j]
+                chunk[j+LEN_META] = bufferData[i+j]
             }
 
+            Thread.sleep(2)
             mStream.sendToStream(
                 MSModelChunkUDP(
                     chunk,
@@ -124,36 +112,27 @@ class MSStreamCameraInput(
             )
 
             i += 1024
-            chunkId++
+            mPacketId++
         }
 
         if (reminderDataSize > 0) {
+            Log.d(TAG, "onGetFrameData: $mPacketId=$reminderDataSize")
             val chunk = ByteArray(
-                reminderDataSize + 10
+                reminderDataSize + LEN_META
             )
 
             chunk.setIntegerOnPosition(
                 mPacketId,
-                pos=0
-            )
-
-            chunk.setShortOnPosition(
-                chunkId,
-                4
-            )
-
-            chunk.setShortOnPosition(
-                chunkCount,
-                6
+                pos=MSUtilsAvc.OFFSET_PACKET_ID
             )
 
             chunk.setShortOnPosition(
                 reminderDataSize,
-                8
+                MSUtilsAvc.OFFSET_PACKET_SIZE
             )
 
             for (j in 0 until reminderDataSize) {
-                chunk[j+10] = bufferData[i+j]
+                chunk[j+LEN_META] = bufferData[i+j]
             }
             
             mStream.sendToStream(
