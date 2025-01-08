@@ -20,6 +20,8 @@ class MSStreamSubscriberUDP(
             mClient.host = v
         }
 
+    fun start() = mClient.start()
+
     override fun onGetPacket(
         data: ByteArray
     ) {

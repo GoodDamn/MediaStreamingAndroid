@@ -21,22 +21,11 @@ class MSReceiverCameraFrame
 
     fun configure(
         decodeSurface: Surface,
-        width: Int,
-        height: Int,
-        rotation: Int
+        format: MediaFormat
     ) {
         mDecoder.configure(
             decodeSurface,
-            MediaFormat.createVideoFormat(
-                MSCoder.TYPE_AVC,
-                width,
-                height
-            ).apply {
-                setInteger(
-                    MediaFormat.KEY_ROTATION,
-                    rotation
-                )
-            }
+            format
         )
     }
 

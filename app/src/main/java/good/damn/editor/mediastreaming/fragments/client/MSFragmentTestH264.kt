@@ -189,8 +189,6 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
         val activity = activity as? MSActivityMain
             ?: return
 
-        Log.d("MSFragmentTestH264", "onSelectCamera: ${Thread.currentThread().id} ${Thread.currentThread().name}")
-
         if (activity.hasPermissionCamera()) {
             if (mCameraStream == null) {
                 initCamera()
@@ -273,6 +271,7 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
             mSubscriberUDP.host = InetAddress.getByName(
                 text.toString()
             )
+            mSubscriberUDP.start()
         }
 
         start(

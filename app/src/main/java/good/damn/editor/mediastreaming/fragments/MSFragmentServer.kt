@@ -1,6 +1,7 @@
 package good.damn.editor.mediastreaming.fragments
 
 import android.graphics.SurfaceTexture
+import android.media.MediaFormat
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Surface
@@ -18,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.adapters.MSAdapterRooms
 import good.damn.editor.mediastreaming.audio.MSRecordAudio
+import good.damn.editor.mediastreaming.camera.avc.MSCoder
 import good.damn.editor.mediastreaming.camera.avc.MSUtilsAvc
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudio
 import good.damn.editor.mediastreaming.network.server.MSReceiverAudioRoom
@@ -148,12 +150,19 @@ MSListenerOnGetHotspotHost {
                         post {
                             mReceiverFrame.configure(
                                 holder.surface,
-                                MSUtilsAvc.VIDEO_WIDTH,
-                                MSUtilsAvc.VIDEO_HEIGHT,
-                                rotation = 90
+                                MediaFormat.createVideoFormat(
+                                    MSCoder.TYPE_AVC,
+                                    MSUtilsAvc.VIDEO_WIDTH,
+                                    MSUtilsAvc.VIDEO_HEIGHT
+                                ).apply {
+                                    setInteger(
+                                        MediaFormat.KEY_ROTATION,
+                                        90
+                                    )
+                                }
                             )
-                            start()
                             mReceiverFrame.start()
+                            start()
                         }
                     },
                     -1,

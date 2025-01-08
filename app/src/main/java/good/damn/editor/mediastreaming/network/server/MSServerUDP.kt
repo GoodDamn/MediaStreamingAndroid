@@ -38,11 +38,6 @@ open class MSServerUDP(
         sendBufferSize = 1
     }
 
-    private val mPacket = DatagramPacket(
-        mBuffer,
-        mBuffer.size
-    )
-
     override fun start() {
         isRunning = true
 
@@ -75,7 +70,10 @@ open class MSServerUDP(
     private suspend inline fun listen() {
         try {
             mSocket.receive(
-                mPacket
+                DatagramPacket(
+                    mBuffer,
+                    mBuffer.size
+                )
             )
         } catch (e: Exception) {
             Log.d(TAG, "listen: ${e.localizedMessage}")

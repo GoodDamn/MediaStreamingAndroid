@@ -84,7 +84,6 @@ MSListenerOnGetOrderedFrame {
     override fun onGetOrderedFrame(
         frame: MSFrame
     ) {
-        Log.d(TAG, "onGetOrderedFrame: $frame")
         mQueueFrame.add(
             frame
         )

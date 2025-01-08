@@ -5,6 +5,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public final class MSPacketBufferizer {
@@ -95,6 +96,10 @@ public final class MSPacketBufferizer {
         final short packetCount,
         final byte[] data
     ) {
+        if (packetCount == 0) {
+            return;
+        }
+
         final int queueId = frameId % CACHE_PACKET_SIZE;
 
         final ConcurrentLinkedDeque<
@@ -165,6 +170,8 @@ public final class MSPacketBufferizer {
             ],
           (short) 1
         );
+
+        Log.d(TAG, "addFrame: " + packetCount + " FRAME_ID:" + frameId);
 
         frame.getPackets()[
           packetId
