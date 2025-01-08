@@ -4,18 +4,21 @@ import android.media.MediaCodec
 import android.media.MediaFormat
 import android.util.Log
 import android.view.Surface
-import good.damn.editor.mediastreaming.camera.avc.cache.MSListenerOnGetOrderedPacket
-import good.damn.editor.mediastreaming.camera.avc.cache.MSPacket
+import good.damn.editor.mediastreaming.camera.avc.cache.MSFrame
+import good.damn.editor.mediastreaming.camera.avc.cache.MSListenerOnGetOrderedFrame
 import good.damn.editor.mediastreaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.editor.mediastreaming.extensions.integer
 import good.damn.editor.mediastreaming.extensions.short
 import good.damn.editor.mediastreaming.network.MSStateable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class MSDecoderAvc
 : MSCoder(),
 MSStateable,
-MSListenerOnGetOrderedPacket {
+MSListenerOnGetOrderedFrame {
 
     companion object {
         private const val TAG = "MSDecoderAvc"
@@ -27,20 +30,40 @@ MSListenerOnGetOrderedPacket {
         TYPE_AVC
     )
 
-    private val mPacketBufferizer = MSPacketBufferizer()
+    private val mPacketBufferizer = MSPacketBufferizer().apply {
+        onGetOrderedFrame = this@MSDecoderAvc
+    }
 
-    private val mQueueData = ConcurrentLinkedQueue<ByteArray>()
+    private val mQueueFrame = ConcurrentLinkedQueue<
+        MSFrame
+    >()
 
     fun writeData(
         data: ByteArray
     ) {
-        /*mPacketBufferizer.write(
+        mPacketBufferizer.write(
             data.integer(
-                MSUtilsAvc.OFFSET_PACKET_ID
+                MSUtilsAvc.OFFSET_PACKET_FRAME_ID
             ),
-            data,
-            this@MSDecoderAvc
-        )*/
+            data.short(
+                MSUtilsAvc.OFFSET_PACKET_ID
+            ).toShort(),
+            data.short(
+                MSUtilsAvc.OFFSET_PACKET_COUNT
+            ).toShort(),
+            data
+        )
+    }
+
+    override fun start() {
+        super.start()
+        CoroutineScope(
+            Dispatchers.IO
+        ).launch {
+            while (isRunning) {
+                mPacketBufferizer.orderPacket()
+            }
+        }
     }
 
     fun configure(
@@ -58,16 +81,15 @@ MSListenerOnGetOrderedPacket {
         )
     }
 
-    override fun onGetOrderedPacket(
-        frame: MSPacket
+    override fun onGetOrderedFrame(
+        frame: MSFrame
     ) {
-        Log.d(TAG, "onGetOrderedPacket: $frame")
-        mQueueData.add(
-            frame.data
+        Log.d(TAG, "onGetOrderedFrame: $frame")
+        mQueueFrame.add(
+            frame
         )
     }
 
-    private var mData = ByteArray(0)
     override fun onInputBufferAvailable(
         codec: MediaCodec,
         index: Int
@@ -78,20 +100,29 @@ MSListenerOnGetOrderedPacket {
 
         inp.clear()
 
-        if (mQueueData.isNotEmpty()) {
-            mData = mQueueData.remove()
-            inp.put(
-                mData,
-                MSUtilsAvc.LEN_META,
-                mData.size - MSUtilsAvc.LEN_META
-            )
+        var s = 0
+        if (mQueueFrame.isNotEmpty()) {
+            mQueueFrame.remove().packets.forEach {
+                it?.apply {
+                    val a = data.short(
+                        MSUtilsAvc.OFFSET_PACKET_SIZE
+                    )
+                    inp.put(
+                        data,
+                        MSUtilsAvc.LEN_META,
+                        a
+                    )
+                    s += a
+                }
+            }
+
+            Log.d(TAG, "onInputBufferAvailable: $s")
         }
 
-        Log.d(TAG, "onInputBufferAvailable: ")
         codec.queueInputBuffer(
             index,
             0,
-            mData.size - MSUtilsAvc.LEN_META,
+            s,
             0,
             0
         )

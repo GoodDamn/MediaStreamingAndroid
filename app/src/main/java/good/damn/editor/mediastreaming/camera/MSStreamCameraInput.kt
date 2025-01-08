@@ -8,10 +8,6 @@ import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrame
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.extensions.setIntegerOnPosition
 import good.damn.editor.mediastreaming.extensions.setShortOnPosition
-import good.damn.editor.mediastreaming.network.client.MSClientStreamUDPChunk
-import good.damn.editor.mediastreaming.network.client.MSModelChunkUDP
-import kotlinx.coroutines.CoroutineScope
-import java.net.InetAddress
 
 class MSStreamCameraInput(
     manager: MSManagerCamera
@@ -19,6 +15,8 @@ class MSStreamCameraInput(
 
     companion object {
         private val TAG = MSStreamCameraInput::class.simpleName
+
+        const val PACKET_MAX_SIZE = 1024
     }
 
     private val mCamera = MSCameraAVC(
@@ -31,7 +29,7 @@ class MSStreamCameraInput(
     val isRunning: Boolean
         get() = mCamera.isRunning
 
-    private var mPacketId = 0
+    private var mFrameId = 0
 
     fun start(
         cameraId: MSCameraModelID,
@@ -64,66 +62,84 @@ class MSStreamCameraInput(
         offset: Int,
         len: Int
     ) {
+        Log.d(TAG, "onGetFrameData: FRAME_LEN: $len")
         var i = offset
 
-        val normLen = len / 1024 * 1024
+        var packetCount = len / PACKET_MAX_SIZE
+        val normLen = packetCount * PACKET_MAX_SIZE
         val reminderDataSize = len - normLen
 
+        var packetId = 0
+
+        if (reminderDataSize > 0) {
+            packetCount++
+        }
+
         while (i < normLen) {
-            val chunk = ByteArray(1024 + LEN_META) // 1024 data + 6 meta
-
-            Log.d(TAG, "onGetFrameData: $mPacketId=1024")
-
-            chunk.setIntegerOnPosition(
-                mPacketId,
-                pos=MSUtilsAvc.OFFSET_PACKET_ID
+            fillChunk(
+                PACKET_MAX_SIZE,
+                packetId,
+                i,
+                bufferData,
+                packetCount
             )
-
-            chunk.setShortOnPosition(
-                1024,
-                MSUtilsAvc.OFFSET_PACKET_SIZE
-            )
-
-            for (j in 0 until 1024) {
-                chunk[j+LEN_META] = bufferData[i+j]
-            }
-
-            Thread.sleep(2)
-            subscribers?.forEach {
-                it.onGetPacket(chunk)
-            }
-
-            i += 1024
-            mPacketId++
+            packetId++
+            i += PACKET_MAX_SIZE
         }
 
         if (reminderDataSize > 0) {
-            Log.d(TAG, "onGetFrameData: $mPacketId=$reminderDataSize")
-            val chunk = ByteArray(
-                reminderDataSize + LEN_META
-            )
-
-            chunk.setIntegerOnPosition(
-                mPacketId,
-                pos=MSUtilsAvc.OFFSET_PACKET_ID
-            )
-
-            chunk.setShortOnPosition(
+            fillChunk(
                 reminderDataSize,
-                MSUtilsAvc.OFFSET_PACKET_SIZE
+                packetId,
+                i,
+                bufferData,
+                packetCount
             )
-
-            for (j in 0 until reminderDataSize) {
-                chunk[j+LEN_META] = bufferData[i+j]
-            }
-
-            Thread.sleep(2)
-            subscribers?.forEach {
-                it.onGetPacket(chunk)
-            }
-
         }
 
-        mPacketId++
+        mFrameId++
+    }
+
+    private inline fun fillChunk(
+        dataLen: Int,
+        packetId: Int,
+        i: Int,
+        bufferData: ByteArray,
+        packetCount: Int
+    ) {
+        val chunk = ByteArray(
+            dataLen + LEN_META
+        )
+
+        Log.d(TAG, "onGetFrameData: $mFrameId:$packetId=$dataLen")
+
+        chunk.setIntegerOnPosition(
+            mFrameId,
+            pos=MSUtilsAvc.OFFSET_PACKET_FRAME_ID
+        )
+
+        chunk.setShortOnPosition(
+            dataLen,
+            MSUtilsAvc.OFFSET_PACKET_SIZE
+        )
+
+        chunk.setShortOnPosition(
+            packetId,
+            MSUtilsAvc.OFFSET_PACKET_ID
+        )
+
+        chunk.setShortOnPosition(
+            packetCount,
+            MSUtilsAvc.OFFSET_PACKET_COUNT
+        )
+
+        for (j in 0 until dataLen) {
+            chunk[j+LEN_META] = bufferData[i+j]
+        }
+
+        Thread.sleep(1)
+        subscribers?.forEach {
+            it.onGetPacket(chunk)
+        }
     }
 }

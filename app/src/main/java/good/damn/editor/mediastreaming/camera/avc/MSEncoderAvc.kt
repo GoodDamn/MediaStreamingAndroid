@@ -104,8 +104,6 @@ MSStateable {
             mRemaining
         )
 
-        Log.d(TAG, "processEncodingBuffers: NAL_HEADER: ${Integer.toBinaryString(mFrame[4].toInt())}")
-
         onGetFrameData?.onGetFrameData(
             mFrame,
             0,
