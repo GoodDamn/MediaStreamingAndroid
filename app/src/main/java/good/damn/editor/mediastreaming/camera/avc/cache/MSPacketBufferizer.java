@@ -12,8 +12,8 @@ public final class MSPacketBufferizer {
 
     private static final String TAG = "MSPacketBufferizer";
 
-    private static final int CACHE_PACKET_SIZE = 2048;
-    private static final int TIMEOUT_PACKET_MS = 5000;
+    private static final int CACHE_PACKET_SIZE = 4096;
+    private static final int TIMEOUT_PACKET_MS = 20;
     // Think about dynamic timeout
     // which depends from captured frame's packet count
     // if it's near to full frame, wait more than 5000 ms
@@ -67,15 +67,20 @@ public final class MSPacketBufferizer {
             @NonNull
             MSFrame frame = queue.getFirst();
 
+            int currentPacketSize = frame.getPacketsAdded();
             while (
                 mCurrentTime - mCapturedTime < TIMEOUT_PACKET_MS
             ) {
                 mCurrentTime = System.currentTimeMillis();
 
+                if (frame.getPacketsAdded() > currentPacketSize) {
+                    currentPacketSize = frame.getPacketsAdded();
+                    mCapturedTime = mCurrentTime;
+                }
+
                 // Waiting when frame will be combined
                 // if it's not, drop it because of timeout
-
-                if (frame.getPacketsAdded() >= frame.getPackets().length) {
+                if (currentPacketSize >= frame.getPackets().length) {
                     if (onGetOrderedFrame != null) {
                         onGetOrderedFrame.onGetOrderedFrame(
                             frame
@@ -140,6 +145,10 @@ public final class MSPacketBufferizer {
                 packetId,
                 data
             );
+            return;
+        }
+
+        if (foundFrame.getPackets()[packetId] != null) {
             return;
         }
 

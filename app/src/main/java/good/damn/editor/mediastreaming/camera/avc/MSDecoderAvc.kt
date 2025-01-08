@@ -22,7 +22,6 @@ MSListenerOnGetOrderedFrame {
 
     companion object {
         private const val TAG = "MSDecoderAvc"
-        private const val TIMEOUT_USAGE_MS = 10_000L
     }
 
     // may throws Exception with no h264 codec
@@ -84,6 +83,7 @@ MSListenerOnGetOrderedFrame {
     override fun onGetOrderedFrame(
         frame: MSFrame
     ) {
+        Log.d(TAG, "onGetOrderedFrame: $frame")
         mQueueFrame.add(
             frame
         )
@@ -114,8 +114,6 @@ MSListenerOnGetOrderedFrame {
                     s += a
                 }
             }
-
-            Log.d(TAG, "onInputBufferAvailable: $s")
         }
 
         codec.queueInputBuffer(

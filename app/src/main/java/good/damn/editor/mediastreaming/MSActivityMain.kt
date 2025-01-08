@@ -20,8 +20,7 @@ MSListenerOnResultPermission {
     }
 
     private val mFragments = arrayOf(
-        MSFragmentTestH264(),
-        MSFragmentServer()
+        MSFragmentTestH264()
     )
 
     override fun onCreate(

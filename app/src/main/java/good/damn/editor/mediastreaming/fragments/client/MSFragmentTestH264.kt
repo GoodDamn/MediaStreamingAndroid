@@ -30,6 +30,8 @@ import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectResolution
 import good.damn.editor.mediastreaming.extensions.camera2.getRotation
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
+import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFrame
+import good.damn.editor.mediastreaming.network.server.MSServerUDP
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +39,9 @@ import java.net.InetAddress
 
 class MSFragmentTestH264
 : Fragment(),
-MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolution {
+MSListenerOnResultPermission,
+MSListenerOnSelectCamera,
+MSListenerOnSelectResolution {
 
     private var managerCamera: MSManagerCamera? = null
     private var mCameraStream: MSStreamCameraInput? = null
@@ -46,12 +50,22 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
     private var mEditTextHost: EditText? = null
 
     private val mSubscriberUDP = MSStreamSubscriberUDP(
+        5556,
         CoroutineScope(
             Dispatchers.IO
         )
     )
 
-    private val mSubscriberSurface = MSStreamSubscriberSurface()
+    private val mReceiverFrame = MSReceiverCameraFrame()
+
+    private val mServerUDP = MSServerUDP(
+        5556,
+        MSStreamCameraInput.PACKET_MAX_SIZE + MSUtilsAvc.LEN_META,
+        CoroutineScope(
+            Dispatchers.IO
+        ),
+        mReceiverFrame
+    )
 
     private val mResolutions = arrayOf(
         Size(176, 144),
@@ -74,6 +88,18 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
         managerCamera = MSManagerCamera(
             context
         )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        mReceiverFrame.stop()
+        mServerUDP.stop()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        mReceiverFrame.release()
+        mServerUDP.release()
     }
 
     override fun onCreateView(
@@ -147,6 +173,33 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
             )
         }
 
+        SurfaceView(
+            context
+        ).apply {
+            post {
+                mReceiverFrame.configure(
+                    holder.surface,
+                    MediaFormat.createVideoFormat(
+                        MSCoder.TYPE_AVC,
+                        MSUtilsAvc.VIDEO_WIDTH,
+                        MSUtilsAvc.VIDEO_HEIGHT
+                    ).apply {
+                        setInteger(
+                            MediaFormat.KEY_ROTATION,
+                            90
+                        )
+                    }
+                )
+
+                mReceiverFrame.start()
+                mServerUDP.start()
+            }
+            mLayoutContent?.addView(
+                this,
+                0
+            )
+        }
+
     }
 
     override fun onDestroy() {
@@ -177,7 +230,7 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
                 this
             ).apply {
                 subscribers = arrayListOf(
-                    mSubscriberSurface
+                    mSubscriberUDP
                 )
             }
         }
@@ -280,33 +333,6 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
             MSUtilsAvc.VIDEO_HEIGHT
         )
 
-        SurfaceView(
-            context
-        ).apply {
-            post {
-                mSubscriberSurface.configure(
-                    holder.surface,
-                    MediaFormat.createVideoFormat(
-                        MSCoder.TYPE_AVC,
-                        MSUtilsAvc.VIDEO_WIDTH,
-                        MSUtilsAvc.VIDEO_HEIGHT
-                    ).apply {
-                        setInteger(
-                            MediaFormat.KEY_ROTATION,
-                            cameraId.characteristics.getRotation() ?: 0
-                        )
-                    }
-                )
-
-                mSubscriberSurface.start()
-            }
-            mLayoutContent?.addView(
-                this,
-                0
-            )
-        }
-
         Unit
-
     } ?: Unit
 }

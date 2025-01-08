@@ -15,8 +15,7 @@ class MSStreamCameraInput(
 
     companion object {
         private val TAG = MSStreamCameraInput::class.simpleName
-
-        const val PACKET_MAX_SIZE = 1024
+        const val PACKET_MAX_SIZE = 1324 - LEN_META
     }
 
     private val mCamera = MSCameraAVC(
@@ -137,7 +136,7 @@ class MSStreamCameraInput(
             chunk[j+LEN_META] = bufferData[i+j]
         }
 
-        Thread.sleep(1)
+        Thread.sleep(2)
         subscribers?.forEach {
             it.onGetPacket(chunk)
         }

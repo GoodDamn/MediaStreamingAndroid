@@ -6,11 +6,12 @@ import kotlinx.coroutines.CoroutineScope
 import java.net.InetAddress
 
 class MSStreamSubscriberUDP(
+    port: Int,
     scope: CoroutineScope
 ): MSStreamSubscriber {
 
     private val mClient = MSClientStreamUDPChunk(
-        5556,
+        port,
         scope
     )
 

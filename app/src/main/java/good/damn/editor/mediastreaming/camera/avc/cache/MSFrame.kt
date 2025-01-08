@@ -24,4 +24,6 @@ data class MSFrame(
         result = 31 * result + packetsAdded
         return result
     }
+
+    override fun toString() = "ID: $id; PACKETS_SIZE: ${packetsAdded}=${packets.size}"
 }
