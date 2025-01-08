@@ -6,7 +6,9 @@ import android.util.Log
 import good.damn.editor.mediastreaming.network.MSStateable
 import good.damn.editor.mediastreaming.network.server.listeners.MSListenerOnReceiveData
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 
@@ -24,7 +26,7 @@ open class MSServerUDP(
     var isRunning = false
         private set
 
-    private val mBuffer = ByteArray(
+    private var mBuffer = ByteArray(
         bufferSize
     )
 
@@ -79,8 +81,15 @@ open class MSServerUDP(
             Log.d(TAG, "listen: ${e.localizedMessage}")
         }
 
-        onReceiveData.onReceiveData(
-            mBuffer
+        val saved = mBuffer
+        scope.launch {
+            onReceiveData.onReceiveData(
+                saved
+            )
+        }
+
+        mBuffer = ByteArray(
+            mBuffer.size
         )
     }
 

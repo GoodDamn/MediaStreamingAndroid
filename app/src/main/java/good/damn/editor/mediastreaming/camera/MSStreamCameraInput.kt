@@ -14,32 +14,22 @@ import kotlinx.coroutines.CoroutineScope
 import java.net.InetAddress
 
 class MSStreamCameraInput(
-    manager: MSManagerCamera,
-    scope: CoroutineScope
+    manager: MSManagerCamera
 ): MSListenerOnGetFrameData {
 
     companion object {
         private val TAG = MSStreamCameraInput::class.simpleName
     }
 
-    private val mStream = MSClientStreamUDPChunk(
-        5556,
-        scope
-    )
-
     private val mCamera = MSCameraAVC(
         manager,
         this@MSStreamCameraInput
     )
 
+    var subscribers: List<MSStreamSubscriber>? = null
+
     val isRunning: Boolean
         get() = mCamera.isRunning
-
-    var host: InetAddress
-        get() = mStream.host
-        set(v) {
-            mStream.host = v
-        }
 
     private var mPacketId = 0
 
@@ -59,21 +49,17 @@ class MSStreamCameraInput(
                 cameraId
             )
         }
-
-        mStream.start()
     }
 
     fun stop() {
         mCamera.stop()
-        mStream.stop()
     }
 
     fun release() {
         mCamera.release()
-        mStream.release()
     }
 
-    override fun onGetFrameData(
+    final override fun onGetFrameData(
         bufferData: ByteArray,
         offset: Int,
         len: Int
@@ -103,13 +89,9 @@ class MSStreamCameraInput(
             }
 
             Thread.sleep(2)
-            mStream.sendToStream(
-                MSModelChunkUDP(
-                    chunk,
-                    0,
-                    chunk.size
-                )
-            )
+            subscribers?.forEach {
+                it.onGetPacket(chunk)
+            }
 
             i += 1024
             mPacketId++
@@ -134,14 +116,12 @@ class MSStreamCameraInput(
             for (j in 0 until reminderDataSize) {
                 chunk[j+LEN_META] = bufferData[i+j]
             }
-            
-            mStream.sendToStream(
-                MSModelChunkUDP(
-                    chunk,
-                    0,
-                    chunk.size
-                )
-            )
+
+            Thread.sleep(2)
+            subscribers?.forEach {
+                it.onGetPacket(chunk)
+            }
+
         }
 
         mPacketId++

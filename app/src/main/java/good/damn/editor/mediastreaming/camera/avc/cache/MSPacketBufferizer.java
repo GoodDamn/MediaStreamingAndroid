@@ -1,66 +1,83 @@
 package good.damn.editor.mediastreaming.camera.avc.cache;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public final class MSPacketBufferizer {
 
     private static final String TAG = "MSPacketBufferizer";
 
-    private static final int CACHE_PACKET = 128;
+    private static final int CACHE_PACKET_SIZE = 1024;
+    private static final int TIMEOUT_PACKET_MS = 5000;
 
-    private final MSPacket[] mPackets =
-        new MSPacket[CACHE_PACKET];
+    // Algorithm which targets Key frames
+    // if buffer has next combined key frame, it needs to update
+    // if buffer has key frame's other frames, it needs to update
 
-    private int mCurrentPacketCycle;
-    private int mTempPacketCycle;
-
-    private int minRangePacket;
+    private final ConcurrentLinkedDeque<
+        MSFrame
+    >[] mQueues = new ConcurrentLinkedDeque[
+        CACHE_PACKET_SIZE
+    ];
 
     public final void write(
+        final int frameId,
         final int packetId,
+        final short packetCount,
         final byte[] data,
         final MSListenerOnGetOrderedPacket onGetOrderedPacket
     ) {
-        final int bufferId = packetId % CACHE_PACKET;
-        mTempPacketCycle = packetId / CACHE_PACKET;
+        final int queueId = frameId % CACHE_PACKET_SIZE;
 
-        if (mTempPacketCycle > mCurrentPacketCycle) {
-            @Nullable
-            MSPacket frame;
-            for (short i = 0; i < mPackets.length; i++) {
-                frame = mPackets[i];
-                if (frame == null ||
-                    frame.getId() < minRangePacket
-                ) {
-                    mPackets[i] = null;
-                    continue;
-                }
+        final ConcurrentLinkedDeque<
+            MSFrame
+        > queue = mQueues[
+            queueId
+        ];
 
-                onGetOrderedPacket.onGetOrderedPacket(
-                    frame
-                );
-            }
+        if (queue.isEmpty()) {
+            queue.add(
+                new MSFrame(
+                    frameId,
+                    new MSPacket[
+                        packetCount
+                    ],
+                    (short) 0
+                )
+            );
+            return;
+        }
 
-            mCurrentPacketCycle = mTempPacketCycle;
-            minRangePacket += CACHE_PACKET;
+        if (frameId < queue.getLast().getId()) {
+            return;
         }
 
         @Nullable
-        final MSPacket frame = mPackets[
-            bufferId
-        ];
-
-        if (frame == null ||
-            mCurrentPacketCycle >= frame.getId() / CACHE_PACKET
-        ) {
-            mPackets[
-                bufferId
-            ] = new MSPacket(
-                packetId,
-                data
-            );
+        MSFrame foundFrame = null;
+        for (MSFrame frame: queue) {
+            if (frame.getId() == frameId) {
+                foundFrame = frame;
+                break;
+            }
         }
 
+        if (foundFrame == null) {
+            return;
+        }
+
+        foundFrame.getPackets()[
+            packetId
+        ] = new MSPacket(
+            packetId,
+            data
+        );
+
+        foundFrame.setPacketsAdded(
+            (short) (foundFrame.getPacketsAdded() + 1)
+        );
     }
 
 }

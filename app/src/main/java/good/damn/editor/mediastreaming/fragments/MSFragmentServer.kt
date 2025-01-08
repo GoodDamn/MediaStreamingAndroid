@@ -1,8 +1,12 @@
 package good.damn.editor.mediastreaming.fragments
 
+import android.graphics.SurfaceTexture
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Surface
 import android.view.SurfaceView
+import android.view.TextureView
+import android.view.TextureView.SurfaceTextureListener
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -139,7 +143,7 @@ MSListenerOnGetHotspotHost {
             } else {
                 mLayoutRoot?.addView(
                     SurfaceView(
-                        context
+                        btn.context
                     ).apply {
                         post {
                             mReceiverFrame.configure(
@@ -151,7 +155,9 @@ MSListenerOnGetHotspotHost {
                             start()
                             mReceiverFrame.start()
                         }
-                    }
+                    },
+                    -1,
+                    -1
                 )
                 "Stop Server"
             }

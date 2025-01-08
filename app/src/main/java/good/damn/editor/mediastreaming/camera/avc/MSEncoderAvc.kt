@@ -56,8 +56,6 @@ MSStateable {
                     break
                 }
 
-                var outputBuffers = mCoder.outputBuffers
-
                 while (true) {
                     val status = mCoder.dequeueOutputBuffer(
                         mBufferInfo,
@@ -72,19 +70,13 @@ MSStateable {
                             }
                         }
 
-                        MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED -> {
-                            Log.d(TAG, "start: OUTPUT_BUFFERS_CHANGED")
-                            outputBuffers = mCoder.outputBuffers
-                        }
-
                         in Int.MIN_VALUE until 0 -> {
                             Log.d(TAG, "start: WAITING")
                         }
 
                         else -> {
                             processEncodingBuffers(
-                                status,
-                                outputBuffers
+                                status
                             )
                         }
                     }
@@ -94,10 +86,11 @@ MSStateable {
     }
 
     private inline fun processEncodingBuffers(
-        id: Int,
-        outputBuffers: Array<ByteBuffer>
+        id: Int
     ) {
-        val buffer = outputBuffers[id]
+        val buffer = mCoder.getOutputBuffer(
+            id
+        ) ?: return
 
         mRemaining = buffer.remaining()
 
@@ -110,6 +103,8 @@ MSStateable {
             0,
             mRemaining
         )
+
+        Log.d(TAG, "processEncodingBuffers: NAL_HEADER: ${Integer.toBinaryString(mFrame[4].toInt())}")
 
         onGetFrameData?.onGetFrameData(
             mFrame,

@@ -1,10 +1,12 @@
 package good.damn.editor.mediastreaming.camera.avc
 
 import android.media.MediaCodec
+import android.media.MediaFormat
 import good.damn.editor.mediastreaming.network.MSStateable
 
 abstract class MSCoder
-: MSStateable {
+: MediaCodec.Callback(),
+MSStateable {
 
     companion object {
         private const val TAG = "MSCoder"
@@ -30,4 +32,25 @@ abstract class MSCoder
         isRunning = false
         mCoder.reset()
     }
+
+    override fun onInputBufferAvailable(
+        codec: MediaCodec,
+        index: Int
+    ) = Unit
+
+    override fun onOutputBufferAvailable(
+        codec: MediaCodec,
+        index: Int,
+        info: MediaCodec.BufferInfo
+    ) = Unit
+
+    override fun onError(
+        codec: MediaCodec,
+        e: MediaCodec.CodecException
+    ) = Unit
+
+    override fun onOutputFormatChanged(
+        codec: MediaCodec,
+        format: MediaFormat
+    ) = Unit
 }

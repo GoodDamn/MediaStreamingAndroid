@@ -10,7 +10,7 @@ import good.damn.editor.mediastreaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.editor.mediastreaming.extensions.integer
 import good.damn.editor.mediastreaming.extensions.short
 import good.damn.editor.mediastreaming.network.MSStateable
-import java.io.ByteArrayOutputStream
+import java.util.concurrent.ConcurrentLinkedQueue
 
 class MSDecoderAvc
 : MSCoder(),
@@ -19,51 +19,37 @@ MSListenerOnGetOrderedPacket {
 
     companion object {
         private const val TAG = "MSDecoderAvc"
-        private const val TIMEOUT_USAGE_MS = 1_000_000L
+        private const val TIMEOUT_USAGE_MS = 10_000L
     }
-
-    private val mStream = ByteArrayOutputStream()
 
     // may throws Exception with no h264 codec
     override val mCoder = MediaCodec.createDecoderByType(
         TYPE_AVC
     )
 
-    private val mPacketCombiner =
-        MSPacketBufferizer()
+    private val mPacketBufferizer = MSPacketBufferizer()
 
-    private val mBufferInfo = MediaCodec.BufferInfo()
-    
+    private val mQueueData = ConcurrentLinkedQueue<ByteArray>()
+
     fun writeData(
         data: ByteArray
     ) {
-        val copied = ByteArray(
-            data.short(
-                MSUtilsAvc.OFFSET_PACKET_SIZE
-            )
-        )
-
-        System.arraycopy(
-            data,
-            MSUtilsAvc.LEN_META,
-            copied,
-            0,
-            copied.size
-        )
-
-        mPacketCombiner.write(
+        /*mPacketBufferizer.write(
             data.integer(
                 MSUtilsAvc.OFFSET_PACKET_ID
             ),
-            copied,
+            data,
             this@MSDecoderAvc
-        )
+        )*/
     }
 
     fun configure(
         decodeSurface: Surface,
         format: MediaFormat
     ) = mCoder.run {
+        setCallback(
+            this@MSDecoderAvc
+        )
         configure(
             format,
             decodeSurface,
@@ -72,78 +58,74 @@ MSListenerOnGetOrderedPacket {
         )
     }
 
-    override fun start() {
-        super.start()
-
-        /*CoroutineScope(
-            Dispatchers.IO
-        ).launch {
-            while (true) {
-                if (!isRunning) {
-                    mCoder.signalEndOfInputStream()
-                    break
-                }
-
-                processBuffer()
-            }
-        }*/
-    }
-
     override fun onGetOrderedPacket(
         frame: MSPacket
     ) {
         Log.d(TAG, "onGetOrderedPacket: $frame")
-        //processBuffer()
+        mQueueData.add(
+            frame.data
+        )
     }
 
-    private var mShitTime = 0L
+    private var mData = ByteArray(0)
+    override fun onInputBufferAvailable(
+        codec: MediaCodec,
+        index: Int
+    ) {
+        val inp = codec.getInputBuffer(
+            index
+        ) ?: return
 
-    private inline fun processBuffer() {
-        val inputBufferId = mCoder.dequeueInputBuffer(
-             TIMEOUT_USAGE_MS
-        )
+        inp.clear()
 
-        if (inputBufferId >= 0) {
-            val inp = mCoder.inputBuffers[
-                inputBufferId
-            ]
-
-            inp.clear()
-
-            val buffer = mStream.toByteArray()
-            mStream.reset()
-
-            if (buffer.isNotEmpty()) {
-                Log.d(TAG, "processBuffer: BUFFER_SIZE: ${buffer.size}")
-            }
-
+        if (mQueueData.isNotEmpty()) {
+            mData = mQueueData.remove()
             inp.put(
-                buffer
-            )
-
-            mCoder.queueInputBuffer(
-                inputBufferId,
-                0,
-                buffer.size,
-                TIMEOUT_USAGE_MS,
-                0
+                mData,
+                MSUtilsAvc.LEN_META,
+                mData.size - MSUtilsAvc.LEN_META
             )
         }
 
-        val outId = mCoder.dequeueOutputBuffer(
-            mBufferInfo,
-            TIMEOUT_USAGE_MS
+        Log.d(TAG, "onInputBufferAvailable: ")
+        codec.queueInputBuffer(
+            index,
+            0,
+            mData.size - MSUtilsAvc.LEN_META,
+            0,
+            0
+        )
+    }
+
+    override fun onError(
+        codec: MediaCodec,
+        e: MediaCodec.CodecException
+    ) {
+        Log.d(TAG, "onError: ")
+    }
+
+    override fun onOutputFormatChanged(
+        codec: MediaCodec, 
+        format: MediaFormat
+    ) {
+        Log.d(TAG, "onOutputFormatChanged: ")
+    }
+    
+    override fun onOutputBufferAvailable(
+        codec: MediaCodec,
+        index: Int,
+        info: MediaCodec.BufferInfo
+    ) {
+        Log.d(TAG, "onOutputBufferAvailable: INFO: ${info.presentationTimeUs} ${info.offset} ${info.size}")
+
+        codec.getOutputBuffer(
+            index
         )
 
-        Log.d(TAG, "processBuffer: $outId $inputBufferId ${mBufferInfo.size}")
-        if (outId >= 0) {
-            mCoder.releaseOutputBuffer(
-                outId,
-                true
-            )
-        }
-
-        mShitTime += 66
+        codec.releaseOutputBuffer(
+            index,
+            true
+        )
     }
 
 }

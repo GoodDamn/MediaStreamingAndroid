@@ -1,11 +1,13 @@
 package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
+import android.media.MediaFormat
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.SurfaceView
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
@@ -16,12 +18,17 @@ import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
 import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
+import good.damn.editor.mediastreaming.camera.MSStreamSubscriberSurface
+import good.damn.editor.mediastreaming.camera.MSStreamSubscriberUDP
+import good.damn.editor.mediastreaming.camera.avc.MSCoder
+import good.damn.editor.mediastreaming.camera.avc.MSDecoderAvc
 import good.damn.editor.mediastreaming.camera.avc.MSUtilsAvc
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectResolution
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectResolution
+import good.damn.editor.mediastreaming.extensions.camera2.getRotation
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import kotlinx.coroutines.CoroutineScope
@@ -37,6 +44,14 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
 
     private var mLayoutContent: FrameLayout? = null
     private var mEditTextHost: EditText? = null
+
+    private val mSubscriberUDP = MSStreamSubscriberUDP(
+        CoroutineScope(
+            Dispatchers.IO
+        )
+    )
+
+    private val mSubscriberSurface = MSStreamSubscriberSurface()
 
     private val mResolutions = arrayOf(
         Size(176, 144),
@@ -159,11 +174,12 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
     private inline fun initCamera() {
         managerCamera?.apply {
             mCameraStream = MSStreamCameraInput(
-                this,
-                CoroutineScope(
-                    Dispatchers.IO
+                this
+            ).apply {
+                subscribers = arrayListOf(
+                    mSubscriberSurface
                 )
-            )
+            }
         }
     }
 
@@ -254,7 +270,7 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
         }
 
         mEditTextHost?.apply {
-            host = InetAddress.getByName(
+            mSubscriberUDP.host = InetAddress.getByName(
                 text.toString()
             )
         }
@@ -264,6 +280,34 @@ MSListenerOnResultPermission, MSListenerOnSelectCamera, MSListenerOnSelectResolu
             MSUtilsAvc.VIDEO_WIDTH,
             MSUtilsAvc.VIDEO_HEIGHT
         )
+
+        SurfaceView(
+            context
+        ).apply {
+            post {
+                mSubscriberSurface.configure(
+                    holder.surface,
+                    MediaFormat.createVideoFormat(
+                        MSCoder.TYPE_AVC,
+                        MSUtilsAvc.VIDEO_WIDTH,
+                        MSUtilsAvc.VIDEO_HEIGHT
+                    ).apply {
+                        setInteger(
+                            MediaFormat.KEY_ROTATION,
+                            cameraId.characteristics.getRotation() ?: 0
+                        )
+                    }
+                )
+
+                mSubscriberSurface.start()
+            }
+            mLayoutContent?.addView(
+                this,
+                0
+            )
+        }
+
+        Unit
 
     } ?: Unit
 }
