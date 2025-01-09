@@ -51,12 +51,7 @@ MSStateable {
             Dispatchers.IO
         ).launch {
             while (true) {
-                if (!isRunning) {
-                    mCoder.signalEndOfInputStream()
-                    break
-                }
-
-                while (true) {
+                try {
                     val status = mCoder.dequeueOutputBuffer(
                         mBufferInfo,
                         TIMEOUT_USAGE_MS
@@ -75,12 +70,13 @@ MSStateable {
                         }
 
                         else -> {
+                            Log.d(TAG, "start: PROCESS_BUFFER: $status")
                             processEncodingBuffers(
                                 status
                             )
                         }
                     }
-                }
+                } catch (_: Exception) { }
             }
         }
     }
@@ -94,18 +90,8 @@ MSStateable {
 
         mRemaining = buffer.remaining()
 
-        val mFrame = ByteArray(
-            mRemaining
-        )
-
-        buffer.get(
-            mFrame,
-            0,
-            mRemaining
-        )
-
         onGetFrameData?.onGetFrameData(
-            mFrame,
+            buffer,
             0,
             mRemaining
         )

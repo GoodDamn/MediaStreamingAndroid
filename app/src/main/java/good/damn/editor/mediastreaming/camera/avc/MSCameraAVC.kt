@@ -35,8 +35,7 @@ class MSCameraAVC(
 
     fun configure(
         width: Int,
-        height: Int,
-        camera: CameraCharacteristics
+        height: Int
     ) {
         mEncoder.configure(
             MediaFormat.createVideoFormat(
@@ -52,17 +51,12 @@ class MSCameraAVC(
 
                 setInteger(
                     MediaFormat.KEY_BIT_RATE,
-                    2_000_000
+                    1024 * 1024 * 1
                 )
 
                 setInteger(
                     MediaFormat.KEY_FRAME_RATE,
                     24
-                )
-
-                setInteger(
-                    MediaFormat.KEY_ROTATION,
-                    camera.getRotation() ?: 0
                 )
 
                 setInteger(

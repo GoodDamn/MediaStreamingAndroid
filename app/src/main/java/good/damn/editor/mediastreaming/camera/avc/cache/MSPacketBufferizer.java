@@ -14,6 +14,7 @@ public final class MSPacketBufferizer {
 
     private static final int CACHE_PACKET_SIZE = 4096;
     private static final int TIMEOUT_PACKET_MS = 20;
+
     // Think about dynamic timeout
     // which depends from captured frame's packet count
     // if it's near to full frame, wait more than 5000 ms

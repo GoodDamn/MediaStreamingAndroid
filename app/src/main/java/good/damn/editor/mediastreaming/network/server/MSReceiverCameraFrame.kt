@@ -19,10 +19,13 @@ class MSReceiverCameraFrame
 
     private val mDecoder = MSDecoderAvc()
 
+    private var mDecodeSurface: Surface? = null
+
     fun configure(
         decodeSurface: Surface,
         format: MediaFormat
     ) {
+        mDecodeSurface = decodeSurface
         mDecoder.configure(
             decodeSurface,
             format
@@ -36,6 +39,7 @@ class MSReceiverCameraFrame
     }
 
     fun release() {
+        mDecodeSurface?.release()
         mDecoder.release()
     }
 

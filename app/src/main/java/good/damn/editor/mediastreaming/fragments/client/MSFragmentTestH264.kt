@@ -96,12 +96,6 @@ MSListenerOnSelectResolution {
         mServerUDP.stop()
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        mReceiverFrame.release()
-        mServerUDP.release()
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -203,6 +197,8 @@ MSListenerOnSelectResolution {
     }
 
     override fun onDestroy() {
+        mReceiverFrame.release()
+        mServerUDP.release()
         mCameraStream?.release()
         mCameraStream = null
         super.onDestroy()
@@ -250,12 +246,6 @@ MSListenerOnSelectResolution {
             mCameraStream?.apply {
                 if (isRunning) {
                     stop()
-
-                    mLayoutContent?.apply {
-                        removeViewAt(
-                            childCount - 1
-                        )
-                    }
                 }
             }
 
@@ -273,6 +263,7 @@ MSListenerOnSelectResolution {
                         context
                     ).apply {
 
+                        isAllCaps = false
                         text = "${it.width}x${it.height}"
 
                         setOnClickListener(

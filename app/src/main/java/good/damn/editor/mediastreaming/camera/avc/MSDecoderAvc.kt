@@ -2,6 +2,8 @@ package good.damn.editor.mediastreaming.camera.avc
 
 import android.media.MediaCodec
 import android.media.MediaFormat
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
 import good.damn.editor.mediastreaming.camera.avc.cache.MSFrame
@@ -37,6 +39,10 @@ MSListenerOnGetOrderedFrame {
         MSFrame
     >()
 
+    private var mThreadHandler = HandlerThread(
+        "decoderAvc"
+    )
+
     fun writeData(
         data: ByteArray
     ) {
@@ -54,6 +60,11 @@ MSListenerOnGetOrderedFrame {
         )
     }
 
+    override fun stop() {
+        super.stop()
+        mThreadHandler.interrupt()
+    }
+
     override fun start() {
         super.start()
         CoroutineScope(
@@ -69,8 +80,15 @@ MSListenerOnGetOrderedFrame {
         decodeSurface: Surface,
         format: MediaFormat
     ) = mCoder.run {
+        mThreadHandler = HandlerThread(
+            "decoderAVC"
+        )
+        mThreadHandler.start()
         setCallback(
-            this@MSDecoderAvc
+            this@MSDecoderAvc,
+            Handler(
+                mThreadHandler.looper
+            )
         )
         configure(
             format,
@@ -93,36 +111,38 @@ MSListenerOnGetOrderedFrame {
         codec: MediaCodec,
         index: Int
     ) {
-        val inp = codec.getInputBuffer(
-            index
-        ) ?: return
+        try {
+            val inp = codec.getInputBuffer(
+                index
+            ) ?: return
 
-        inp.clear()
+            inp.clear()
 
-        var s = 0
-        if (mQueueFrame.isNotEmpty()) {
-            mQueueFrame.remove().packets.forEach {
-                it?.apply {
-                    val a = data.short(
-                        MSUtilsAvc.OFFSET_PACKET_SIZE
-                    )
-                    inp.put(
-                        data,
-                        MSUtilsAvc.LEN_META,
-                        a
-                    )
-                    s += a
+            var s = 0
+            if (mQueueFrame.isNotEmpty()) {
+                mQueueFrame.remove().packets.forEach {
+                    it?.apply {
+                        val a = data.short(
+                            MSUtilsAvc.OFFSET_PACKET_SIZE
+                        )
+                        inp.put(
+                            data,
+                            MSUtilsAvc.LEN_META,
+                            a
+                        )
+                        s += a
+                    }
                 }
             }
-        }
 
-        codec.queueInputBuffer(
-            index,
-            0,
-            s,
-            0,
-            0
-        )
+            codec.queueInputBuffer(
+                index,
+                0,
+                s,
+                0,
+                0
+            )
+        } catch (_: Exception) {}
     }
 
     override fun onError(
@@ -145,6 +165,10 @@ MSListenerOnGetOrderedFrame {
         info: MediaCodec.BufferInfo
     ) {
         Log.d(TAG, "onOutputBufferAvailable: INFO: ${info.presentationTimeUs} ${info.offset} ${info.size}")
+
+        if (isRunning) {
+            return
+        }
 
         codec.getOutputBuffer(
             index

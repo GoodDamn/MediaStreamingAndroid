@@ -8,6 +8,7 @@ import good.damn.editor.mediastreaming.camera.avc.listeners.MSListenerOnGetFrame
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.extensions.setIntegerOnPosition
 import good.damn.editor.mediastreaming.extensions.setShortOnPosition
+import java.nio.ByteBuffer
 
 class MSStreamCameraInput(
     manager: MSManagerCamera
@@ -15,7 +16,7 @@ class MSStreamCameraInput(
 
     companion object {
         private val TAG = MSStreamCameraInput::class.simpleName
-        const val PACKET_MAX_SIZE = 1324 - LEN_META
+        const val PACKET_MAX_SIZE = 1024 - LEN_META
     }
 
     private val mCamera = MSCameraAVC(
@@ -38,8 +39,7 @@ class MSStreamCameraInput(
         mCamera.apply {
             configure(
                 width,
-                height,
-                cameraId.characteristics
+                height
             )
 
             start(
@@ -57,7 +57,7 @@ class MSStreamCameraInput(
     }
 
     final override fun onGetFrameData(
-        bufferData: ByteArray,
+        bufferData: ByteBuffer,
         offset: Int,
         len: Int
     ) {
@@ -103,7 +103,7 @@ class MSStreamCameraInput(
         dataLen: Int,
         packetId: Int,
         i: Int,
-        bufferData: ByteArray,
+        bufferData: ByteBuffer,
         packetCount: Int
     ) {
         val chunk = ByteArray(
