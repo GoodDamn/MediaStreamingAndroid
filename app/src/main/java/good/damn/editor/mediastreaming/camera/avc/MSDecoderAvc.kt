@@ -39,10 +39,6 @@ MSListenerOnGetOrderedFrame {
         MSFrame
     >()
 
-    private var mThreadHandler = HandlerThread(
-        "decoderAvc"
-    )
-
     fun writeData(
         data: ByteArray
     ) {
@@ -60,10 +56,6 @@ MSListenerOnGetOrderedFrame {
         )
     }
 
-    override fun stop() {
-        super.stop()
-        mThreadHandler.interrupt()
-    }
 
     override fun start() {
         super.start()
@@ -80,15 +72,8 @@ MSListenerOnGetOrderedFrame {
         decodeSurface: Surface,
         format: MediaFormat
     ) = mCoder.run {
-        mThreadHandler = HandlerThread(
-            "decoderAVC"
-        )
-        mThreadHandler.start()
         setCallback(
-            this@MSDecoderAvc,
-            Handler(
-                mThreadHandler.looper
-            )
+            this@MSDecoderAvc
         )
         configure(
             format,
@@ -133,6 +118,8 @@ MSListenerOnGetOrderedFrame {
                         s += a
                     }
                 }
+
+                Log.d(TAG, "onInputBufferAvailable: $s")
             }
 
             codec.queueInputBuffer(
@@ -142,7 +129,9 @@ MSListenerOnGetOrderedFrame {
                 0,
                 0
             )
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Log.d(TAG, "onInputBufferAvailable: EXCEPTION: ${e.message}")
+        }
     }
 
     override fun onError(
@@ -166,18 +155,17 @@ MSListenerOnGetOrderedFrame {
     ) {
         Log.d(TAG, "onOutputBufferAvailable: INFO: ${info.presentationTimeUs} ${info.offset} ${info.size}")
 
-        if (isRunning) {
-            return
-        }
+        try {
+            codec.getOutputBuffer(
+                index
+            )
 
-        codec.getOutputBuffer(
-            index
-        )
 
-        codec.releaseOutputBuffer(
-            index,
-            true
-        )
+            codec.releaseOutputBuffer(
+                index,
+                true
+            )
+        } catch (_: Exception) {}
     }
 
 }

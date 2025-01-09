@@ -1,10 +1,12 @@
 package good.damn.editor.mediastreaming.camera.avc
 
+import android.graphics.Camera
 import android.hardware.camera2.CameraCharacteristics
 import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
+import android.provider.MediaStore.Audio.Media
 import android.view.Surface
 import good.damn.editor.mediastreaming.camera.MSCamera
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
@@ -35,7 +37,8 @@ class MSCameraAVC(
 
     fun configure(
         width: Int,
-        height: Int
+        height: Int,
+        character: CameraCharacteristics
     ) {
         mEncoder.configure(
             MediaFormat.createVideoFormat(
@@ -57,6 +60,11 @@ class MSCameraAVC(
                 setInteger(
                     MediaFormat.KEY_FRAME_RATE,
                     24
+                )
+
+                setInteger(
+                    MediaFormat.KEY_ROTATION,
+                    character.getRotation() ?: 0
                 )
 
                 setInteger(

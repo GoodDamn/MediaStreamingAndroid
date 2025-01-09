@@ -39,7 +39,8 @@ class MSStreamCameraInput(
         mCamera.apply {
             configure(
                 width,
-                height
+                height,
+                cameraId.characteristics
             )
 
             start(

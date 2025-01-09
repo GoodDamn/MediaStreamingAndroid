@@ -188,6 +188,11 @@ MSListenerOnSelectResolution {
                 mReceiverFrame.start()
                 mServerUDP.start()
             }
+
+            layoutParams = ViewGroup.LayoutParams(
+                MSApp.width,
+                (MSUtilsAvc.VIDEO_WIDTH.toFloat() / MSUtilsAvc.VIDEO_HEIGHT * MSApp.width).toInt()
+            )
             mLayoutContent?.addView(
                 this,
                 0
@@ -197,8 +202,6 @@ MSListenerOnSelectResolution {
     }
 
     override fun onDestroy() {
-        mReceiverFrame.release()
-        mServerUDP.release()
         mCameraStream?.release()
         mCameraStream = null
         super.onDestroy()
