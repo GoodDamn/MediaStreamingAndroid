@@ -9,6 +9,7 @@ import android.util.Log
 import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.ViewGroup
 import android.widget.Button
@@ -42,7 +43,8 @@ class MSFragmentTestH264
 : Fragment(),
 MSListenerOnResultPermission,
 MSListenerOnSelectCamera,
-MSListenerOnSelectResolution {
+MSListenerOnSelectResolution,
+SurfaceHolder.Callback {
 
     companion object {
         private const val TAG = "MSFragmentTestH264"
@@ -73,22 +75,8 @@ MSListenerOnSelectResolution {
 
     override fun onPause() {
         super.onPause()
-
         mReceiverFrame.stop()
         mServerUDP.stop()
-
-        mLayoutContent?.apply {
-            Log.d(TAG, "onPause: $childCount")
-            if (childCount != 1) {
-                removeViewAt(0)
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        initSurfaceView()
     }
 
     override fun onDestroy() {
@@ -135,6 +123,7 @@ MSListenerOnSelectResolution {
         FrameLayout(
             context
         ).let {
+            setBackgroundColor(0)
             mLayoutContent = it
             LinearLayout(
                 context
@@ -174,6 +163,24 @@ MSListenerOnSelectResolution {
 
             addView(
                 it
+            )
+        }
+
+        SurfaceView(
+            context
+        ).run {
+
+            holder.addCallback(
+                this@MSFragmentTestH264
+            )
+
+            layoutParams = ViewGroup.LayoutParams(
+                MSApp.width,
+                (MSUtilsAvc.VIDEO_WIDTH.toFloat() / MSUtilsAvc.VIDEO_HEIGHT * MSApp.width).toInt()
+            )
+            mLayoutContent?.addView(
+                this,
+                0
             )
         }
     }
@@ -263,6 +270,43 @@ MSListenerOnSelectResolution {
         }
     }
 
+    override fun surfaceCreated(
+        holder: SurfaceHolder
+    ) {
+        Log.d(TAG, "surfaceCreated: ")
+    }
+
+    override fun surfaceChanged(
+        holder: SurfaceHolder,
+        format: Int,
+        width: Int,
+        height: Int
+    ) {
+        Log.d(TAG, "surfaceChanged: ")
+        mReceiverFrame.configure(
+            holder.surface,
+            MediaFormat.createVideoFormat(
+                MSCoder.TYPE_AVC,
+                MSUtilsAvc.VIDEO_WIDTH,
+                MSUtilsAvc.VIDEO_HEIGHT
+            ).apply {
+                setInteger(
+                    MediaFormat.KEY_ROTATION,
+                    90
+                )
+            }
+        )
+
+        mReceiverFrame.start()
+        mServerUDP.start()
+    }
+
+    override fun surfaceDestroyed(
+        holder: SurfaceHolder
+    ) {
+        Log.d(TAG, "surfaceDestroyed: ")
+    }
+
     override fun onSelectResolution(
         resolution: Size,
         cameraId: MSCameraModelID
@@ -274,38 +318,6 @@ MSListenerOnSelectResolution {
         )
     } ?: Unit
 
-    private inline fun initSurfaceView() = SurfaceView(
-        context
-    ).run {
-        post {
-            mReceiverFrame.configure(
-                holder.surface,
-                MediaFormat.createVideoFormat(
-                    MSCoder.TYPE_AVC,
-                    MSUtilsAvc.VIDEO_WIDTH,
-                    MSUtilsAvc.VIDEO_HEIGHT
-                ).apply {
-                    setInteger(
-                        MediaFormat.KEY_ROTATION,
-                        90
-                    )
-                }
-            )
-
-            mReceiverFrame.start()
-            mServerUDP.start()
-        }
-
-        layoutParams = ViewGroup.LayoutParams(
-            MSApp.width,
-            (MSUtilsAvc.VIDEO_WIDTH.toFloat() / MSUtilsAvc.VIDEO_HEIGHT * MSApp.width).toInt()
-        )
-        mLayoutContent?.addView(
-            this,
-            0
-        )
-    }
-
     private inline fun initServiceStream() {
         // start service
         context?.apply {
@@ -314,5 +326,4 @@ MSListenerOnSelectResolution {
             )
         }
     }
-
 }
