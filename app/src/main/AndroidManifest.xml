@@ -37,6 +37,8 @@
             </intent-filter>
         </activity>
 
+        <service android:name=".camera.service.MSServiceStream"/>
+
     </application>
 
 </manifest>

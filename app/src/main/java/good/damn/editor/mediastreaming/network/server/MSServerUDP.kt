@@ -39,8 +39,6 @@ open class MSServerUDP(
     }
 
     override fun start() {
-        isRunning = true
-
         if (mSocket.isClosed) {
             mSocket = DatagramSocket(
                 port
@@ -51,6 +49,7 @@ open class MSServerUDP(
             }
         }
 
+        isRunning = true
         scope.launch {
             while (
                 isRunning
@@ -58,12 +57,13 @@ open class MSServerUDP(
         }
     }
 
+
     override fun stop() {
         isRunning = false
-        mSocket.close()
     }
 
     override fun release() {
+        isRunning = false
         mSocket.close()
     }
 

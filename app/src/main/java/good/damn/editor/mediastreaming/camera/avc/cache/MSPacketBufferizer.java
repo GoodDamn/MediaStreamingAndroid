@@ -44,6 +44,12 @@ public final class MSPacketBufferizer {
         }
     }
 
+    public final void clear() {
+        for (int i = 0; i < CACHE_PACKET_SIZE; i++) {
+            mQueues[i].clear();
+        }
+    }
+
     public final void orderPacket() {
         synchronized (mQueues) {
             mCapturedTime = System.currentTimeMillis();
@@ -166,7 +172,7 @@ public final class MSPacketBufferizer {
     }
 
 
-    private void addFrame(
+    private final void addFrame(
         final ConcurrentLinkedDeque<MSFrame> queue,
         final int frameId,
         final short packetCount,

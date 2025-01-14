@@ -65,6 +65,8 @@ MSListenerOnGetOrderedFrame {
             while (isRunning) {
                 mPacketBufferizer.orderPacket()
             }
+
+            mPacketBufferizer.clear()
         }
     }
 
@@ -130,7 +132,7 @@ MSListenerOnGetOrderedFrame {
                 0
             )
         } catch (e: Exception) {
-            Log.d(TAG, "onInputBufferAvailable: EXCEPTION: ${e.message}")
+            Log.d(TAG, "onInputBufferAvailable: EXCEPTION: ${e.localizedMessage}")
         }
     }
 
@@ -159,7 +161,6 @@ MSListenerOnGetOrderedFrame {
             codec.getOutputBuffer(
                 index
             )
-
 
             codec.releaseOutputBuffer(
                 index,

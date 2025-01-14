@@ -1,6 +1,8 @@
 package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.media.MediaFormat
 import android.os.Bundle
 import android.util.Log
@@ -17,18 +19,17 @@ import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.camera.MSManagerCamera
+import good.damn.editor.mediastreaming.camera.service.MSServiceStream
 import good.damn.editor.mediastreaming.camera.MSStreamCameraInput
-import good.damn.editor.mediastreaming.camera.MSStreamSubscriberSurface
-import good.damn.editor.mediastreaming.camera.MSStreamSubscriberUDP
 import good.damn.editor.mediastreaming.camera.avc.MSCoder
-import good.damn.editor.mediastreaming.camera.avc.MSDecoderAvc
 import good.damn.editor.mediastreaming.camera.avc.MSUtilsAvc
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
+import good.damn.editor.mediastreaming.camera.service.MSCameraServiceConnection
+import good.damn.editor.mediastreaming.camera.service.MSServiceStreamWrapper
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectResolution
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectResolution
-import good.damn.editor.mediastreaming.extensions.camera2.getRotation
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
 import good.damn.editor.mediastreaming.network.server.MSReceiverCameraFrame
 import good.damn.editor.mediastreaming.network.server.MSServerUDP
@@ -43,20 +44,15 @@ MSListenerOnResultPermission,
 MSListenerOnSelectCamera,
 MSListenerOnSelectResolution {
 
-    private var managerCamera: MSManagerCamera? = null
-    private var mCameraStream: MSStreamCameraInput? = null
-
+    companion object {
+        private const val TAG = "MSFragmentTestH264"
+    }
+    
     private var mLayoutContent: FrameLayout? = null
     private var mEditTextHost: EditText? = null
 
-    private val mSubscriberUDP = MSStreamSubscriberUDP(
-        5556,
-        CoroutineScope(
-            Dispatchers.IO
-        )
-    )
-
     private val mReceiverFrame = MSReceiverCameraFrame()
+    private val mServiceStreamWrapper = MSServiceStreamWrapper()
 
     private val mServerUDP = MSServerUDP(
         5556,
@@ -75,25 +71,37 @@ MSListenerOnSelectResolution {
         Size(1920, 1080)
     )
 
-    override fun onCreate(
-        savedInstanceState: Bundle?
-    ) {
-        super.onCreate(
-            savedInstanceState
-        )
+    override fun onPause() {
+        super.onPause()
 
-        val context = context
-            ?: return
-
-        managerCamera = MSManagerCamera(
-            context
-        )
-    }
-
-    override fun onStop() {
-        super.onStop()
         mReceiverFrame.stop()
         mServerUDP.stop()
+
+        mLayoutContent?.apply {
+            Log.d(TAG, "onPause: $childCount")
+            if (childCount != 1) {
+                removeViewAt(0)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        initSurfaceView()
+    }
+
+    override fun onDestroy() {
+        mReceiverFrame.release()
+        mServerUDP.release()
+
+        Log.d(TAG, "onDestroy: ")
+        context?.apply {
+            mServiceStreamWrapper.destroy(
+                this
+            )
+        }
+        super.onDestroy()
     }
 
     override fun onCreateView(
@@ -135,7 +143,9 @@ MSListenerOnSelectResolution {
                 orientation = LinearLayout
                     .VERTICAL
 
-                managerCamera?.getCameraIds()?.forEach {
+                MSManagerCamera(
+                    context
+                ).getCameraIds().forEach {
                     addView(
                         Button(
                             context
@@ -166,46 +176,8 @@ MSListenerOnSelectResolution {
                 it
             )
         }
-
-        SurfaceView(
-            context
-        ).apply {
-            post {
-                mReceiverFrame.configure(
-                    holder.surface,
-                    MediaFormat.createVideoFormat(
-                        MSCoder.TYPE_AVC,
-                        MSUtilsAvc.VIDEO_WIDTH,
-                        MSUtilsAvc.VIDEO_HEIGHT
-                    ).apply {
-                        setInteger(
-                            MediaFormat.KEY_ROTATION,
-                            90
-                        )
-                    }
-                )
-
-                mReceiverFrame.start()
-                mServerUDP.start()
-            }
-
-            layoutParams = ViewGroup.LayoutParams(
-                MSApp.width,
-                (MSUtilsAvc.VIDEO_WIDTH.toFloat() / MSUtilsAvc.VIDEO_HEIGHT * MSApp.width).toInt()
-            )
-            mLayoutContent?.addView(
-                this,
-                0
-            )
-        }
-
     }
 
-    override fun onDestroy() {
-        mCameraStream?.release()
-        mCameraStream = null
-        super.onDestroy()
-    }
 
     override fun onResultPermission(
         permission: String,
@@ -217,22 +189,10 @@ MSListenerOnSelectResolution {
 
         when (permission) {
             Manifest.permission.CAMERA -> {
-                initCamera()
+                initServiceStream()
             }
         }
 
-    }
-
-    private inline fun initCamera() {
-        managerCamera?.apply {
-            mCameraStream = MSStreamCameraInput(
-                this
-            ).apply {
-                subscribers = arrayListOf(
-                    mSubscriberUDP
-                )
-            }
-        }
     }
 
     override fun onSelectCamera(
@@ -241,92 +201,118 @@ MSListenerOnSelectResolution {
         val activity = activity as? MSActivityMain
             ?: return
 
-        if (activity.hasPermissionCamera()) {
-            if (mCameraStream == null) {
-                initCamera()
-            }
-
-            mCameraStream?.apply {
-                if (isRunning) {
-                    stop()
-                }
-            }
-
-            LinearLayout(
-                context
-            ).apply {
-
-                orientation = LinearLayout
-                    .VERTICAL
-
-                setBackgroundColor(0)
-
-                mResolutions.forEach {
-                    Button(
-                        context
-                    ).apply {
-
-                        isAllCaps = false
-                        text = "${it.width}x${it.height}"
-
-                        setOnClickListener(
-                            MSClickOnSelectResolution(
-                                it,
-                                cameraId
-                            ).apply {
-                                onSelectResolution = this@MSFragmentTestH264
-                            }
-                        )
-
-                        addView(
-                            this,
-                            -2,
-                            -2
-                        )
-                    }
-                }
-
-                layoutParams = FrameLayout.LayoutParams(
-                    -2,
-                    -2
-                ).apply {
-                    gravity = Gravity.END or Gravity.TOP
-                }
-
-                mLayoutContent?.addView(
-                    this
-                )
-            }
-
+        if (!activity.hasPermissionCamera()) {
+            activity.launcherPermission.launch(
+                Manifest.permission.CAMERA
+            )
             return
         }
 
-        activity.launcherPermission.launch(
-            Manifest.permission.CAMERA
+        if (!mServiceStreamWrapper.isStarted) {
+            initServiceStream()
+        }
+
+        mServiceStreamWrapper.unbind(
+            activity
         )
+
+        LinearLayout(
+            context
+        ).apply {
+
+            orientation = LinearLayout
+                .VERTICAL
+
+            setBackgroundColor(0)
+
+            mResolutions.forEach {
+                Button(
+                    context
+                ).apply {
+
+                    isAllCaps = false
+                    text = "${it.width}x${it.height}"
+
+                    setOnClickListener(
+                        MSClickOnSelectResolution(
+                            it,
+                            cameraId
+                        ).apply {
+                            onSelectResolution = this@MSFragmentTestH264
+                        }
+                    )
+
+                    addView(
+                        this,
+                        -2,
+                        -2
+                    )
+                }
+            }
+
+            layoutParams = FrameLayout.LayoutParams(
+                -2,
+                -2
+            ).apply {
+                gravity = Gravity.END or Gravity.TOP
+            }
+
+            mLayoutContent?.addView(
+                this
+            )
+        }
     }
 
     override fun onSelectResolution(
         resolution: Size,
         cameraId: MSCameraModelID
-    ) = mCameraStream?.run {
-        if (isRunning) {
-            stop()
-        }
-
-        mEditTextHost?.apply {
-            mSubscriberUDP.host = InetAddress.getByName(
-                text.toString()
-            )
-            mSubscriberUDP.start()
-        }
-
-        start(
+    ) = mEditTextHost?.run {
+        mServiceStreamWrapper.bind(
             cameraId,
-            MSUtilsAvc.VIDEO_WIDTH,
-            MSUtilsAvc.VIDEO_HEIGHT
+            text.toString(),
+            context
         )
-
-        Unit
     } ?: Unit
+
+    private inline fun initSurfaceView() = SurfaceView(
+        context
+    ).run {
+        post {
+            mReceiverFrame.configure(
+                holder.surface,
+                MediaFormat.createVideoFormat(
+                    MSCoder.TYPE_AVC,
+                    MSUtilsAvc.VIDEO_WIDTH,
+                    MSUtilsAvc.VIDEO_HEIGHT
+                ).apply {
+                    setInteger(
+                        MediaFormat.KEY_ROTATION,
+                        90
+                    )
+                }
+            )
+
+            mReceiverFrame.start()
+            mServerUDP.start()
+        }
+
+        layoutParams = ViewGroup.LayoutParams(
+            MSApp.width,
+            (MSUtilsAvc.VIDEO_WIDTH.toFloat() / MSUtilsAvc.VIDEO_HEIGHT * MSApp.width).toInt()
+        )
+        mLayoutContent?.addView(
+            this,
+            0
+        )
+    }
+
+    private inline fun initServiceStream() {
+        // start service
+        context?.apply {
+            mServiceStreamWrapper.start(
+                this
+            )
+        }
+    }
+
 }

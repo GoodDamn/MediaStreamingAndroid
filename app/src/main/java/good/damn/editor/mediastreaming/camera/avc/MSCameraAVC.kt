@@ -80,10 +80,6 @@ class MSCameraAVC(
 
         mCamera.stop()
         mEncoder.stop()
-
-        mCamera.surfaces?.forEach {
-            it.release()
-        }
     }
 
     fun start(
