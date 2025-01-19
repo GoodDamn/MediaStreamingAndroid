@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public final class MSPacketBufferizer {
@@ -98,7 +99,6 @@ public final class MSPacketBufferizer {
             }
 
             queue.removeFirst();
-
         }
     }
 
@@ -131,7 +131,11 @@ public final class MSPacketBufferizer {
             return;
         }
 
-        if (frameId < queue.getLast().getId()) {
+        try {
+            if (frameId < queue.getLast().getId()) {
+                return;
+            }
+        } catch (NoSuchElementException e) {
             return;
         }
 
@@ -192,8 +196,8 @@ public final class MSPacketBufferizer {
         frame.getPackets()[
           packetId
         ] = new MSPacket(
-          packetId,
-          data
+            packetId,
+            data
         );
 
         queue.add(

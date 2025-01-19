@@ -2,13 +2,18 @@ package good.damn.editor.mediastreaming.camera.service
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import good.damn.editor.mediastreaming.camera.MSCamera
 import good.damn.editor.mediastreaming.camera.avc.MSUtilsAvc
 import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
 
 class MSServiceStreamWrapper {
 
-    private val mServiceConnectionStream = MSCameraServiceConnection()
+    private var mServiceConnectionStream = MSCameraServiceConnection()
+
+    companion object {
+        private const val TAG = "MSServiceStreamWrapper"
+    }
 
     var isStarted = false
         private set
@@ -46,6 +51,7 @@ class MSServiceStreamWrapper {
         if (isBound) {
             return
         }
+        Log.d(TAG, "bind: $mServiceConnectionStream")
         isBound = true
         context.bindService(
             fillIntent(
@@ -69,6 +75,8 @@ class MSServiceStreamWrapper {
         context.unbindService(
             mServiceConnectionStream
         )
+
+        mServiceConnectionStream = MSCameraServiceConnection()
     }
 }
 
