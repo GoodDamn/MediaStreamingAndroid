@@ -72,8 +72,14 @@ public final class MSPacketBufferizer {
                 return;
             }
 
+
             @NonNull
-            MSFrame frame = queue.getFirst();
+            MSFrame frame;
+            try {
+                frame = queue.getFirst();
+            } catch (NoSuchElementException e) {
+                return;
+            }
 
             int currentPacketSize = frame.getPacketsAdded();
             while (
