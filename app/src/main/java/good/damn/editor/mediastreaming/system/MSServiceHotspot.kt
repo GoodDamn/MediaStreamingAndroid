@@ -2,8 +2,8 @@ package good.damn.editor.mediastreaming.system
 
 import android.content.Context
 import android.net.wifi.WifiManager
-import good.damn.editor.mediastreaming.extensions.setIntegerOnPosition
 import good.damn.editor.mediastreaming.system.interfaces.MSListenerOnGetHotspotHost
+import good.damn.media.streaming.extensions.setIntegerOnPosition
 import java.nio.ByteOrder
 
 @Deprecated("dhcpInfo of WifiManager class is deprecated")

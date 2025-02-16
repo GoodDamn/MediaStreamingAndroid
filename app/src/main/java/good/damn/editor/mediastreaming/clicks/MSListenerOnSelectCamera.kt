@@ -1,6 +1,7 @@
 package good.damn.editor.mediastreaming.clicks
 
-import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.camera.models.MSCameraModelID
+
 
 interface MSListenerOnSelectCamera {
     fun onSelectCamera(

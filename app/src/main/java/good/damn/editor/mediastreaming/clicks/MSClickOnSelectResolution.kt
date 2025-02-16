@@ -2,7 +2,7 @@ package good.damn.editor.mediastreaming.clicks
 
 import android.util.Size
 import android.view.View
-import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.camera.models.MSCameraModelID
 
 class MSClickOnSelectResolution(
     private val resolution: Size,

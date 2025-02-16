@@ -1,7 +1,7 @@
 package good.damn.editor.mediastreaming.clicks
 
 import android.util.Size
-import good.damn.editor.mediastreaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.camera.models.MSCameraModelID
 
 interface MSListenerOnSelectResolution {
     fun onSelectResolution(
