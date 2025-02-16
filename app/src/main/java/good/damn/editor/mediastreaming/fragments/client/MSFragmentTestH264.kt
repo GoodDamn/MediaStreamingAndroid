@@ -56,6 +56,8 @@ SurfaceHolder.Callback {
     private val mReceiverFrame = MSReceiverCameraFrame()
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
 
+    private var mIsPermissionPause = false
+
     private val mServerUDP = MSServerUDP(
         5556,
         MSStreamCameraInput.PACKET_MAX_SIZE + MSUtilsAvc.LEN_META,
@@ -66,15 +68,20 @@ SurfaceHolder.Callback {
     )
 
     private val mResolutions = arrayOf(
-        Size(176, 144),
-        Size(320,240),
-        Size(640, 480),
-        Size(1280, 720),
-        Size(1920, 1080)
+        Size(640, 480)
     )
+
+    override fun onResume() {
+        super.onResume()
+        //mReceiverFrame.start()
+        //mServerUDP.start()
+    }
 
     override fun onPause() {
         super.onPause()
+        if (mIsPermissionPause) {
+            return
+        }
         mReceiverFrame.stop()
         mServerUDP.stop()
     }
@@ -208,7 +215,9 @@ SurfaceHolder.Callback {
         val activity = activity as? MSActivityMain
             ?: return
 
+        mIsPermissionPause = false
         if (!activity.hasPermissionCamera()) {
+            mIsPermissionPause = true
             activity.launcherPermission.launch(
                 Manifest.permission.CAMERA
             )

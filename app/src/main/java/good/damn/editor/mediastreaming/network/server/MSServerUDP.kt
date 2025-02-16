@@ -51,9 +51,11 @@ open class MSServerUDP(
 
         isRunning = true
         scope.launch {
+            Log.d(TAG, "start: isRunning: START:")
             while (
                 isRunning
             ) { listen() }
+            Log.d(TAG, "start: isRunning: END")
         }
     }
 
@@ -67,7 +69,8 @@ open class MSServerUDP(
         mSocket.close()
     }
 
-    private suspend inline fun listen() {
+    private inline fun listen() {
+        Log.d(TAG, "listen: BUFFER: $mBuffer")
         try {
             mSocket.receive(
                 DatagramPacket(

@@ -39,6 +39,8 @@ MSListenerOnGetOrderedFrame {
         MSFrame
     >()
 
+    var isConfigured = false
+
     fun writeData(
         data: ByteArray
     ) {
@@ -57,6 +59,16 @@ MSListenerOnGetOrderedFrame {
     }
 
 
+    override fun stop() {
+        isConfigured = false
+        super.stop()
+    }
+
+    override fun release() {
+        isConfigured = false
+        super.release()
+    }
+
     override fun start() {
         super.start()
         CoroutineScope(
@@ -74,6 +86,7 @@ MSListenerOnGetOrderedFrame {
         decodeSurface: Surface,
         format: MediaFormat
     ) = mCoder.run {
+        isConfigured = true
         setCallback(
             this@MSDecoderAvc
         )
