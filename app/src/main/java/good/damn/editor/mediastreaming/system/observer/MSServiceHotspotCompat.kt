@@ -1,4 +1,4 @@
-package good.damn.editor.mediastreaming.system
+package good.damn.editor.mediastreaming.system.observer
 
 import android.content.Context
 import android.os.Build
@@ -16,8 +16,8 @@ class MSServiceHotspotCompat(
 
     private val mService = if (
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-    ) MSServiceHotspotApi30(context)
-    else MSServiceHotspot(context)
+    ) MSObserverHotspotApi30(context)
+    else MSObserverHotspot(context)
 
     fun start() {
         mService.start()

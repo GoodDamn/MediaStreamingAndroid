@@ -70,7 +70,6 @@ open class MSServerUDP(
     }
 
     private inline fun listen() {
-        Log.d(TAG, "listen: BUFFER: $mBuffer")
         try {
             mSocket.receive(
                 DatagramPacket(

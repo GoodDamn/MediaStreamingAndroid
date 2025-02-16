@@ -38,7 +38,11 @@ class MSDecoderAvc
         MSFrame
     >()
 
+    private var mSavedSurface: Surface? = null
+    private var mSavedFormat: MediaFormat? = null
+
     var isConfigured = false
+        private set
 
     fun writeData(
         data: ByteArray
@@ -70,7 +74,13 @@ class MSDecoderAvc
 
     override fun start() {
         if (!isConfigured) {
-            return
+            mSavedFormat ?: return
+            mSavedSurface ?: return
+
+            configure(
+                mSavedSurface!!,
+                mSavedFormat!!
+            )
         }
         super.start()
         CoroutineScope(
@@ -88,6 +98,9 @@ class MSDecoderAvc
         decodeSurface: Surface,
         format: MediaFormat
     ) = mCoder.run {
+        mSavedSurface = decodeSurface
+        mSavedFormat = format
+
         isConfigured = true
         setCallback(
             this@MSDecoderAvc

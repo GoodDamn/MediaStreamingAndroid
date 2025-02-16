@@ -1,4 +1,4 @@
-package good.damn.editor.mediastreaming.system
+package good.damn.editor.mediastreaming.system.observer
 
 import android.content.Context
 import android.net.wifi.WifiManager
@@ -7,11 +7,11 @@ import good.damn.media.streaming.extensions.setIntegerOnPosition
 import java.nio.ByteOrder
 
 @Deprecated("dhcpInfo of WifiManager class is deprecated")
-class MSServiceHotspot(
+class MSObserverHotspot(
     context: Context
-): MSServiceBase<
+): MSObserverBase<
     MSListenerOnGetHotspotHost
->(context) {
+    >(context) {
 
     companion object {
         private const val TAG = "HotspotService"

@@ -1,4 +1,4 @@
-package good.damn.editor.mediastreaming.system
+package good.damn.editor.mediastreaming.system.observer
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -10,11 +10,11 @@ import androidx.annotation.RequiresApi
 import good.damn.editor.mediastreaming.system.interfaces.MSListenerOnGetHotspotHost
 
 @RequiresApi(30)
-class MSServiceHotspotApi30(
+class MSObserverHotspotApi30(
     context: Context
-): MSServiceBase<
+): MSObserverBase<
     MSListenerOnGetHotspotHost
->(context) {
+    >(context) {
 
     private val mConnectivityManager = context.getSystemService(
         Context.CONNECTIVITY_SERVICE

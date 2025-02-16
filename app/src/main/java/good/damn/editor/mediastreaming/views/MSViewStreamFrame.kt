@@ -22,7 +22,7 @@ class MSViewStreamFrame(
     companion object {
         private const val TAG = "MSViewStreamFrame"
     }
-    
+
     init {
         holder.addCallback(
             this
@@ -42,6 +42,7 @@ class MSViewStreamFrame(
         height: Int
     ) {
         Log.d(TAG, "surfaceChanged: ")
+
         receiverFrame.configure(
             holder.surface,
             videoFormat

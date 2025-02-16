@@ -197,8 +197,6 @@ public final class MSPacketBufferizer {
           (short) 1
         );
 
-        Log.d(TAG, "addFrame: " + packetCount + " FRAME_ID:" + frameId);
-
         frame.getPackets()[
           packetId
         ] = new MSPacket(

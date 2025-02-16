@@ -1,4 +1,4 @@
-package good.damn.media.streaming.camera.service
+package good.damn.editor.mediastreaming.system.service
 
 import android.content.Context
 import android.content.Intent
@@ -52,7 +52,7 @@ class MSServiceStreamWrapper {
         if (isBound) {
             return
         }
-        Log.d(TAG, "bind: $mServiceConnectionStream")
+        Log.d(TAG, "bind: $videoWidth $videoHeight $host")
         isBound = true
         context.bindService(
             fillIntent(
@@ -83,14 +83,14 @@ class MSServiceStreamWrapper {
     }
 }
 
-private inline fun MSServiceStreamWrapper.intentStream(
+private inline fun intentStream(
     context: Context
 ) = Intent(
     context,
     MSServiceStream::class.java
 )
 
-private inline fun MSServiceStreamWrapper.fillIntent(
+private inline fun fillIntent(
     cameraId: MSCameraModelID,
     host: String,
     intent: Intent,

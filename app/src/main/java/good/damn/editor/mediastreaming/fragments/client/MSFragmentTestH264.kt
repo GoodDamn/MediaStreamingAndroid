@@ -31,7 +31,7 @@ import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.models.MSCameraModelID
-import good.damn.media.streaming.camera.service.MSServiceStreamWrapper
+import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.media.streaming.network.server.MSReceiverCameraFrame
 import good.damn.media.streaming.network.server.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
@@ -41,8 +41,7 @@ import java.net.InetAddress
 class MSFragmentTestH264
 : Fragment(),
 MSListenerOnResultPermission,
-MSListenerOnSelectCamera,
-MSListenerOnSelectResolution {
+MSListenerOnSelectCamera {
 
     companion object {
         private const val TAG = "MSFragmentTestH264"
@@ -51,8 +50,7 @@ MSListenerOnSelectResolution {
             480
         )
     }
-    
-    private var mLayoutContent: FrameLayout? = null
+
     private var mEditTextHost: EditText? = null
 
     private val mReceiverFrame = MSReceiverCameraFrame()
@@ -124,7 +122,32 @@ MSListenerOnSelectResolution {
             context
         ).let {
             setBackgroundColor(0)
-            mLayoutContent = it
+
+            MSViewStreamFrame(
+                context,
+                mReceiverFrame,
+                mServerUDP,
+                MediaFormat.createVideoFormat(
+                    MSCoder.TYPE_AVC,
+                    RESOLUTION.width,
+                    RESOLUTION.height
+                ).apply {
+                    setInteger(
+                        MediaFormat.KEY_ROTATION,
+                        90
+                    )
+                }
+            ).apply {
+
+                layoutParams = ViewGroup.LayoutParams(
+                    MSApp.width,
+                    (RESOLUTION.width.toFloat() / RESOLUTION.height * MSApp.width).toInt()
+                )
+                it.addView(
+                    this
+                )
+            }
+
             LinearLayout(
                 context
             ).apply {
@@ -163,33 +186,6 @@ MSListenerOnSelectResolution {
 
             addView(
                 it
-            )
-        }
-
-        MSViewStreamFrame(
-            context,
-            mReceiverFrame,
-            mServerUDP,
-            MediaFormat.createVideoFormat(
-                MSCoder.TYPE_AVC,
-                RESOLUTION.width,
-                RESOLUTION.height
-            ).apply {
-                setInteger(
-                    MediaFormat.KEY_ROTATION,
-                    90
-                )
-            }
-        ).apply {
-
-            layoutParams = ViewGroup.LayoutParams(
-                MSApp.width,
-                (RESOLUTION.width.toFloat() / RESOLUTION.height * MSApp.width).toInt()
-            )
-
-            mLayoutContent?.addView(
-                this,
-                0
             )
         }
     }
@@ -232,63 +228,16 @@ MSListenerOnSelectResolution {
             activity
         )
 
-        LinearLayout(
-            context
-        ).apply {
-
-            orientation = LinearLayout
-                .VERTICAL
-
-            setBackgroundColor(0)
-
-            Button(
+        mEditTextHost?.apply {
+            mServiceStreamWrapper.bind(
+                RESOLUTION.width,
+                RESOLUTION.height,
+                cameraId,
+                text.toString(),
                 context
-            ).apply {
-
-                isAllCaps = false
-                text = RESOLUTION.toString()
-
-                setOnClickListener(
-                    MSClickOnSelectResolution(
-                        RESOLUTION,
-                        cameraId
-                    ).apply {
-                        onSelectResolution = this@MSFragmentTestH264
-                    }
-                )
-
-                addView(
-                    this,
-                    -2,
-                    -2
-                )
-            }
-
-            layoutParams = FrameLayout.LayoutParams(
-                -2,
-                -2
-            ).apply {
-                gravity = Gravity.END or Gravity.TOP
-            }
-
-            mLayoutContent?.addView(
-                this
             )
         }
     }
-
-    override fun onSelectResolution(
-        resolution: Size,
-        cameraId: MSCameraModelID
-    ) = mEditTextHost?.run {
-        mServiceStreamWrapper.bind(
-            resolution.width,
-            resolution.height,
-            cameraId,
-            text.toString(),
-            context
-        )
-    } ?: Unit
 
     private inline fun initServiceStream() {
         // start service

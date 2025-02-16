@@ -17,7 +17,7 @@ class MSEncoderAvc
 
     companion object {
         private const val TAG = "MSEncoderAvc"
-        private const val TIMEOUT_USAGE_MS = 10000L
+        private const val TIMEOUT_USAGE_MS = 1_000_000L
     }
 
     // may throws Exception with no h264 codec
@@ -46,7 +46,6 @@ class MSEncoderAvc
 
     override fun start() {
         super.start()
-
         CoroutineScope(
             Dispatchers.IO
         ).launch {
@@ -90,6 +89,8 @@ class MSEncoderAvc
 
         mRemaining = buffer.remaining()
 
+        Log.d(TAG, "processEncodingBuffers: $mRemaining")
+        
         onGetFrameData?.onGetFrameData(
             buffer,
             0,

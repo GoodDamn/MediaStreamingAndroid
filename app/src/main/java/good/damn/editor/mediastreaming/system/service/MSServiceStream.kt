@@ -1,4 +1,4 @@
-package good.damn.media.streaming.camera.service
+package good.damn.editor.mediastreaming.system.service
 
 import android.app.Service
 import android.content.Intent
