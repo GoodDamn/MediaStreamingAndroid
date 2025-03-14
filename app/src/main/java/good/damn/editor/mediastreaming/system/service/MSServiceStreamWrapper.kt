@@ -2,15 +2,10 @@ package good.damn.editor.mediastreaming.system.service
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
-import androidx.core.app.ServiceCompat
-import good.damn.editor.mediastreaming.extensions.supportsForegroundService
-import good.damn.media.streaming.camera.avc.MSUtilsAvc
-import good.damn.media.streaming.camera.models.MSCameraModelID
 
 class MSServiceStreamWrapper {
 
-    private var mServiceConnectionStream = MSCameraServiceConnection()
+    val serviceConnectionStream = MSCameraServiceConnection()
 
     companion object {
         private const val TAG = "MSServiceStreamWrapper"
@@ -31,9 +26,17 @@ class MSServiceStreamWrapper {
 
         isStarted = true
 
-        context?.startService(
-            intentStream(context)
-        )
+        context?.apply {
+            startService(
+                intentStream(this)
+            )
+            isBound = true
+            bindService(
+                intentStream(this),
+                serviceConnectionStream,
+                Context.BIND_AUTO_CREATE
+            )
+        }
     }
 
     fun destroy(
@@ -45,45 +48,6 @@ class MSServiceStreamWrapper {
         )
     }
 
-    fun bind(
-        videoWidth: Int,
-        videoHeight: Int,
-        cameraId: MSCameraModelID,
-        host: String,
-        context: Context
-    ) {
-        if (isBound) {
-            return
-        }
-        Log.d(TAG, "bind: $videoWidth $videoHeight $host")
-        isBound = true
-        context.bindService(
-            fillIntent(
-                cameraId,
-                host,
-                intentStream(context),
-                videoWidth,
-                videoHeight
-            ),
-            mServiceConnectionStream,
-            Context.BIND_AUTO_CREATE
-        )
-
-    }
-
-    fun unbind(
-        context: Context
-    ) {
-        if (!isBound) {
-            return
-        }
-        isBound = false
-        context.unbindService(
-            mServiceConnectionStream
-        )
-
-        mServiceConnectionStream = MSCameraServiceConnection()
-    }
 }
 
 private inline fun intentStream(
@@ -92,36 +56,3 @@ private inline fun intentStream(
     context,
     MSServiceStream::class.java
 )
-
-private inline fun fillIntent(
-    cameraId: MSCameraModelID,
-    host: String,
-    intent: Intent,
-    videoWidth: Int,
-    videoHeight: Int
-) = intent.apply {
-    putExtra(
-        MSServiceStream.EXTRA_CAMERA_ID_LOGICAL,
-        cameraId.logical
-    )
-
-    putExtra(
-        MSServiceStream.EXTRA_CAMERA_ID_PHYSICAL,
-        cameraId.physical
-    )
-
-    putExtra(
-        MSServiceStream.EXTRA_VIDEO_WIDTH,
-        videoWidth
-    )
-
-    putExtra(
-        MSServiceStream.EXTRA_VIDEO_HEIGHT,
-        videoHeight
-    )
-
-    putExtra(
-        MSServiceStream.EXTRA_HOST,
-        host
-    )
-}

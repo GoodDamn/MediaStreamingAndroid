@@ -27,6 +27,7 @@ class MSServiceStream
     private lateinit var managerCamera: MSManagerCamera
     private lateinit var mSubscriber: MSStreamSubscriberUDP
     private lateinit var mStreamCamera: MSStreamCameraInput
+    private lateinit var mBinder: MSServiceStreamBinder
 
     override fun onStartCommand(
         intent: Intent?,
@@ -54,65 +55,26 @@ class MSServiceStream
             )
         }
 
+        mBinder = MSServiceStreamBinder(
+            managerCamera,
+            mSubscriber,
+            mStreamCamera
+        )
+
         return START_STICKY
     }
 
     override fun onBind(
         intent: Intent?
-    ): IBinder? {
+    ): IBinder {
         Log.d(TAG, "onBind: $intent")
-
-        intent ?: return null
-
-        val logical = intent.getStringExtra(
-            EXTRA_CAMERA_ID_LOGICAL
-        ) ?: return null
-
-        val physical = intent.getStringExtra(
-            EXTRA_CAMERA_ID_PHYSICAL
-        )
-
-        val width = intent.getIntExtra(
-            EXTRA_VIDEO_WIDTH, 0
-        )
-
-        val height = intent.getIntExtra(
-            EXTRA_VIDEO_HEIGHT, 0
-        )
-
-        if (width == 0 || height == 0) {
-            return null
-        }
-
-        mSubscriber.host = InetAddress.getByName(
-            intent.getStringExtra(
-                EXTRA_HOST
-            )
-        )
-
-        mSubscriber.start()
-
-        mStreamCamera.start(
-            MSCameraModelID(
-                logical,
-                physical,
-                characteristics = managerCamera.getCharacteristics(
-                    physical ?: logical
-                )
-            ),
-            width,
-            height
-        )
-
-        return null
+        return mBinder
     }
 
     override fun onUnbind(
         intent: Intent?
     ): Boolean {
         Log.d(TAG, "onUnbind: ")
-        mSubscriber.stop()
-        mStreamCamera.stop()
         return true
     }
 

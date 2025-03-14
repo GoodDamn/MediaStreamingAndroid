@@ -90,6 +90,18 @@ MSListenerOnChangeSurface {
         }
     }
 
+    override fun onCreate(
+        savedInstanceState: Bundle?
+    ) {
+        super.onCreate(
+            savedInstanceState
+        )
+
+        mServiceStreamWrapper.start(
+            requireActivity().applicationContext
+        )
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -241,21 +253,21 @@ MSListenerOnChangeSurface {
             return
         }
 
-        mServiceStreamWrapper.apply {
-            if (!isStarted) {
-                start(context)
+        val ip = mEditTextHost?.text?.toString()
+            ?: return
+
+        mServiceStreamWrapper.serviceConnectionStream.binder?.apply {
+            if (isStreaming) {
+                stopStreaming()
             }
 
-            unbind(activity)
-            mEditTextHost?.apply {
-                bind(
-                    RESOLUTION.width,
-                    RESOLUTION.height,
-                    cameraId,
-                    text.toString(),
-                    context
-                )
-            }
+            startStreaming(
+                cameraId.logical,
+                cameraId.physical,
+                ip,
+                RESOLUTION.width,
+                RESOLUTION.height
+            )
         }
 
     }

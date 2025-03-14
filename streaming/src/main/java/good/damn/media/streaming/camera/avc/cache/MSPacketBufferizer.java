@@ -166,6 +166,10 @@ public final class MSPacketBufferizer {
             return;
         }
 
+        if (packetId < 0 || packetId >= foundFrame.getPackets().length) {
+            return;
+        }
+
         if (foundFrame.getPackets()[packetId] != null) {
             return;
         }
