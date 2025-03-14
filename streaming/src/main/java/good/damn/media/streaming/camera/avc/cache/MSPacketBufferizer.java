@@ -13,8 +13,8 @@ public final class MSPacketBufferizer {
 
     private static final String TAG = "MSPacketBufferizer";
 
-    private static final int CACHE_PACKET_SIZE = 4096;
-    private static final int TIMEOUT_PACKET_MS = 20;
+    private static final int CACHE_PACKET_SIZE = 1024;
+    private static final int TIMEOUT_PACKET_MS = 33;
 
     // Think about dynamic timeout
     // which depends from captured frame's packet count
@@ -53,9 +53,6 @@ public final class MSPacketBufferizer {
 
     public final void orderPacket() {
         synchronized (mQueues) {
-            mCapturedTime = System.currentTimeMillis();
-            mCurrentTime = mCapturedTime;
-
             mCurrentQueueIndex++;
             if (mCurrentQueueIndex >= mQueues.length) {
                 mCurrentQueueIndex = 0;
@@ -72,7 +69,6 @@ public final class MSPacketBufferizer {
                 return;
             }
 
-
             @NonNull
             MSFrame frame;
             try {
@@ -80,6 +76,9 @@ public final class MSPacketBufferizer {
             } catch (NoSuchElementException e) {
                 return;
             }
+
+            mCapturedTime = System.currentTimeMillis();
+            mCurrentTime = mCapturedTime;
 
             int currentPacketSize = frame.getPacketsAdded();
             while (
@@ -97,13 +96,14 @@ public final class MSPacketBufferizer {
                 if (currentPacketSize >= frame.getPackets().length) {
                     if (onGetOrderedFrame != null) {
                         onGetOrderedFrame.onGetOrderedFrame(
-                            frame
+                          frame
                         );
                     }
                     break;
                 }
             }
 
+            Log.d(TAG, "orderPacket: LOST_PACKETS: " + frame.getId() + ": " + (frame.getPackets().length-currentPacketSize));
             queue.removeFirst();
         }
     }
@@ -119,6 +119,7 @@ public final class MSPacketBufferizer {
         }
 
         final int queueId = frameId % CACHE_PACKET_SIZE;
+
 
         final ConcurrentLinkedDeque<
             MSFrame

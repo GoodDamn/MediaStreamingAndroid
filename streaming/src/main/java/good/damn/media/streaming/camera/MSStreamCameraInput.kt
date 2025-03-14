@@ -137,7 +137,7 @@ class MSStreamCameraInput(
             chunk[j+LEN_META] = bufferData[i+j]
         }
 
-        Thread.sleep(2)
+        Thread.sleep(4)
         subscribers?.forEach {
             it.onGetPacket(chunk)
         }

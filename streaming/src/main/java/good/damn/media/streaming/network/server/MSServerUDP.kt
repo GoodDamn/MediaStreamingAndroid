@@ -30,6 +30,11 @@ open class MSServerUDP(
         bufferSize
     )
 
+    private val mPacket = DatagramPacket(
+        mBuffer,
+        mBuffer.size
+    )
+
     private var mSocket = DatagramSocket(
         port
     ).apply {
@@ -44,8 +49,6 @@ open class MSServerUDP(
                 port
             ).apply {
                 reuseAddress = true
-                receiveBufferSize = 1
-                sendBufferSize = 1
             }
         }
 
@@ -59,7 +62,6 @@ open class MSServerUDP(
         }
     }
 
-
     override fun stop() {
         isRunning = false
     }
@@ -69,20 +71,24 @@ open class MSServerUDP(
         mSocket.close()
     }
 
-    private inline fun listen() {
+    private suspend inline fun listen() {
         try {
+            mPacket.setData(
+                mBuffer,
+                0,
+                mBuffer.size
+            )
             mSocket.receive(
-                DatagramPacket(
-                    mBuffer,
-                    mBuffer.size
-                )
+                mPacket
             )
         } catch (e: Exception) {
             Log.d(TAG, "listen: ${e.localizedMessage}")
         }
 
         val saved = mBuffer
-        scope.launch {
+        withContext(
+            Dispatchers.IO
+        ) {
             onReceiveData.onReceiveData(
                 saved
             )

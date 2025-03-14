@@ -9,6 +9,7 @@ import android.util.Log
 import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.ViewGroup
@@ -32,6 +33,7 @@ import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
+import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
 import good.damn.media.streaming.network.server.MSReceiverCameraFrame
 import good.damn.media.streaming.network.server.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
@@ -41,7 +43,8 @@ import java.net.InetAddress
 class MSFragmentTestH264
 : Fragment(),
 MSListenerOnResultPermission,
-MSListenerOnSelectCamera {
+MSListenerOnSelectCamera,
+MSListenerOnChangeSurface {
 
     companion object {
         private const val TAG = "MSFragmentTestH264"
@@ -57,7 +60,7 @@ MSListenerOnSelectCamera {
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
 
     private val mServerUDP = MSServerUDP(
-        5556,
+        6666,
         MSStreamCameraInput.PACKET_MAX_SIZE + MSUtilsAvc.LEN_META,
         CoroutineScope(
             Dispatchers.IO
@@ -65,29 +68,26 @@ MSListenerOnSelectCamera {
         mReceiverFrame
     )
 
-    override fun onResume() {
-        super.onResume()
-        mReceiverFrame.start()
-        mServerUDP.start()
-    }
+    private var mSurfaceReceive: Surface? = null
 
     override fun onPause() {
         super.onPause()
-        mReceiverFrame.stop()
-        mServerUDP.stop()
+        if (mServerUDP.isRunning) {
+            mReceiverFrame.stop()
+            mServerUDP.stop()
+        }
     }
 
     override fun onDestroy() {
+        super.onDestroy()
         mReceiverFrame.release()
         mServerUDP.release()
 
-        Log.d(TAG, "onDestroy: ")
         context?.apply {
             mServiceStreamWrapper.destroy(
                 this
             )
         }
-        super.onDestroy()
     }
 
     override fun onCreateView(
@@ -118,26 +118,58 @@ MSListenerOnSelectCamera {
             )
         }
 
+        Button(
+            context
+        ).apply {
+
+            text = "Start receiving"
+
+            setOnClickListener {
+                if (mServerUDP.isRunning) {
+                    text = "Start receiving"
+                    mReceiverFrame.stop()
+                    mServerUDP.stop()
+                    return@setOnClickListener
+                }
+
+                text = "Stop receiving"
+                mSurfaceReceive?.apply {
+                    mReceiverFrame.configure(
+                        this,
+                        MediaFormat.createVideoFormat(
+                            MSCoder.TYPE_AVC,
+                            RESOLUTION.width,
+                            RESOLUTION.height
+                        ).apply {
+                            setInteger(
+                                MediaFormat.KEY_ROTATION,
+                                90
+                            )
+                        }
+                    )
+
+                    mReceiverFrame.start()
+                    mServerUDP.start()
+                }
+            }
+
+            addView(
+                this,
+                -1,
+                -2
+            )
+        }
+
         FrameLayout(
             context
         ).let {
             setBackgroundColor(0)
 
             MSViewStreamFrame(
-                context,
-                mReceiverFrame,
-                mServerUDP,
-                MediaFormat.createVideoFormat(
-                    MSCoder.TYPE_AVC,
-                    RESOLUTION.width,
-                    RESOLUTION.height
-                ).apply {
-                    setInteger(
-                        MediaFormat.KEY_ROTATION,
-                        90
-                    )
-                }
+                context
             ).apply {
+
+                onChangeSurface = this@MSFragmentTestH264
 
                 layoutParams = ViewGroup.LayoutParams(
                     MSApp.width,
@@ -194,18 +226,7 @@ MSListenerOnSelectCamera {
     override fun onResultPermission(
         permission: String,
         result: Boolean
-    ) {
-        if (!result) {
-            return
-        }
-
-        when (permission) {
-            Manifest.permission.CAMERA -> {
-                initServiceStream()
-            }
-        }
-
-    }
+    ) = Unit
 
     override fun onSelectCamera(
         cameraId: MSCameraModelID
@@ -220,31 +241,30 @@ MSListenerOnSelectCamera {
             return
         }
 
-        if (!mServiceStreamWrapper.isStarted) {
-            initServiceStream()
+        mServiceStreamWrapper.apply {
+            if (!isStarted) {
+                start(context)
+            }
+
+            unbind(activity)
+            mEditTextHost?.apply {
+                bind(
+                    RESOLUTION.width,
+                    RESOLUTION.height,
+                    cameraId,
+                    text.toString(),
+                    context
+                )
+            }
         }
 
-        mServiceStreamWrapper.unbind(
-            activity
-        )
-
-        mEditTextHost?.apply {
-            mServiceStreamWrapper.bind(
-                RESOLUTION.width,
-                RESOLUTION.height,
-                cameraId,
-                text.toString(),
-                context
-            )
-        }
     }
 
-    private inline fun initServiceStream() {
-        // start service
-        context?.apply {
-            mServiceStreamWrapper.start(
-                this
-            )
-        }
+
+    override fun onChangeSurface(
+        surface: Surface
+    ) {
+        mSurfaceReceive = surface
     }
+
 }

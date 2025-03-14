@@ -28,7 +28,9 @@ class MSReceiverCameraFrame
         )
     }
 
-    fun start() = mDecoder.start()
+    fun start() {
+        mDecoder.start()
+    }
 
     fun stop() {
         mDecoder.stop()

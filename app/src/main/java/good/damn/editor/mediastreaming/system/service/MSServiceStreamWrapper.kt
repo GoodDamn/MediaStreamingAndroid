@@ -3,6 +3,8 @@ package good.damn.editor.mediastreaming.system.service
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.core.app.ServiceCompat
+import good.damn.editor.mediastreaming.extensions.supportsForegroundService
 import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.models.MSCameraModelID
 
@@ -21,14 +23,15 @@ class MSServiceStreamWrapper {
         private set
 
     fun start(
-        context: Context
+        context: Context?
     ) {
         if (isStarted) {
             return
         }
 
         isStarted = true
-        context.startService(
+
+        context?.startService(
             intentStream(context)
         )
     }

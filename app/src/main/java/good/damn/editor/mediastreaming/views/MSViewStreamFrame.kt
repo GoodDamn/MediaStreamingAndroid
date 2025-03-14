@@ -1,20 +1,12 @@
 package good.damn.editor.mediastreaming.views
 
 import android.content.Context
-import android.media.MediaFormat
 import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import good.damn.media.streaming.camera.avc.MSCoder
-import good.damn.media.streaming.camera.avc.MSUtilsAvc
-import good.damn.media.streaming.network.server.MSReceiverCameraFrame
-import good.damn.media.streaming.network.server.MSServerUDP
 
 class MSViewStreamFrame(
-    context: Context,
-    private val receiverFrame: MSReceiverCameraFrame,
-    private val serverUdp: MSServerUDP,
-    private val videoFormat: MediaFormat
+    context: Context
 ): SurfaceView(
     context
 ), SurfaceHolder.Callback {
@@ -22,6 +14,8 @@ class MSViewStreamFrame(
     companion object {
         private const val TAG = "MSViewStreamFrame"
     }
+
+    var onChangeSurface: MSListenerOnChangeSurface? = null
 
     init {
         holder.addCallback(
@@ -42,14 +36,9 @@ class MSViewStreamFrame(
         height: Int
     ) {
         Log.d(TAG, "surfaceChanged: ")
-
-        receiverFrame.configure(
-            holder.surface,
-            videoFormat
+        onChangeSurface?.onChangeSurface(
+            holder.surface
         )
-
-        receiverFrame.start()
-        serverUdp.start()
     }
 
     override fun surfaceDestroyed(

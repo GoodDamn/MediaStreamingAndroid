@@ -40,7 +40,7 @@ class MSServiceStream
         )
 
         mSubscriber = MSStreamSubscriberUDP(
-            5556,
+            6666,
             CoroutineScope(
                 Dispatchers.IO
             )

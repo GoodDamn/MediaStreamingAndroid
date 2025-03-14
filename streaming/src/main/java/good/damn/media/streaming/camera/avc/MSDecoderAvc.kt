@@ -8,6 +8,7 @@ import android.util.Log
 import android.view.Surface
 import good.damn.media.streaming.camera.avc.cache.MSFrame
 import good.damn.media.streaming.camera.avc.cache.MSListenerOnGetOrderedFrame
+import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.integer
 import good.damn.media.streaming.extensions.short
 import good.damn.media.streaming.network.MSStateable
@@ -18,8 +19,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 class MSDecoderAvc
 : MSCoder(),
-    MSStateable,
-    MSListenerOnGetOrderedFrame {
+MSStateable,
+MSListenerOnGetOrderedFrame {
 
     companion object {
         private const val TAG = "MSDecoderAvc"
@@ -30,7 +31,7 @@ class MSDecoderAvc
         TYPE_AVC
     )
 
-    private val mPacketBufferizer = good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer().apply {
+    private val mPacketBufferizer = MSPacketBufferizer().apply {
         onGetOrderedFrame = this@MSDecoderAvc
     }
 
@@ -38,11 +39,14 @@ class MSDecoderAvc
         MSFrame
     >()
 
-    private var mSavedSurface: Surface? = null
-    private var mSavedFormat: MediaFormat? = null
+    private val mScope = CoroutineScope(
+        Dispatchers.IO
+    )
 
     var isConfigured = false
         private set
+
+    var isRender = true
 
     fun writeData(
         data: ByteArray
@@ -74,18 +78,10 @@ class MSDecoderAvc
 
     override fun start() {
         if (!isConfigured) {
-            mSavedFormat ?: return
-            mSavedSurface ?: return
-
-            configure(
-                mSavedSurface!!,
-                mSavedFormat!!
-            )
+            return
         }
         super.start()
-        CoroutineScope(
-            Dispatchers.IO
-        ).launch {
+        mScope.launch {
             while (isRunning) {
                 mPacketBufferizer.orderPacket()
             }
@@ -98,9 +94,6 @@ class MSDecoderAvc
         decodeSurface: Surface,
         format: MediaFormat
     ) = mCoder.run {
-        mSavedSurface = decodeSurface
-        mSavedFormat = format
-
         isConfigured = true
         setCallback(
             this@MSDecoderAvc
@@ -116,7 +109,6 @@ class MSDecoderAvc
     override fun onGetOrderedFrame(
         frame: MSFrame
     ) {
-        Log.d(TAG, "onGetOrderedFrame: $frame")
         mQueueFrame.add(
             frame
         )
@@ -129,12 +121,15 @@ class MSDecoderAvc
         try {
             val inp = codec.getInputBuffer(
                 index
-            ) ?: return
+            )
+            if (inp == null) {
+                Log.d(TAG, "onInputBufferAvailable: NULL")
+                return
+            }
 
-            inp.clear()
-
-            var s = 0
+            var mSizeFrame = 0
             if (mQueueFrame.isNotEmpty()) {
+                inp.clear()
                 mQueueFrame.remove().packets.forEach {
                     it?.apply {
                         val a = data.short(
@@ -145,17 +140,15 @@ class MSDecoderAvc
                             MSUtilsAvc.LEN_META,
                             a
                         )
-                        s += a
+                        mSizeFrame += a
                     }
                 }
-
-                Log.d(TAG, "onInputBufferAvailable: $s")
             }
 
             codec.queueInputBuffer(
                 index,
                 0,
-                s,
+                mSizeFrame,
                 0,
                 0
             )
@@ -192,7 +185,7 @@ class MSDecoderAvc
 
             codec.releaseOutputBuffer(
                 index,
-                true
+                isRender
             )
         } catch (_: Exception) {}
     }
