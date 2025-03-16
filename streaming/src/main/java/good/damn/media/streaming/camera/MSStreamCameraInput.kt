@@ -4,6 +4,8 @@ import android.util.Log
 import good.damn.media.streaming.camera.avc.MSCameraAVC
 import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.avc.MSUtilsAvc.Companion.LEN_META
+import good.damn.media.streaming.camera.avc.cache.MSPacket
+import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.media.streaming.extensions.setIntegerOnPosition
@@ -23,6 +25,8 @@ class MSStreamCameraInput(
         manager,
         this@MSStreamCameraInput
     )
+
+    val bufferizer = MSPacketBufferizer()
 
     var subscribers: List<MSStreamSubscriber>? = null
 
@@ -62,7 +66,6 @@ class MSStreamCameraInput(
         offset: Int,
         len: Int
     ) {
-        Log.d(TAG, "onGetFrameData: FRAME_LEN: $len")
         var i = offset
 
         var packetCount = len / PACKET_MAX_SIZE
@@ -75,8 +78,14 @@ class MSStreamCameraInput(
             packetCount++
         }
 
+        if (mFrameId >= MSPacketBufferizer.CACHE_PACKET_SIZE) {
+            bufferizer.removeFirstFrameByIndex(
+                mFrameId - MSPacketBufferizer.CACHE_PACKET_SIZE
+            )
+        }
+
         while (i < normLen) {
-            fillChunk(
+            fillSendChunk(
                 PACKET_MAX_SIZE,
                 packetId,
                 i,
@@ -88,7 +97,7 @@ class MSStreamCameraInput(
         }
 
         if (reminderDataSize > 0) {
-            fillChunk(
+            fillSendChunk(
                 reminderDataSize,
                 packetId,
                 i,
@@ -100,7 +109,7 @@ class MSStreamCameraInput(
         mFrameId++
     }
 
-    private inline fun fillChunk(
+    private inline fun fillSendChunk(
         dataLen: Int,
         packetId: Int,
         i: Int,
@@ -111,7 +120,7 @@ class MSStreamCameraInput(
             dataLen + LEN_META
         )
 
-        Log.d(TAG, "onGetFrameData: $mFrameId:$packetId=$dataLen")
+        Log.d(TAG, "onGetFrameData: FRAME: $mFrameId:$packetId=$dataLen")
 
         chunk.setIntegerOnPosition(
             mFrameId,
@@ -137,7 +146,14 @@ class MSStreamCameraInput(
             chunk[j+LEN_META] = bufferData[i+j]
         }
 
-        Thread.sleep(4)
+        bufferizer.write(
+            mFrameId,
+            packetId.toShort(),
+            packetCount.toShort(),
+            chunk
+        )
+
+        Thread.sleep(16)
         subscribers?.forEach {
             it.onGetPacket(chunk)
         }

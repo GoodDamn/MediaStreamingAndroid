@@ -12,7 +12,7 @@ import kotlin.math.log
 class MSClientStreamUDPChunk(
     port: Int,
     scope: CoroutineScope
-): MSClientStreamUDP<MSModelChunkUDP>(
+): MSClientStreamUDP<ByteArray>(
     port,
     scope
 ) {
@@ -22,21 +22,29 @@ class MSClientStreamUDPChunk(
             .simpleName
     }
 
+    private val mPacket = DatagramPacket(
+        ByteArray(0),
+        0,
+        0,
+        host,
+        port
+    )
+
     override fun sendToStream(
-        data: MSModelChunkUDP
+        data: ByteArray
     ) {
         if (!isStreamRunning) {
             return
         }
 
+        mPacket.setData(
+            data,
+            0,
+            data.size
+        )
+
         mSocket.send(
-            DatagramPacket(
-                data.data,
-                data.offset,
-                data.len,
-                host,
-                port
-            )
+            mPacket
         )
     }
 

@@ -13,8 +13,8 @@ public final class MSPacketBufferizer {
 
     private static final String TAG = "MSPacketBufferizer";
 
-    private static final int CACHE_PACKET_SIZE = 1024;
-    private static final int TIMEOUT_PACKET_MS = 33;
+    public static final int CACHE_PACKET_SIZE = 1024;
+    public static final int TIMEOUT_PACKET_MS = 33;
 
     // Think about dynamic timeout
     // which depends from captured frame's packet count
@@ -108,6 +108,12 @@ public final class MSPacketBufferizer {
         }
     }
 
+    public final void removeFirstFrameByIndex(
+        int i
+    ) {
+        mQueues[i].removeFirst();
+    }
+
     public final void write(
         final int frameId,
         final short packetId,
@@ -156,6 +162,7 @@ public final class MSPacketBufferizer {
         }
 
         if (foundFrame == null) {
+            
             addFrame(
                 queue,
                 frameId,

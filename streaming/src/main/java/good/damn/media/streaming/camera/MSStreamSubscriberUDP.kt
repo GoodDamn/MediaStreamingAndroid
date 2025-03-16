@@ -1,7 +1,6 @@
 package good.damn.media.streaming.camera
 
 import good.damn.media.streaming.network.client.MSClientStreamUDPChunk
-import good.damn.media.streaming.network.client.MSModelChunkUDP
 import kotlinx.coroutines.CoroutineScope
 import java.net.InetAddress
 
@@ -31,11 +30,7 @@ class MSStreamSubscriberUDP(
         data: ByteArray
     ) {
         mClient.sendToStream(
-            MSModelChunkUDP(
-                data,
-                0,
-                data.size
-            )
+            data
         )
     }
 }
