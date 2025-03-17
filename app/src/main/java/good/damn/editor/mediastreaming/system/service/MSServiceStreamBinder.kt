@@ -9,13 +9,17 @@ import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.MSStreamSubscriberUDP
 import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.network.server.MSReceiverCameraFrameRestore
+import good.damn.media.streaming.network.server.MSServerUDP
 import java.io.FileDescriptor
 import java.net.InetAddress
 
 class MSServiceStreamBinder(
     private val managerCamera: MSManagerCamera,
     private val mSubscriber: MSStreamSubscriberUDP,
-    private val mStreamCamera: MSStreamCameraInput
+    private val mStreamCamera: MSStreamCameraInput,
+    private val mServerRestore: MSServerUDP,
+    private val mReceiverCameraFrameRestore: MSReceiverCameraFrameRestore
 ): Binder() {
 
     val isStreaming: Boolean
@@ -36,8 +40,10 @@ class MSServiceStreamBinder(
         mSubscriber.host = InetAddress.getByName(
             host
         )
+        mReceiverCameraFrameRestore.host = mSubscriber.host
 
         mSubscriber.start()
+        mServerRestore.start()
 
         mStreamCamera.start(
             MSCameraModelID(

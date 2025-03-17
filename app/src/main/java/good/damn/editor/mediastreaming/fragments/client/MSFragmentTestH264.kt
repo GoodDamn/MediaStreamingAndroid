@@ -34,6 +34,8 @@ import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
+import good.damn.media.streaming.camera.avc.cache.MSPacket
+import good.damn.media.streaming.network.server.MSPacketMissingHandler
 import good.damn.media.streaming.network.server.MSReceiverCameraFrame
 import good.damn.media.streaming.network.server.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
@@ -59,8 +61,19 @@ MSListenerOnChangeSurface {
     private val mReceiverFrame = MSReceiverCameraFrame()
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
 
+    private val mHandlerPacketMissing = MSPacketMissingHandler()
+
     private val mServerUDP = MSServerUDP(
         6666,
+        MSStreamCameraInput.PACKET_MAX_SIZE + MSUtilsAvc.LEN_META,
+        CoroutineScope(
+            Dispatchers.IO
+        ),
+        mReceiverFrame
+    )
+
+    private val mServerRestorePackets = MSServerUDP(
+        6667,
         MSStreamCameraInput.PACKET_MAX_SIZE + MSUtilsAvc.LEN_META,
         CoroutineScope(
             Dispatchers.IO
@@ -75,6 +88,7 @@ MSListenerOnChangeSurface {
         if (mServerUDP.isRunning) {
             mReceiverFrame.stop()
             mServerUDP.stop()
+            mServerRestorePackets.stop()
         }
     }
 
@@ -82,6 +96,7 @@ MSListenerOnChangeSurface {
         super.onDestroy()
         mReceiverFrame.release()
         mServerUDP.release()
+        mServerRestorePackets.release()
 
         context?.apply {
             mServiceStreamWrapper.destroy(
@@ -141,6 +156,7 @@ MSListenerOnChangeSurface {
                     text = "Start receiving"
                     mReceiverFrame.stop()
                     mServerUDP.stop()
+                    mServerRestorePackets.stop()
                     return@setOnClickListener
                 }
 
@@ -160,8 +176,14 @@ MSListenerOnChangeSurface {
                         }
                     )
 
+                    mHandlerPacketMissing.handlingMissedPackets(
+                        InetAddress.getByName(
+                            mEditTextHost?.text?.toString()
+                        )
+                    )
                     mReceiverFrame.start()
                     mServerUDP.start()
+                    mServerRestorePackets.start()
                 }
             }
 

@@ -5,7 +5,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
@@ -14,7 +13,7 @@ public final class MSPacketBufferizer {
     private static final String TAG = "MSPacketBufferizer";
 
     public static final int CACHE_PACKET_SIZE = 1024;
-    public static final int TIMEOUT_PACKET_MS = 33;
+    public static final int TIMEOUT_PACKET_MS = 2200;
 
     // Think about dynamic timeout
     // which depends from captured frame's packet count
@@ -28,9 +27,7 @@ public final class MSPacketBufferizer {
     // if buffer has next combined key frame, it needs to update
     // if buffer has key frame's other frames, it needs to update
 
-    private final ConcurrentLinkedDeque<
-        MSFrame
-    >[] mQueues = new ConcurrentLinkedDeque[
+    private final MSMFrameQueue[] mQueues = new MSMFrameQueue[
         CACHE_PACKET_SIZE
     ];
 
@@ -41,13 +38,13 @@ public final class MSPacketBufferizer {
 
     public MSPacketBufferizer() {
         for (int i = 0; i < CACHE_PACKET_SIZE; i++) {
-            mQueues[i] = new ConcurrentLinkedDeque<>();
+            mQueues[i] = new MSMFrameQueue();
         }
     }
 
     public final void clear() {
         for (int i = 0; i < CACHE_PACKET_SIZE; i++) {
-            mQueues[i].clear();
+            mQueues[i].queue.clear();
         }
     }
 
@@ -63,7 +60,7 @@ public final class MSPacketBufferizer {
                 MSFrame
             > queue = mQueues[
                 mCurrentQueueIndex
-            ];
+            ].queue;
 
             if (queue.isEmpty()) {
                 return;
@@ -96,22 +93,33 @@ public final class MSPacketBufferizer {
                 if (currentPacketSize >= frame.getPackets().length) {
                     if (onGetOrderedFrame != null) {
                         onGetOrderedFrame.onGetOrderedFrame(
-                          frame
+                            frame
                         );
                     }
                     break;
                 }
             }
 
-            Log.d(TAG, "orderPacket: LOST_PACKETS: " + frame.getId() + ": " + (frame.getPackets().length-currentPacketSize));
+            Log.d(TAG, "orderPacket: LOST_PACKETS_1: " + mCurrentQueueIndex + "; " + frame.getId() + ": " + (frame.getPackets().length-currentPacketSize) + " - " + Thread.currentThread().getId());
             queue.removeFirst();
+        }
+    }
+
+    @Nullable
+    public final MSFrame getFrameById(
+        int frameId
+    ) {
+        try {
+            return mQueues[frameId % CACHE_PACKET_SIZE].queue.getFirst();
+        } catch (Exception e) {
+            return null;
         }
     }
 
     public final void removeFirstFrameByIndex(
         int i
     ) {
-        mQueues[i].removeFirst();
+        mQueues[i].queue.removeFirst();
     }
 
     public final void write(
@@ -126,16 +134,20 @@ public final class MSPacketBufferizer {
 
         final int queueId = frameId % CACHE_PACKET_SIZE;
 
+        final MSMFrameQueue frameQueue = mQueues[queueId];
+        final ConcurrentLinkedDeque<MSFrame> queue = frameQueue.queue;
 
-        final ConcurrentLinkedDeque<
-            MSFrame
-        > queue = mQueues[
-            queueId
-        ];
+        if (frameQueue.lastFrameId > frameId) {
+            return;
+        }
 
         if (queue.isEmpty()) {
+            if (frameQueue.lastFrameId >= frameId) {
+                return;
+            }
+
             addFrame(
-                queue,
+                frameQueue,
                 frameId,
                 packetCount,
                 packetId,
@@ -148,6 +160,7 @@ public final class MSPacketBufferizer {
             if (frameId < queue.getLast().getId()) {
                 return;
             }
+
         } catch (NoSuchElementException e) {
             return;
         }
@@ -161,10 +174,11 @@ public final class MSPacketBufferizer {
             }
         }
 
+        Log.d(TAG, "write: " + frameId + ":"+packetId + ":" + packetCount + " - " + Thread.currentThread().getId());
+
         if (foundFrame == null) {
-            
             addFrame(
-                queue,
+                frameQueue,
                 frameId,
                 packetCount,
                 packetId,
@@ -193,9 +207,33 @@ public final class MSPacketBufferizer {
         );
     }
 
+    public final void findFirstMissingPacket(
+        @NonNull final MSIOnEachMissedPacket onEachMissedPacket
+    ) {
+        for (MSMFrameQueue item : mQueues) {
+            try {
+                final MSFrame frame = item.queue.getFirst();
+                final MSPacket[] packets = frame.getPackets();
+                for (
+                    short packetId = 0;
+                    packetId < packets.length;
+                    packetId++
+                ) {
+                    if (packets[packetId] != null) {
+                        continue;
+                    }
+
+                    onEachMissedPacket.onEachMissedPacket(
+                        frame.getId(),
+                        packetId
+                    );
+                }
+            } catch (Exception ignored) {}
+        }
+    }
 
     private final void addFrame(
-        final ConcurrentLinkedDeque<MSFrame> queue,
+        final MSMFrameQueue frameQueue,
         final int frameId,
         final short packetCount,
         final short packetId,
@@ -216,9 +254,11 @@ public final class MSPacketBufferizer {
             data
         );
 
-        queue.add(
-          frame
+        frameQueue.queue.add(
+            frame
         );
+
+        frameQueue.lastFrameId = frameId;
     }
 
 }

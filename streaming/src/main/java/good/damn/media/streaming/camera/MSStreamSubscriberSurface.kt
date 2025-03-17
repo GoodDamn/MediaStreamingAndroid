@@ -3,11 +3,22 @@ package good.damn.media.streaming.camera
 import android.media.MediaFormat
 import android.view.Surface
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
+import good.damn.media.streaming.camera.avc.MSUtilsAvc
+import good.damn.media.streaming.camera.avc.cache.MSFrame
+import good.damn.media.streaming.camera.avc.cache.MSListenerOnGetOrderedFrame
+import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
+import good.damn.media.streaming.extensions.integer
+import good.damn.media.streaming.extensions.short
+import good.damn.media.streaming.extensions.writeDefault
 
 class MSStreamSubscriberSurface
-: MSStreamSubscriber {
+: MSStreamSubscriber,
+MSListenerOnGetOrderedFrame {
 
     private val mDecoder = MSDecoderAvc()
+    private val mBufferizer = MSPacketBufferizer().apply {
+        onGetOrderedFrame = this@MSStreamSubscriberSurface
+    }
 
     fun configure(
         decodeSurface: Surface,
@@ -24,8 +35,16 @@ class MSStreamSubscriberSurface
     override fun onGetPacket(
         data: ByteArray
     ) {
-        mDecoder.writeData(
+        mBufferizer.writeDefault(
             data
+        )
+    }
+
+    override fun onGetOrderedFrame(
+        frame: MSFrame
+    ) {
+        mDecoder.addOrderedFrame(
+            frame
         )
     }
 }

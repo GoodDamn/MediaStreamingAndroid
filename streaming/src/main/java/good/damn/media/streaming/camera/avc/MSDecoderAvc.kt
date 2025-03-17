@@ -15,12 +15,12 @@ import good.damn.media.streaming.network.MSStateable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.net.DatagramSocket
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class MSDecoderAvc
 : MSCoder(),
-MSStateable,
-MSListenerOnGetOrderedFrame {
+MSStateable {
 
     companion object {
         private const val TAG = "MSDecoderAvc"
@@ -31,40 +31,14 @@ MSListenerOnGetOrderedFrame {
         TYPE_AVC
     )
 
-    private val mPacketBufferizer = MSPacketBufferizer().apply {
-        onGetOrderedFrame = this@MSDecoderAvc
-    }
-
     private val mQueueFrame = ConcurrentLinkedQueue<
         MSFrame
     >()
-
-    private val mScope = CoroutineScope(
-        Dispatchers.IO
-    )
 
     var isConfigured = false
         private set
 
     var isRender = true
-
-    fun writeData(
-        data: ByteArray
-    ) {
-        mPacketBufferizer.write(
-            data.integer(
-                MSUtilsAvc.OFFSET_PACKET_FRAME_ID
-            ),
-            data.short(
-                MSUtilsAvc.OFFSET_PACKET_ID
-            ).toShort(),
-            data.short(
-                MSUtilsAvc.OFFSET_PACKET_COUNT
-            ).toShort(),
-            data
-        )
-    }
-
 
     override fun stop() {
         isConfigured = false
@@ -81,13 +55,6 @@ MSListenerOnGetOrderedFrame {
             return
         }
         super.start()
-        mScope.launch {
-            while (isRunning) {
-                mPacketBufferizer.orderPacket()
-            }
-
-            mPacketBufferizer.clear()
-        }
     }
 
     fun configure(
@@ -106,7 +73,7 @@ MSListenerOnGetOrderedFrame {
         )
     }
 
-    override fun onGetOrderedFrame(
+    fun addOrderedFrame(
         frame: MSFrame
     ) {
         mQueueFrame.add(

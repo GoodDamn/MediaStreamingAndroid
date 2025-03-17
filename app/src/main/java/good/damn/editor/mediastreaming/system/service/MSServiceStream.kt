@@ -7,10 +7,10 @@ import android.util.Log
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.MSStreamSubscriberUDP
-import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.network.server.MSReceiverCameraFrameRestore
+import good.damn.media.streaming.network.server.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import java.net.InetAddress
 
 class MSServiceStream
 : Service() {
@@ -27,6 +27,9 @@ class MSServiceStream
     private lateinit var managerCamera: MSManagerCamera
     private lateinit var mSubscriber: MSStreamSubscriberUDP
     private lateinit var mStreamCamera: MSStreamCameraInput
+    private lateinit var mServerRestorePackets: MSServerUDP
+    private lateinit var mReceiverCameraFrameRestore: MSReceiverCameraFrameRestore
+
     private lateinit var mBinder: MSServiceStreamBinder
 
     override fun onStartCommand(
@@ -55,10 +58,25 @@ class MSServiceStream
             )
         }
 
+        mReceiverCameraFrameRestore = MSReceiverCameraFrameRestore().apply {
+            bufferizer = mStreamCamera.bufferizer
+        }
+
+        mServerRestorePackets = MSServerUDP(
+            5555,
+            64,
+            CoroutineScope(
+                Dispatchers.IO
+            ),
+            mReceiverCameraFrameRestore
+        )
+
         mBinder = MSServiceStreamBinder(
             managerCamera,
             mSubscriber,
-            mStreamCamera
+            mStreamCamera,
+            mServerRestorePackets,
+            mReceiverCameraFrameRestore
         )
 
         return START_STICKY
@@ -85,6 +103,9 @@ class MSServiceStream
 
         mStreamCamera.stop()
         mStreamCamera.release()
+
+        mServerRestorePackets.stop()
+        mServerRestorePackets.release()
 
         super.onDestroy()
     }
