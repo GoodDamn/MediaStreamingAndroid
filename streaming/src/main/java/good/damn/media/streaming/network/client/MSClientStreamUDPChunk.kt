@@ -37,6 +37,8 @@ class MSClientStreamUDPChunk(
             return
         }
 
+        mPacket.address = host
+
         mPacket.setData(
             data,
             0,

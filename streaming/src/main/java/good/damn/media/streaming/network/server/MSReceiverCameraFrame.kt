@@ -65,19 +65,6 @@ MSListenerOnGetOrderedFrame {
         }
 
         mDecoder.start()
-
-        /*Handler(
-            Looper.getMainLooper()
-        ).apply {
-
-            postDelayed({
-
-            }, 1500)
-
-            postDelayed({
-
-            }, 3500)
-        }*/
     }
 
     fun stop() {

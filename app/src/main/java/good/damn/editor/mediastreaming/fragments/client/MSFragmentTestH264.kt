@@ -89,6 +89,7 @@ MSListenerOnChangeSurface {
             mReceiverFrame.stop()
             mServerUDP.stop()
             mServerRestorePackets.stop()
+            mHandlerPacketMissing.isRunning = false
         }
     }
 
@@ -157,6 +158,7 @@ MSListenerOnChangeSurface {
                     mReceiverFrame.stop()
                     mServerUDP.stop()
                     mServerRestorePackets.stop()
+                    mHandlerPacketMissing.isRunning = false
                     return@setOnClickListener
                 }
 

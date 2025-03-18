@@ -84,7 +84,7 @@ open class MSServerUDP(
         } catch (e: Exception) {
             Log.d(TAG, "listen: ${e.localizedMessage}")
         }
-
+        Log.d(TAG, "listen: $onReceiveData ${mBuffer[0]}")
         val saved = mBuffer
         withContext(
             Dispatchers.IO
