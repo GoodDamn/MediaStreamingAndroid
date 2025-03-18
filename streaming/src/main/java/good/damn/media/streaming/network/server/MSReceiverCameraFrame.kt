@@ -1,32 +1,14 @@
 package good.damn.media.streaming.network.server
 
 import android.media.MediaFormat
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.Looper
-import android.provider.MediaStore.Audio.Media
 import android.util.Log
 import android.view.Surface
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
-import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.avc.cache.MSFrame
-import good.damn.media.streaming.camera.avc.cache.MSIOnEachMissedPacket
 import good.damn.media.streaming.camera.avc.cache.MSListenerOnGetOrderedFrame
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
-import good.damn.media.streaming.extensions.integer
-import good.damn.media.streaming.extensions.setIntegerOnPosition
-import good.damn.media.streaming.extensions.setShortOnPosition
-import good.damn.media.streaming.extensions.short
 import good.damn.media.streaming.extensions.writeDefault
 import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveData
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.net.InetAddress
-import java.nio.ByteBuffer
 
 class MSReceiverCameraFrame
 : MSListenerOnReceiveData,
@@ -36,14 +18,8 @@ MSListenerOnGetOrderedFrame {
         private const val TAG = "MSReceiverCameraFramePi"
     }
 
+    var bufferizer: MSPacketBufferizer? = null
     private val mDecoder = MSDecoderAvc()
-    private val mBufferizer = MSPacketBufferizer().apply {
-        onGetOrderedFrame = this@MSReceiverCameraFrame
-    }
-
-    private val mScope = CoroutineScope(
-        Dispatchers.IO
-    )
 
     fun configure(
         decodeSurface: Surface,
@@ -55,21 +31,12 @@ MSListenerOnGetOrderedFrame {
         )
     }
 
-    fun start() {
-        mScope.launch {
-            while (mDecoder.isRunning) {
-                mBufferizer.orderPacket()
-            }
-
-            mBufferizer.clear()
-        }
-
+    fun startDecoding() {
         mDecoder.start()
     }
 
     fun stop() {
         mDecoder.stop()
-        mScope.cancel()
     }
 
     fun release() {
@@ -79,7 +46,7 @@ MSListenerOnGetOrderedFrame {
     override suspend fun onReceiveData(
         data: ByteArray
     ) {
-        mBufferizer.writeDefault(
+        bufferizer?.writeDefault(
             data
         )
     }

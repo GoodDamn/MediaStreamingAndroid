@@ -51,6 +51,7 @@ MSStateable {
     }
 
     override fun start() {
+        Log.d(TAG, "start: $isConfigured")
         if (!isConfigured) {
             return
         }
@@ -76,6 +77,7 @@ MSStateable {
     fun addOrderedFrame(
         frame: MSFrame
     ) {
+        Log.d(TAG, "addOrderedFrame: ")
         mQueueFrame.add(
             frame
         )

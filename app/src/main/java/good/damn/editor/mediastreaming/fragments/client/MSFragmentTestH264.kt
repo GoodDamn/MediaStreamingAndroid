@@ -1,17 +1,14 @@
 package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
-import android.content.Context
-import android.content.Intent
 import android.media.MediaFormat
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.util.Size
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Surface
-import android.view.SurfaceHolder
-import android.view.SurfaceView
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
@@ -21,9 +18,7 @@ import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
-import good.damn.editor.mediastreaming.clicks.MSClickOnSelectResolution
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
-import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectResolution
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import good.damn.editor.mediastreaming.views.MSViewStreamFrame
@@ -34,12 +29,13 @@ import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
-import good.damn.media.streaming.camera.avc.cache.MSPacket
+import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.network.server.MSPacketMissingHandler
 import good.damn.media.streaming.network.server.MSReceiverCameraFrame
 import good.damn.media.streaming.network.server.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.net.InetAddress
 
 class MSFragmentTestH264
@@ -60,6 +56,11 @@ MSListenerOnChangeSurface {
 
     private val mReceiverFrame = MSReceiverCameraFrame()
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
+
+    private val mBufferizerRemote = MSPacketBufferizer().apply {
+        onGetOrderedFrame = mReceiverFrame
+        mReceiverFrame.bufferizer = this
+    }
 
     private val mHandlerPacketMissing = MSPacketMissingHandler()
 
@@ -178,14 +179,29 @@ MSListenerOnChangeSurface {
                         }
                     )
 
+                    // Bufferizing
+                    mServerUDP.start()
+                    mServerRestorePackets.start()
+
+                    CoroutineScope(
+                        Dispatchers.IO
+                    ).launch {
+                        while (mServerUDP.isRunning) {
+                            mBufferizerRemote.orderPacket()
+                        }
+
+                        mBufferizerRemote.clear()
+                    }
+
+                    // Checking
                     mHandlerPacketMissing.handlingMissedPackets(
                         InetAddress.getByName(
                             mEditTextHost?.text?.toString()
                         )
                     )
-                    mReceiverFrame.start()
-                    mServerUDP.start()
-                    mServerRestorePackets.start()
+
+                    // Decoding
+                    mReceiverFrame.startDecoding()
                 }
             }
 
