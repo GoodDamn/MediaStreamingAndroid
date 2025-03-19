@@ -46,6 +46,7 @@ class MSReceiverCameraFrameRestore
     override suspend fun onReceiveData(
         data: ByteArray
     ) {
+
         val frameId = data.integer(0)
         val packetId = data.short(4)
 
@@ -53,11 +54,13 @@ class MSReceiverCameraFrameRestore
             frameId
         ) ?: return
 
+        if (frame.id != frameId) {
+            return
+        }
+
         val packet = frame.packets.getOrNull(
             packetId
         ) ?: return
-
-        Log.d(TAG, "onReceiveData: $frameId: $packetId")
 
         mPacket.setData(
             packet.data,

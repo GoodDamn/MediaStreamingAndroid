@@ -77,7 +77,6 @@ MSStateable {
     fun addOrderedFrame(
         frame: MSFrame
     ) {
-        Log.d(TAG, "addOrderedFrame: ")
         mQueueFrame.add(
             frame
         )
@@ -96,9 +95,9 @@ MSStateable {
                 return
             }
 
+            inp.clear()
             var mSizeFrame = 0
             if (mQueueFrame.isNotEmpty()) {
-                inp.clear()
                 mQueueFrame.remove().packets.forEach {
                     it?.apply {
                         val a = data.short(

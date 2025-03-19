@@ -28,6 +28,7 @@ class MSServiceStreamBinder(
     fun stopStreaming() {
         mSubscriber.stop()
         mStreamCamera.stop()
+        mServerRestore.stop()
     }
 
     fun startStreaming(

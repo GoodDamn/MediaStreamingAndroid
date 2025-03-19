@@ -13,7 +13,7 @@ public final class MSPacketBufferizer {
     private static final String TAG = "MSPacketBufferizer";
 
     public static final int CACHE_PACKET_SIZE = 1024;
-    public static final int TIMEOUT_PACKET_MS = 33;
+    public static final int TIMEOUT_PACKET_MS = 330;
 
     // Think about dynamic timeout
     // which depends from captured frame's packet count
@@ -22,6 +22,9 @@ public final class MSPacketBufferizer {
 
     @Nullable
     public MSListenerOnGetOrderedFrame onGetOrderedFrame;
+
+    @Nullable
+    public MSListenerOnOrderPacket onOrderPacket;
 
     // Algorithm which targets Key frames
     // if buffer has next combined key frame, it needs to update
@@ -35,6 +38,8 @@ public final class MSPacketBufferizer {
     private long mCapturedTime = 0L;
 
     private volatile int mCurrentQueueIndex = 0;
+
+    private int mCurrentFrame = 0;
 
     public MSPacketBufferizer() {
         for (int i = 0; i < CACHE_PACKET_SIZE; i++) {
@@ -64,6 +69,14 @@ public final class MSPacketBufferizer {
 
             if (queue.isEmpty()) {
                 return;
+            }
+
+            mCurrentFrame++;
+
+            if (onOrderPacket != null) {
+                onOrderPacket.onOrderPacket(
+                    mCurrentFrame
+                );
             }
 
             @NonNull

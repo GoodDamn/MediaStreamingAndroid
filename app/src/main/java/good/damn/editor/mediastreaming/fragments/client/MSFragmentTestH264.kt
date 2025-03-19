@@ -29,6 +29,7 @@ import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
+import good.damn.media.streaming.camera.avc.cache.MSListenerOnOrderPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.network.server.MSPacketMissingHandler
 import good.damn.media.streaming.network.server.MSReceiverCameraFrame
@@ -56,13 +57,13 @@ MSListenerOnChangeSurface {
 
     private val mReceiverFrame = MSReceiverCameraFrame()
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
+    private val mHandlerPacketMissing = MSPacketMissingHandler()
 
     private val mBufferizerRemote = MSPacketBufferizer().apply {
         onGetOrderedFrame = mReceiverFrame
         mReceiverFrame.bufferizer = this
+        mHandlerPacketMissing.bufferizer = this
     }
-
-    private val mHandlerPacketMissing = MSPacketMissingHandler()
 
     private val mServerUDP = MSServerUDP(
         6666,
@@ -163,6 +164,11 @@ MSListenerOnChangeSurface {
                     return@setOnClickListener
                 }
 
+                val ip = mEditTextHost?.text?.toString()
+                    ?: return@setOnClickListener
+
+                val inet = InetAddress.getByName(ip)
+
                 text = "Stop receiving"
                 mSurfaceReceive?.apply {
                     mReceiverFrame.configure(
@@ -183,6 +189,24 @@ MSListenerOnChangeSurface {
                     mServerUDP.start()
                     mServerRestorePackets.start()
 
+
+                    mBufferizerRemote.onOrderPacket = MSListenerOnOrderPacket {
+                        Log.d(TAG, "onCreateView: MSListenerOnOrderPacket: $it")
+                        if (it > 15 && !mHandlerPacketMissing.isRunning) {
+                            // Checking
+                            mHandlerPacketMissing.handlingMissedPackets(
+                                inet
+                            )
+                        }
+                        
+                        if (it > 30 && !mReceiverFrame.isDecoding) {
+                            // Decoding
+                            mReceiverFrame.startDecoding()
+                            mBufferizerRemote.onOrderPacket = null;
+                        }
+                        
+                    }
+                    
                     CoroutineScope(
                         Dispatchers.IO
                     ).launch {
@@ -192,16 +216,6 @@ MSListenerOnChangeSurface {
 
                         mBufferizerRemote.clear()
                     }
-
-                    // Checking
-                    mHandlerPacketMissing.handlingMissedPackets(
-                        InetAddress.getByName(
-                            mEditTextHost?.text?.toString()
-                        )
-                    )
-
-                    // Decoding
-                    mReceiverFrame.startDecoding()
                 }
             }
 

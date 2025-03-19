@@ -19,6 +19,10 @@ MSListenerOnGetOrderedFrame {
     }
 
     var bufferizer: MSPacketBufferizer? = null
+
+    val isDecoding: Boolean
+        get() = mDecoder.isRunning
+
     private val mDecoder = MSDecoderAvc()
 
     fun configure(
