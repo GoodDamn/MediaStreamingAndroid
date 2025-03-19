@@ -1,4 +1,4 @@
-package good.damn.media.streaming.network.server.guild
+package good.damn.media.streaming.network.server.tcp
 
 import android.util.Log
 import good.damn.media.streaming.network.MSStateable

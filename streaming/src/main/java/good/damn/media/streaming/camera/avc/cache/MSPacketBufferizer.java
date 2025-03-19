@@ -13,7 +13,7 @@ public final class MSPacketBufferizer {
     private static final String TAG = "MSPacketBufferizer";
 
     public static final int CACHE_PACKET_SIZE = 1024;
-    public static final int TIMEOUT_PACKET_MS = 330;
+    public static final int TIMEOUT_PACKET_MS = 180;
 
     // Think about dynamic timeout
     // which depends from captured frame's packet count

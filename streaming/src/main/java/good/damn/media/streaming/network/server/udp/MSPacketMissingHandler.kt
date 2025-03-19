@@ -1,4 +1,4 @@
-package good.damn.media.streaming.network.server
+package good.damn.media.streaming.network.server.udp
 
 import good.damn.media.streaming.camera.avc.cache.MSIOnEachMissedPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer

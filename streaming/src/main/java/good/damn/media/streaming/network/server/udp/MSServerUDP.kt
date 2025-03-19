@@ -1,7 +1,5 @@
-package good.damn.media.streaming.network.server
+package good.damn.media.streaming.network.server.udp
 
-import android.provider.ContactsContract.Data
-import android.system.ErrnoException
 import android.util.Log
 import good.damn.media.streaming.network.MSStateable
 import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveData

@@ -1,7 +1,6 @@
-package good.damn.media.streaming.network.server
+package good.damn.media.streaming.network.server.udp
 
 import android.media.MediaFormat
-import android.util.Log
 import android.view.Surface
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
 import good.damn.media.streaming.camera.avc.cache.MSFrame

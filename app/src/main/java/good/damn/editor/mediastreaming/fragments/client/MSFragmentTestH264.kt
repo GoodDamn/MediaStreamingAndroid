@@ -3,8 +3,6 @@ package good.damn.editor.mediastreaming.fragments.client
 import android.Manifest
 import android.media.MediaFormat
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.util.Size
 import android.view.LayoutInflater
@@ -31,9 +29,9 @@ import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
 import good.damn.media.streaming.camera.avc.cache.MSListenerOnOrderPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
-import good.damn.media.streaming.network.server.MSPacketMissingHandler
-import good.damn.media.streaming.network.server.MSReceiverCameraFrame
-import good.damn.media.streaming.network.server.MSServerUDP
+import good.damn.media.streaming.network.server.udp.MSPacketMissingHandler
+import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrame
+import good.damn.media.streaming.network.server.udp.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

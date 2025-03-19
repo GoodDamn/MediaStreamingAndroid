@@ -1,15 +1,13 @@
-package good.damn.media.streaming.network.server
+package good.damn.media.streaming.network.server.udp
 
 import android.util.Log
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
-import good.damn.media.streaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.media.streaming.extensions.integer
 import good.damn.media.streaming.extensions.short
 import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveData
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
-import java.nio.ByteBuffer
 
 class MSReceiverCameraFrameRestore
 : MSListenerOnReceiveData {
@@ -61,6 +59,8 @@ class MSReceiverCameraFrameRestore
         val packet = frame.packets.getOrNull(
             packetId
         ) ?: return
+
+        Log.d(TAG, "onReceiveData: $frameId:$packetId")
 
         mPacket.setData(
             packet.data,

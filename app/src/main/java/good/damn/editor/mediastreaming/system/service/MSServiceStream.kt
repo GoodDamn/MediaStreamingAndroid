@@ -7,8 +7,8 @@ import android.util.Log
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.MSStreamSubscriberUDP
-import good.damn.media.streaming.network.server.MSReceiverCameraFrameRestore
-import good.damn.media.streaming.network.server.MSServerUDP
+import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameRestore
+import good.damn.media.streaming.network.server.udp.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 

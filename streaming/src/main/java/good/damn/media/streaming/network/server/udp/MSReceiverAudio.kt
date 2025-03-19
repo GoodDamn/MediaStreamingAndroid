@@ -1,11 +1,9 @@
-package good.damn.media.streaming.network.server
+package good.damn.media.streaming.network.server.udp
 
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
-import android.util.Log
-import good.damn.media.streaming.audio.MSRecordAudio
 import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveData
 
 class MSReceiverAudio
