@@ -58,18 +58,15 @@ class MSEncoderAvc
 
                     when (status) {
                         MediaCodec.INFO_TRY_AGAIN_LATER -> {
-                            Log.d(TAG, "start: TRY_AGAIN")
                             if (!isRunning) {
                                 break
                             }
                         }
 
                         in Int.MIN_VALUE until 0 -> {
-                            Log.d(TAG, "start: WAITING")
                         }
 
                         else -> {
-                            Log.d(TAG, "start: PROCESS_BUFFER: $status")
                             processEncodingBuffers(
                                 status
                             )
@@ -88,8 +85,6 @@ class MSEncoderAvc
         ) ?: return
 
         mRemaining = buffer.remaining()
-
-        Log.d(TAG, "processEncodingBuffers: $mRemaining")
         
         onGetFrameData?.onGetFrameData(
             buffer,

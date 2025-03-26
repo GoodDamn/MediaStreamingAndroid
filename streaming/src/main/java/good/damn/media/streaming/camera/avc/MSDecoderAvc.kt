@@ -86,6 +86,7 @@ MSStateable {
         codec: MediaCodec,
         index: Int
     ) {
+        Thread.sleep(24)
         try {
             val inp = codec.getInputBuffer(
                 index
@@ -144,8 +145,6 @@ MSStateable {
         index: Int,
         info: MediaCodec.BufferInfo
     ) {
-        Log.d(TAG, "onOutputBufferAvailable: INFO: ${info.presentationTimeUs} ${info.offset} ${info.size}")
-
         try {
             codec.getOutputBuffer(
                 index

@@ -24,11 +24,11 @@ class MSServiceStream
         const val EXTRA_HOST = "h"
     }
 
-    private lateinit var managerCamera: MSManagerCamera
-    private lateinit var mSubscriber: MSStreamSubscriberUDP
-    private lateinit var mStreamCamera: MSStreamCameraInput
-    private lateinit var mServerRestorePackets: MSServerUDP
-    private lateinit var mReceiverCameraFrameRestore: MSReceiverCameraFrameRestore
+    private var managerCamera: MSManagerCamera? = null
+    private var mSubscriber: MSStreamSubscriberUDP? = null
+    private var mStreamCamera: MSStreamCameraInput? = null
+    private var mServerRestorePackets: MSServerUDP? = null
+    private var mReceiverCameraFrameRestore: MSReceiverCameraFrameRestore? = null
 
     private lateinit var mBinder: MSServiceStreamBinder
 
@@ -51,15 +51,15 @@ class MSServiceStream
         )
 
         mStreamCamera = MSStreamCameraInput(
-            managerCamera
+            managerCamera!!
         ).apply {
             subscribers = arrayListOf(
-                mSubscriber
+                mSubscriber!!
             )
         }
 
         mReceiverCameraFrameRestore = MSReceiverCameraFrameRestore().apply {
-            bufferizer = mStreamCamera.bufferizer
+            bufferizer = mStreamCamera!!.bufferizer
         }
 
         mServerRestorePackets = MSServerUDP(
@@ -68,15 +68,15 @@ class MSServiceStream
             CoroutineScope(
                 Dispatchers.IO
             ),
-            mReceiverCameraFrameRestore
+            mReceiverCameraFrameRestore!!
         )
 
         mBinder = MSServiceStreamBinder(
-            managerCamera,
-            mSubscriber,
-            mStreamCamera,
-            mServerRestorePackets,
-            mReceiverCameraFrameRestore
+            managerCamera!!,
+            mSubscriber!!,
+            mStreamCamera!!,
+            mServerRestorePackets!!,
+            mReceiverCameraFrameRestore!!
         )
 
         return START_STICKY
@@ -98,14 +98,20 @@ class MSServiceStream
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: ")
-        mSubscriber.stop()
-        mSubscriber.release()
+        mSubscriber?.apply {
+            stop()
+            release()
+        }
 
-        mStreamCamera.stop()
-        mStreamCamera.release()
+        mStreamCamera?.apply {
+            stop()
+            release()
+        }
 
-        mServerRestorePackets.stop()
-        mServerRestorePackets.release()
+        mServerRestorePackets?.apply {
+            stop()
+            release()
+        }
 
         super.onDestroy()
     }

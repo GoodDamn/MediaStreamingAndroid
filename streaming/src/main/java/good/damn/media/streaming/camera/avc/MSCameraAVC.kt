@@ -12,6 +12,7 @@ import good.damn.media.streaming.camera.MSCamera
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.extensions.camera2.default
 import good.damn.media.streaming.extensions.camera2.getRotation
 
 class MSCameraAVC(
@@ -45,30 +46,10 @@ class MSCameraAVC(
                 width,
                 height
             ).apply {
-                setInteger(
-                    MediaFormat.KEY_COLOR_FORMAT,
-                    MediaCodecInfo.CodecCapabilities
-                        .COLOR_FormatSurface
-                )
-
-                setInteger(
-                    MediaFormat.KEY_BIT_RATE,
-                    1024 * 1024 * 1
-                )
-
-                setInteger(
-                    MediaFormat.KEY_FRAME_RATE,
-                    24
-                )
-
+                default()
                 setInteger(
                     MediaFormat.KEY_ROTATION,
                     character.getRotation() ?: 0
-                )
-
-                setInteger(
-                    MediaFormat.KEY_I_FRAME_INTERVAL,
-                    1
                 )
             }
         )

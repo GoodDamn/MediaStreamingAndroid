@@ -120,8 +120,6 @@ class MSStreamCameraInput(
             dataLen + LEN_META
         )
 
-        Log.d(TAG, "onGetFrameData: FRAME: $mFrameId:$packetId=$dataLen")
-
         chunk.setIntegerOnPosition(
             mFrameId,
             pos= MSUtilsAvc.OFFSET_PACKET_FRAME_ID

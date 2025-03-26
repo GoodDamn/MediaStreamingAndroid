@@ -29,6 +29,7 @@ import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
 import good.damn.media.streaming.camera.avc.cache.MSListenerOnOrderPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
+import good.damn.media.streaming.extensions.camera2.default
 import good.damn.media.streaming.network.server.udp.MSPacketMissingHandler
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrame
 import good.damn.media.streaming.network.server.udp.MSServerUDP
@@ -46,8 +47,8 @@ MSListenerOnChangeSurface {
     companion object {
         private const val TAG = "MSFragmentTestH264"
         private val RESOLUTION = Size(
-            640,
-            480
+            1280,
+            720
         )
     }
 
@@ -176,6 +177,7 @@ MSListenerOnChangeSurface {
                             RESOLUTION.width,
                             RESOLUTION.height
                         ).apply {
+                            default()
                             setInteger(
                                 MediaFormat.KEY_ROTATION,
                                 90

@@ -12,8 +12,8 @@ public final class MSPacketBufferizer {
 
     private static final String TAG = "MSPacketBufferizer";
 
-    public static final int CACHE_PACKET_SIZE = 1024;
-    public static final int TIMEOUT_PACKET_MS = 180;
+    public static final int CACHE_PACKET_SIZE = 2048;
+    public static final int TIMEOUT_DEFAULT_PACKET_MS = 33;
 
     // Think about dynamic timeout
     // which depends from captured frame's packet count
@@ -91,8 +91,9 @@ public final class MSPacketBufferizer {
             mCurrentTime = mCapturedTime;
 
             int currentPacketSize = frame.getPacketsAdded();
+
             while (
-                mCurrentTime - mCapturedTime < TIMEOUT_PACKET_MS
+                mCurrentTime - mCapturedTime < TIMEOUT_DEFAULT_PACKET_MS
             ) {
                 mCurrentTime = System.currentTimeMillis();
 
@@ -113,7 +114,6 @@ public final class MSPacketBufferizer {
                 }
             }
 
-            Log.d(TAG, "orderPacket: LOST_PACKETS_1: " + mCurrentQueueIndex + "; " + frame.getId() + ": " + (frame.getPackets().length-currentPacketSize));
             queue.removeFirst();
         }
     }
@@ -186,8 +186,6 @@ public final class MSPacketBufferizer {
                 break;
             }
         }
-
-        Log.d(TAG, "write: " + frameId + ":"+packetId + ":" + packetCount + " - " + Thread.currentThread().getId());
 
         if (foundFrame == null) {
             addFrame(
@@ -267,7 +265,7 @@ public final class MSPacketBufferizer {
             data
         );
 
-        frameQueue.queue.add(
+        frameQueue.queue.addLast(
             frame
         );
 

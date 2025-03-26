@@ -114,7 +114,7 @@ class MSCamera(
                 SessionConfiguration(
                     SessionConfiguration.SESSION_REGULAR,
                     listConfig,
-                    good.damn.media.streaming.misc.HandlerExecutor(
+                    HandlerExecutor(
                         mCameraSession.handler
                     ),
                     mCameraSession
