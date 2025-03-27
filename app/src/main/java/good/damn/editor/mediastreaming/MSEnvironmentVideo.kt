@@ -21,8 +21,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.net.InetAddress
 
-class MSEnvironmentVideoConf
-: MSListenerOnOrderPacket {
+class MSEnvironmentVideo(
+    private val mServiceStreamWrapper: MSServiceStreamWrapper
+): MSListenerOnOrderPacket {
 
     companion object {
         private const val TAG = "MSStreamEnvironmentCame"
@@ -36,11 +37,6 @@ class MSEnvironmentVideoConf
     val isReceiving: Boolean
         get() = mServerVideo.isRunning
 
-    val isStreamingAudio: Boolean
-        get() = mServiceStreamWrapper
-            .serviceConnectionStream
-            .binder
-            ?.isStreamingAudio ?: false
 
     val isStreamingVideo: Boolean
         get() = mServiceStreamWrapper
@@ -50,7 +46,6 @@ class MSEnvironmentVideoConf
 
     private val mReceiverFrame = MSReceiverCameraFrame()
 
-    private val mServiceStreamWrapper = MSServiceStreamWrapper()
     private val mHandlerPacketMissing = MSPacketMissingHandler()
 
     private val mBufferizerRemote = MSPacketBufferizer().apply {
@@ -78,15 +73,6 @@ class MSEnvironmentVideoConf
         mReceiverFrame
     )
 
-    fun configureService(
-        applicationContext: Context?
-    ) {
-        mServiceStreamWrapper.start(
-            applicationContext
-        )
-    }
-
-
     fun startReceiving(
         surfaceOutput: Surface,
         host: InetAddress
@@ -112,7 +98,7 @@ class MSEnvironmentVideoConf
         mServerVideo.start()
         mServerRestorePackets.start()
 
-        mBufferizerRemote.onOrderPacket = this@MSEnvironmentVideoConf
+        mBufferizerRemote.onOrderPacket = this@MSEnvironmentVideo
 
         CoroutineScope(
             Dispatchers.IO
@@ -136,9 +122,7 @@ class MSEnvironmentVideoConf
         mHandlerPacketMissing.isRunning = false
     }
 
-    fun releaseReceiving(
-        context: Context?
-    ) {
+    fun releaseReceiving() {
         mReceiverFrame.release()
         mServerVideo.release()
         mServerRestorePackets.release()
@@ -146,12 +130,6 @@ class MSEnvironmentVideoConf
         mServerVideo.apply {
             stop()
             release()
-        }
-
-        context?.apply {
-            mServiceStreamWrapper.destroy(
-                this
-            )
         }
     }
 

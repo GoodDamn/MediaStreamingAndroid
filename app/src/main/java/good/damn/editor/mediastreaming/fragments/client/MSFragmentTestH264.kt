@@ -2,6 +2,7 @@ package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Surface
 import android.view.ViewGroup
@@ -12,16 +13,20 @@ import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.MSApp
-import good.damn.editor.mediastreaming.MSEnvironmentVideoConf
+import good.damn.editor.mediastreaming.MSEnvironmentAudio
+import good.damn.editor.mediastreaming.MSEnvironmentVideo
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
+import good.damn.editor.mediastreaming.extensions.hasPermissionMicrophone
+import good.damn.media.streaming.extensions.toInetAddress
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
+import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.editor.mediastreaming.views.MSViewStreamFrame
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
-import java.net.InetAddress
+import good.damn.editor.mediastreaming.views.MSViewColor
 
 class MSFragmentTestH264
 : Fragment(),
@@ -35,18 +40,14 @@ MSListenerOnChangeSurface {
 
     private var mEditTextHost: EditText? = null
 
-    private val mStreamCamera = MSEnvironmentVideoConf()
+    private val mServiceStreamWrapper = MSServiceStreamWrapper()
+    private val mStreamCamera = MSEnvironmentVideo(
+        mServiceStreamWrapper
+    )
 
-    /*private val mReceiverAudio = MSReceiverAudio()
-    private val mServerAudio = MSServerUDP(
-        MSStreamConstants.PORT_AUDIO,
-        1024,
-        CoroutineScope(
-            Dispatchers.IO
-        ),
-        mReceiverAudio
-    )*/
-
+    private val mStreamAudio = MSEnvironmentAudio(
+        mServiceStreamWrapper
+    )
 
     private var mSurfaceReceive: Surface? = null
 
@@ -57,9 +58,15 @@ MSListenerOnChangeSurface {
 
     override fun onDestroy() {
         super.onDestroy()
-        mStreamCamera.releaseReceiving(
-            context
-        )
+
+        mStreamAudio.releaseReceiving()
+        mStreamCamera.releaseReceiving()
+
+        context?.apply {
+            mServiceStreamWrapper.destroy(
+                this
+            )
+        }
     }
 
     override fun onCreate(
@@ -69,7 +76,7 @@ MSListenerOnChangeSurface {
             savedInstanceState
         )
 
-        mStreamCamera.configureService(
+        mServiceStreamWrapper.start(
             requireActivity().applicationContext
         )
     }
@@ -112,13 +119,14 @@ MSListenerOnChangeSurface {
                 if (mStreamCamera.isReceiving) {
                     text = "Start receiving"
                     mStreamCamera.stopReceiving()
+                    mStreamAudio.stopReceiving()
                     return@setOnClickListener
                 }
 
                 val ip = mEditTextHost?.text?.toString()
                     ?: return@setOnClickListener
 
-                val inet = InetAddress.getByName(ip)
+                val inet = ip.toInetAddress()
 
                 text = "Stop receiving"
                 mSurfaceReceive?.apply {
@@ -127,6 +135,8 @@ MSListenerOnChangeSurface {
                         inet
                     )
                 }
+
+                mStreamAudio.startReceiving()
             }
 
             addView(
@@ -189,6 +199,56 @@ MSListenerOnChangeSurface {
                     this,
                     -1,
                     -2
+                )
+            }
+
+            MSViewColor(
+                context
+            ).apply {
+                setBackgroundColor(
+                    0xffff0000.toInt()
+                )
+
+                val s = (MSApp.width * 0.1f).toInt()
+                layoutParams = FrameLayout.LayoutParams(
+                    s, s
+                ).apply {
+                    gravity = Gravity.END or Gravity.TOP
+                }
+
+                setOnClickListener {
+                    if (color == 0xffff0000.toInt()) {
+                        // Audio disabled
+                        (activity as? MSActivityMain)?.apply {
+                            if (!hasPermissionMicrophone()) {
+                                launcherPermission.launch(
+                                    Manifest.permission.RECORD_AUDIO
+                                )
+                                return@setOnClickListener
+                            }
+
+                            setBackgroundColor(
+                                0xff0000ff.toInt()
+                            )
+
+                            mEditTextHost?.text?.toString()?.apply {
+                                mStreamAudio.startStreaming(
+                                    this
+                                )
+                            }
+                        }
+                        return@setOnClickListener
+                    }
+
+                    setBackgroundColor(
+                        0xffff0000.toInt()
+                    )
+
+                    mStreamAudio.stopStreaming()
+                }
+
+                it.addView(
+                    this
                 )
             }
 
