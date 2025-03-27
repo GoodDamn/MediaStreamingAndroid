@@ -1,62 +1,52 @@
 package good.damn.media.streaming.audio.stream
 
+import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.audio.MSListenerOnSamplesRecord
 import good.damn.media.streaming.audio.MSRecordAudio
-import good.damn.media.streaming.network.MSStateable
 import good.damn.media.streaming.network.client.MSClientStreamUDPAudio
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
 
 class MSStreamAudioInput
-: MSStateable,
-MSListenerOnSamplesRecord {
+: MSListenerOnSamplesRecord {
 
     companion object {
         private val TAG = MSStreamAudioInput::class.simpleName
     }
 
-    var host: InetAddress
-        get() = mClientAudioStream.host
-        set(v) {
-            mClientAudioStream.host = v
-        }
-
-    var roomId: Byte
-        get() = mClientAudioStream.roomId
-        set(v) {
-            mClientAudioStream.roomId = v
-        }
-
-    var userId: Byte
-        get() = mClientAudioStream.userId
-        set(v) {
-            mClientAudioStream.userId = v
-        }
-
-    private val mAudioRecord = good.damn.media.streaming.audio.MSRecordAudio().apply {
+    private val mAudioRecord = MSRecordAudio(
+        CoroutineScope(
+            Dispatchers.IO
+        )
+    ).apply {
         onSampleListener = this@MSStreamAudioInput
     }
 
     private val mClientAudioStream = MSClientStreamUDPAudio(
-        port = 5555,
+        MSStreamConstants.PORT_AUDIO,
         CoroutineScope(
             Dispatchers.IO
         ),
-        2048
+        1024
     )
 
-    override fun start() {
+    fun start(
+        host: InetAddress
+    ) {
         mAudioRecord.startRecording()
-        mClientAudioStream.start()
+        mClientAudioStream.apply {
+            this.host = host
+            start()
+        }
     }
 
-    override fun stop() {
+    fun stop() {
         mAudioRecord.stop()
         mClientAudioStream.stop()
     }
 
-    override fun release() {
+    fun release() {
         mAudioRecord.release()
         mClientAudioStream.release()
     }

@@ -4,9 +4,11 @@ import android.app.Service
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
+import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.MSStreamSubscriberUDP
+import good.damn.media.streaming.network.server.udp.MSReceiverAudio
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameRestore
 import good.damn.media.streaming.network.server.udp.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +30,10 @@ class MSServiceStream
     private var mSubscriber: MSStreamSubscriberUDP? = null
     private var mStreamCamera: MSStreamCameraInput? = null
     private var mServerRestorePackets: MSServerUDP? = null
+    private var mServerAudio: MSServerUDP? = null
+
     private var mReceiverCameraFrameRestore: MSReceiverCameraFrameRestore? = null
+    private var mReceiverAudio: MSReceiverAudio? = null
 
     private lateinit var mBinder: MSServiceStreamBinder
 
@@ -44,7 +49,7 @@ class MSServiceStream
         )
 
         mSubscriber = MSStreamSubscriberUDP(
-            6666,
+            MSStreamConstants.PORT_VIDEO,
             CoroutineScope(
                 Dispatchers.IO
             )
@@ -62,8 +67,19 @@ class MSServiceStream
             bufferizer = mStreamCamera!!.bufferizer
         }
 
+        mReceiverAudio = MSReceiverAudio()
+
+        mServerAudio = MSServerUDP(
+            MSStreamConstants.PORT_AUDIO,
+            1024,
+            CoroutineScope(
+                Dispatchers.IO
+            ),
+            mReceiverAudio!!
+        )
+
         mServerRestorePackets = MSServerUDP(
-            5555,
+            MSStreamConstants.PORT_VIDEO_RESTORE_REQUEST,
             64,
             CoroutineScope(
                 Dispatchers.IO
@@ -76,6 +92,7 @@ class MSServiceStream
             mSubscriber!!,
             mStreamCamera!!,
             mServerRestorePackets!!,
+            mServerAudio!!,
             mReceiverCameraFrameRestore!!
         )
 
@@ -109,6 +126,16 @@ class MSServiceStream
         }
 
         mServerRestorePackets?.apply {
+            stop()
+            release()
+        }
+
+        mServerAudio?.apply {
+            stop()
+            release()
+        }
+
+        mReceiverAudio?.apply {
             stop()
             release()
         }

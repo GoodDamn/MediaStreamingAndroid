@@ -27,6 +27,7 @@ import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
+import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.avc.cache.MSListenerOnOrderPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.camera2.default
@@ -65,7 +66,7 @@ MSListenerOnChangeSurface {
     }
 
     private val mServerUDP = MSServerUDP(
-        6666,
+        MSStreamConstants.PORT_VIDEO,
         MSStreamCameraInput.PACKET_MAX_SIZE + MSUtilsAvc.LEN_META,
         CoroutineScope(
             Dispatchers.IO
@@ -74,7 +75,7 @@ MSListenerOnChangeSurface {
     )
 
     private val mServerRestorePackets = MSServerUDP(
-        6667,
+        MSStreamConstants.PORT_VIDEO_RESTORE,
         MSStreamCameraInput.PACKET_MAX_SIZE + MSUtilsAvc.LEN_META,
         CoroutineScope(
             Dispatchers.IO
@@ -311,8 +312,8 @@ MSListenerOnChangeSurface {
             ?: return
 
         mServiceStreamWrapper.serviceConnectionStream.binder?.apply {
-            if (isStreaming) {
-                stopStreaming()
+            if (isStreamingCamera) {
+                stopStreamingCamera()
             }
 
             startStreaming(

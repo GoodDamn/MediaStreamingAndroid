@@ -4,6 +4,7 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import good.damn.media.streaming.audio.MSRecordAudio
 import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveData
 
 class MSReceiverAudio
@@ -11,7 +12,7 @@ class MSReceiverAudio
 
     companion object {
         private const val TAG = "MSReceiverAudio"
-        const val BUFFER_SIZE = 2048
+        const val BUFFER_SIZE = 1024
     }
 
     private val mAudioTrack = AudioTrack(
@@ -23,9 +24,9 @@ class MSReceiverAudio
             ).build(),
         AudioFormat.Builder()
             .setSampleRate(
-                good.damn.media.streaming.audio.MSRecordAudio.DEFAULT_SAMPLE_RATE
+                MSRecordAudio.DEFAULT_SAMPLE_RATE
             ).setEncoding(
-                good.damn.media.streaming.audio.MSRecordAudio.DEFAULT_ENCODING
+                MSRecordAudio.DEFAULT_ENCODING
             ).setChannelMask(
                 AudioFormat.CHANNEL_OUT_MONO
             ).build(),
@@ -39,9 +40,18 @@ class MSReceiverAudio
     ) = mAudioTrack.run {
         write(
             data,
-            2,
-            BUFFER_SIZE - 2
+            0,
+            BUFFER_SIZE
         )
         play()
+    }
+
+
+    fun stop() {
+        mAudioTrack.stop()
+    }
+
+    fun release() {
+        mAudioTrack.release()
     }
 }

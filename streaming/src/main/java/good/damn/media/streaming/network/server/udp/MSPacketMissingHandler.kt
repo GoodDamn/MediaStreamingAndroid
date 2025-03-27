@@ -1,5 +1,6 @@
 package good.damn.media.streaming.network.server.udp
 
+import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.avc.cache.MSIOnEachMissedPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.setIntegerOnPosition
@@ -29,7 +30,7 @@ class MSPacketMissingHandler {
             0,
             buffer.size,
             host,
-            5555
+            MSStreamConstants.PORT_VIDEO_RESTORE_REQUEST
         )
 
         val onEach = MSIOnEachMissedPacket { frameId, packetId ->

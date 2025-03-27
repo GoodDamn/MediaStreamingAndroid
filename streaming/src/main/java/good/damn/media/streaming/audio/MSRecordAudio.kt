@@ -10,17 +10,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @SuppressLint("MissingPermission")
-class MSRecordAudio
-: AudioRecord(
+class MSRecordAudio(
+    private val scope: CoroutineScope
+): AudioRecord(
     AudioSource.MIC,
-    good.damn.media.streaming.audio.MSRecordAudio.Companion.DEFAULT_SAMPLE_RATE,
-    good.damn.media.streaming.audio.MSRecordAudio.Companion.DEFAULT_CHANNEL,
-    good.damn.media.streaming.audio.MSRecordAudio.Companion.DEFAULT_ENCODING,
-    good.damn.media.streaming.audio.MSRecordAudio.Companion.DEFAULT_BUFFER_SIZE
+    DEFAULT_SAMPLE_RATE,
+    DEFAULT_CHANNEL,
+    DEFAULT_ENCODING,
+    DEFAULT_BUFFER_SIZE
 ) {
 
     companion object {
-        private val TAG = good.damn.media.streaming.audio.MSRecordAudio::class.simpleName
+        private val TAG = MSRecordAudio::class.simpleName
         private const val DEFAULT_BUFFER_SIZE = 256
 
         const val DEFAULT_SAMPLE_RATE = 44100
@@ -29,19 +30,15 @@ class MSRecordAudio
     }
 
     init {
-        Log.d(good.damn.media.streaming.audio.MSRecordAudio.Companion.TAG, "init:")
+        Log.d(TAG, "init:")
     }
 
-    var onSampleListener: good.damn.media.streaming.audio.MSListenerOnSamplesRecord? = null
+    var onSampleListener: MSListenerOnSamplesRecord? = null
 
     private var mIsPaused = false
 
     private val mSampleData = ByteArray(
-        good.damn.media.streaming.audio.MSRecordAudio.Companion.DEFAULT_BUFFER_SIZE
-    )
-
-    private val mScope = CoroutineScope(
-        Dispatchers.IO
+        DEFAULT_BUFFER_SIZE
     )
 
     override fun release() {
@@ -57,7 +54,7 @@ class MSRecordAudio
     override fun startRecording() {
         super.startRecording()
         mIsPaused = false
-        mScope.launch {
+        scope.launch {
             while (!mIsPaused) {
                 runStream()
             }
@@ -73,19 +70,19 @@ class MSRecordAudio
 
         when (sample) {
             ERROR_INVALID_OPERATION -> {
-                Log.d(good.damn.media.streaming.audio.MSRecordAudio.Companion.TAG, "runStream: INVALID_OPERATION")
+                Log.d(TAG, "runStream: INVALID_OPERATION")
             }
 
             ERROR_BAD_VALUE -> {
-                Log.d(good.damn.media.streaming.audio.MSRecordAudio.Companion.TAG, "runStream: BAD_VALUE")
+                Log.d(TAG, "runStream: BAD_VALUE")
             }
 
             ERROR_DEAD_OBJECT -> {
-                Log.d(good.damn.media.streaming.audio.MSRecordAudio.Companion.TAG, "runStream: DEAD_OBJECT")
+                Log.d(TAG, "runStream: DEAD_OBJECT")
             }
 
             ERROR -> {
-                Log.d(good.damn.media.streaming.audio.MSRecordAudio.Companion.TAG, "runStream: ERROR")
+                Log.d(TAG, "runStream: ERROR")
             }
 
             else -> {
