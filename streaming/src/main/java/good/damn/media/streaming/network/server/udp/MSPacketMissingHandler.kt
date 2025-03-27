@@ -17,9 +17,9 @@ class MSPacketMissingHandler {
     var bufferizer: MSPacketBufferizer? = null
     var isRunning = false
 
-    fun handlingMissedPackets(
-        host: InetAddress
-    ) = CoroutineScope(
+    var host: InetAddress? = null
+
+    fun handlingMissedPackets() = CoroutineScope(
         Dispatchers.IO
     ).launch {
         isRunning = true

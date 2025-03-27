@@ -1,6 +1,7 @@
 package good.damn.editor.mediastreaming.system.service
 
 import android.os.Binder
+import good.damn.media.streaming.audio.stream.MSStreamAudioInput
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.MSStreamSubscriberUDP
@@ -13,19 +14,19 @@ class MSServiceStreamBinder(
     private val managerCamera: MSManagerCamera,
     private val mSubscriber: MSStreamSubscriberUDP,
     private val mStreamCamera: MSStreamCameraInput,
+    private val mStreamAudio: MSStreamAudioInput,
     private val mServerRestore: MSServerUDP,
-    private val mServerAudio: MSServerUDP,
     private val mReceiverCameraFrameRestore: MSReceiverCameraFrameRestore
 ): Binder() {
 
     val isStreamingAudio: Boolean
-        get() = mServerAudio.isRunning
+        get() = mStreamAudio.isRunning
 
     val isStreamingCamera: Boolean
         get() = mStreamCamera.isRunning
 
     fun stopStreamingAudio() {
-        mServerAudio.stop()
+        mStreamAudio.stop()
     }
 
     fun stopStreamingCamera() {
@@ -34,7 +35,17 @@ class MSServiceStreamBinder(
         mServerRestore.stop()
     }
 
-    fun startStreaming(
+    fun startStreamingAudio(
+        host: String
+    ) {
+        mStreamAudio.start(
+            InetAddress.getByName(
+                host
+            )
+        )
+    }
+
+    fun startStreamingVideo(
         idLogical: String,
         idPhysical: String?,
         host: String,
@@ -48,8 +59,6 @@ class MSServiceStreamBinder(
 
         mSubscriber.start()
         mServerRestore.start()
-
-        mServerAudio.start()
 
         mStreamCamera.start(
             MSCameraModelID(

@@ -15,6 +15,9 @@ class MSStreamAudioInput
         private val TAG = MSStreamAudioInput::class.simpleName
     }
 
+    val isRunning: Boolean
+        get() = mClientAudioStream.isStreamRunning
+
     private val mAudioRecord = MSRecordAudio(
         CoroutineScope(
             Dispatchers.IO

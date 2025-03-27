@@ -1,10 +1,7 @@
 package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
-import android.media.MediaFormat
 import android.os.Bundle
-import android.util.Log
-import android.util.Size
 import android.view.LayoutInflater
 import android.view.Surface
 import android.view.ViewGroup
@@ -15,28 +12,15 @@ import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.MSApp
+import good.damn.editor.mediastreaming.MSEnvironmentVideoConf
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import good.damn.editor.mediastreaming.views.MSViewStreamFrame
 import good.damn.media.streaming.camera.MSManagerCamera
-import good.damn.media.streaming.camera.MSStreamCameraInput
-import good.damn.media.streaming.camera.avc.MSCoder
-import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.models.MSCameraModelID
-import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
-import good.damn.media.streaming.MSStreamConstants
-import good.damn.media.streaming.camera.avc.cache.MSListenerOnOrderPacket
-import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
-import good.damn.media.streaming.extensions.camera2.default
-import good.damn.media.streaming.network.server.udp.MSPacketMissingHandler
-import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrame
-import good.damn.media.streaming.network.server.udp.MSServerUDP
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.net.InetAddress
 
 class MSFragmentTestH264
@@ -47,65 +31,35 @@ MSListenerOnChangeSurface {
 
     companion object {
         private const val TAG = "MSFragmentTestH264"
-        private val RESOLUTION = Size(
-            1280,
-            720
-        )
     }
 
     private var mEditTextHost: EditText? = null
 
-    private val mReceiverFrame = MSReceiverCameraFrame()
-    private val mServiceStreamWrapper = MSServiceStreamWrapper()
-    private val mHandlerPacketMissing = MSPacketMissingHandler()
+    private val mStreamCamera = MSEnvironmentVideoConf()
 
-    private val mBufferizerRemote = MSPacketBufferizer().apply {
-        onGetOrderedFrame = mReceiverFrame
-        mReceiverFrame.bufferizer = this
-        mHandlerPacketMissing.bufferizer = this
-    }
-
-    private val mServerUDP = MSServerUDP(
-        MSStreamConstants.PORT_VIDEO,
-        MSStreamCameraInput.PACKET_MAX_SIZE + MSUtilsAvc.LEN_META,
+    /*private val mReceiverAudio = MSReceiverAudio()
+    private val mServerAudio = MSServerUDP(
+        MSStreamConstants.PORT_AUDIO,
+        1024,
         CoroutineScope(
             Dispatchers.IO
         ),
-        mReceiverFrame
-    )
+        mReceiverAudio
+    )*/
 
-    private val mServerRestorePackets = MSServerUDP(
-        MSStreamConstants.PORT_VIDEO_RESTORE,
-        MSStreamCameraInput.PACKET_MAX_SIZE + MSUtilsAvc.LEN_META,
-        CoroutineScope(
-            Dispatchers.IO
-        ),
-        mReceiverFrame
-    )
 
     private var mSurfaceReceive: Surface? = null
 
     override fun onPause() {
         super.onPause()
-        if (mServerUDP.isRunning) {
-            mReceiverFrame.stop()
-            mServerUDP.stop()
-            mServerRestorePackets.stop()
-            mHandlerPacketMissing.isRunning = false
-        }
+        mStreamCamera.stopReceiving()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mReceiverFrame.release()
-        mServerUDP.release()
-        mServerRestorePackets.release()
-
-        context?.apply {
-            mServiceStreamWrapper.destroy(
-                this
-            )
-        }
+        mStreamCamera.releaseReceiving(
+            context
+        )
     }
 
     override fun onCreate(
@@ -115,7 +69,7 @@ MSListenerOnChangeSurface {
             savedInstanceState
         )
 
-        mServiceStreamWrapper.start(
+        mStreamCamera.configureService(
             requireActivity().applicationContext
         )
     }
@@ -155,12 +109,9 @@ MSListenerOnChangeSurface {
             text = "Start receiving"
 
             setOnClickListener {
-                if (mServerUDP.isRunning) {
+                if (mStreamCamera.isReceiving) {
                     text = "Start receiving"
-                    mReceiverFrame.stop()
-                    mServerUDP.stop()
-                    mServerRestorePackets.stop()
-                    mHandlerPacketMissing.isRunning = false
+                    mStreamCamera.stopReceiving()
                     return@setOnClickListener
                 }
 
@@ -171,52 +122,10 @@ MSListenerOnChangeSurface {
 
                 text = "Stop receiving"
                 mSurfaceReceive?.apply {
-                    mReceiverFrame.configure(
+                    mStreamCamera.startReceiving(
                         this,
-                        MediaFormat.createVideoFormat(
-                            MSCoder.TYPE_AVC,
-                            RESOLUTION.width,
-                            RESOLUTION.height
-                        ).apply {
-                            default()
-                            setInteger(
-                                MediaFormat.KEY_ROTATION,
-                                90
-                            )
-                        }
+                        inet
                     )
-
-                    // Bufferizing
-                    mServerUDP.start()
-                    mServerRestorePackets.start()
-
-
-                    mBufferizerRemote.onOrderPacket = MSListenerOnOrderPacket {
-                        Log.d(TAG, "onCreateView: MSListenerOnOrderPacket: $it")
-                        if (it > 15 && !mHandlerPacketMissing.isRunning) {
-                            // Checking
-                            mHandlerPacketMissing.handlingMissedPackets(
-                                inet
-                            )
-                        }
-                        
-                        if (it > 30 && !mReceiverFrame.isDecoding) {
-                            // Decoding
-                            mReceiverFrame.startDecoding()
-                            mBufferizerRemote.onOrderPacket = null;
-                        }
-                        
-                    }
-                    
-                    CoroutineScope(
-                        Dispatchers.IO
-                    ).launch {
-                        while (mServerUDP.isRunning) {
-                            mBufferizerRemote.orderPacket()
-                        }
-
-                        mBufferizerRemote.clear()
-                    }
                 }
             }
 
@@ -240,7 +149,7 @@ MSListenerOnChangeSurface {
 
                 layoutParams = ViewGroup.LayoutParams(
                     MSApp.width,
-                    (RESOLUTION.width.toFloat() / RESOLUTION.height * MSApp.width).toInt()
+                    (mStreamCamera.resolution.width.toFloat() / mStreamCamera.resolution.height * MSApp.width).toInt()
                 )
                 it.addView(
                     this
@@ -311,17 +220,16 @@ MSListenerOnChangeSurface {
         val ip = mEditTextHost?.text?.toString()
             ?: return
 
-        mServiceStreamWrapper.serviceConnectionStream.binder?.apply {
-            if (isStreamingCamera) {
+
+        mStreamCamera.apply {
+            if (isStreamingVideo) {
                 stopStreamingCamera()
             }
 
-            startStreaming(
+            startStreamingCamera(
                 cameraId.logical,
                 cameraId.physical,
-                ip,
-                RESOLUTION.width,
-                RESOLUTION.height
+                ip
             )
         }
 

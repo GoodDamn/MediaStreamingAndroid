@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.IBinder
 import android.util.Log
 import good.damn.media.streaming.MSStreamConstants
+import good.damn.media.streaming.audio.stream.MSStreamAudioInput
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.MSStreamSubscriberUDP
@@ -29,11 +30,10 @@ class MSServiceStream
     private var managerCamera: MSManagerCamera? = null
     private var mSubscriber: MSStreamSubscriberUDP? = null
     private var mStreamCamera: MSStreamCameraInput? = null
-    private var mServerRestorePackets: MSServerUDP? = null
-    private var mServerAudio: MSServerUDP? = null
+    private var mStreamAudio: MSStreamAudioInput? = null
 
+    private var mServerRestorePackets: MSServerUDP? = null
     private var mReceiverCameraFrameRestore: MSReceiverCameraFrameRestore? = null
-    private var mReceiverAudio: MSReceiverAudio? = null
 
     private lateinit var mBinder: MSServiceStreamBinder
 
@@ -67,16 +67,6 @@ class MSServiceStream
             bufferizer = mStreamCamera!!.bufferizer
         }
 
-        mReceiverAudio = MSReceiverAudio()
-
-        mServerAudio = MSServerUDP(
-            MSStreamConstants.PORT_AUDIO,
-            1024,
-            CoroutineScope(
-                Dispatchers.IO
-            ),
-            mReceiverAudio!!
-        )
 
         mServerRestorePackets = MSServerUDP(
             MSStreamConstants.PORT_VIDEO_RESTORE_REQUEST,
@@ -87,12 +77,14 @@ class MSServiceStream
             mReceiverCameraFrameRestore!!
         )
 
+        mStreamAudio = MSStreamAudioInput()
+
         mBinder = MSServiceStreamBinder(
             managerCamera!!,
             mSubscriber!!,
             mStreamCamera!!,
+            mStreamAudio!!,
             mServerRestorePackets!!,
-            mServerAudio!!,
             mReceiverCameraFrameRestore!!
         )
 
@@ -130,12 +122,7 @@ class MSServiceStream
             release()
         }
 
-        mServerAudio?.apply {
-            stop()
-            release()
-        }
-
-        mReceiverAudio?.apply {
+        mStreamAudio?.apply {
             stop()
             release()
         }
