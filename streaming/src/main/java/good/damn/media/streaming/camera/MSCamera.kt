@@ -20,9 +20,6 @@ class MSCamera(
         private val TAG = MSCamera::class.simpleName
     }
 
-    private var mThread: HandlerThread? = null
-    private var mHandler: Handler? = null
-
     private val mCameraSession = MSCameraSession()
 
     private var mCurrentDevice: Device? = null
@@ -37,25 +34,16 @@ class MSCamera(
         private set
 
     fun openCameraStream(
-        cameraId: MSCameraModelID
+        cameraId: MSCameraModelID,
+        handler: Handler
     ): Boolean {
         Log.d(TAG, "openCameraStream: $cameraId")
+
+        mCameraSession.handler = handler
 
         if (mCurrentDevice?.id == cameraId) {
             Log.d(TAG, "openCameraStream: $cameraId is current opened device. Dismissed")
             stop()
-        }
-
-        mThread = HandlerThread(
-            "cameraThread"
-        ).apply {
-            start()
-
-            mHandler = Handler(
-                looper
-            ).apply {
-                mCameraSession.handler = this
-            }
         }
 
         camera = cameraId
@@ -82,7 +70,6 @@ class MSCamera(
 
     fun release() {
         mCameraSession.release()
-        mThread?.interrupt()
     }
 
     override fun onOpened(

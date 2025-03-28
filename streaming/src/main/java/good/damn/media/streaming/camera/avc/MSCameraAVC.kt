@@ -24,6 +24,9 @@ class MSCameraAVC(
         private const val TAG = "MSCameraAVC"
     }
 
+    private var mThread: HandlerThread? = null
+    private lateinit var mHandler: Handler
+
     private val mCamera = MSCamera(
         manager
     )
@@ -40,19 +43,31 @@ class MSCameraAVC(
         height: Int,
         character: CameraCharacteristics
     ) {
-        mEncoder.configure(
-            MediaFormat.createVideoFormat(
-                MSCoder.TYPE_AVC,
-                width,
-                height
-            ).apply {
-                default()
-                setInteger(
-                    MediaFormat.KEY_ROTATION,
-                    character.getRotation() ?: 0
+        mThread = HandlerThread(
+            "cameraThread"
+        ).apply {
+            start()
+
+            mHandler = Handler(
+                looper
+            )
+
+            mHandler.post {
+                mEncoder.configure(
+                    MediaFormat.createVideoFormat(
+                        MSCoder.TYPE_AVC,
+                        width,
+                        height
+                    ).apply {
+                        default()
+                        setInteger(
+                            MediaFormat.KEY_ROTATION,
+                            character.getRotation() ?: 0
+                        )
+                    }
                 )
             }
-        )
+        }
     }
 
     fun stop() {
@@ -64,14 +79,15 @@ class MSCameraAVC(
 
     fun start(
         cameraId: MSCameraModelID
-    ) {
+    ) = mHandler.post {
         isRunning = true
         mCamera.apply {
             surfaces = arrayListOf(
                 mEncoder.createInputSurface()
             )
             openCameraStream(
-                cameraId
+                cameraId,
+                mHandler
             )
         }
 
@@ -81,6 +97,7 @@ class MSCameraAVC(
     fun release() {
         isRunning = false
         mEncoder.release()
+        mThread?.interrupt()
 
         mCamera.apply {
             surfaces?.forEach {
