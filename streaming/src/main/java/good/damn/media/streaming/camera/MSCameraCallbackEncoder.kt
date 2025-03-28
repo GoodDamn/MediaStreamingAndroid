@@ -21,22 +21,26 @@ class MSCameraCallbackEncoder
         index: Int,
         info: MediaCodec.BufferInfo
     ) {
-        val buffer = codec.getOutputBuffer(
-            index
-        ) ?: return
+        try {
+            val buffer = codec.getOutputBuffer(
+                index
+            ) ?: return
 
-        mRemaining = buffer.remaining()
+            mRemaining = buffer.remaining()
 
-        onGetFrameData?.onGetFrameData(
-            buffer,
-            0,
-            mRemaining
-        )
+            onGetFrameData?.onGetFrameData(
+                buffer,
+                0,
+                mRemaining
+            )
 
-        codec.releaseOutputBuffer(
-            index,
-            false
-        )
+            codec.releaseOutputBuffer(
+                index,
+                false
+            )
+        } catch (e: Exception) {
+
+        }
     }
 
     override fun onError(

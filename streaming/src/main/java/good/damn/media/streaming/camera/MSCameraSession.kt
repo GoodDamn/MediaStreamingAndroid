@@ -1,6 +1,7 @@
 package good.damn.media.streaming.camera
 
 import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CaptureRequest
 import android.os.Handler
@@ -22,6 +23,8 @@ class MSCameraSession
         Looper.getMainLooper()
     )
 
+    var characteristics: CameraCharacteristics? = null
+
     private var mSession: CameraCaptureSession? = null
 
     private val mCameraCapture = MSCameraCapture()
@@ -34,7 +37,31 @@ class MSCameraSession
 
         val request = session.device.createCaptureRequest(
             CameraDevice.TEMPLATE_PREVIEW
-        )
+        ).apply {
+            set(
+                CaptureRequest.CONTROL_AE_MODE,
+                CaptureRequest.CONTROL_AE_MODE_OFF
+            )
+
+            set(
+                CaptureRequest.CONTROL_AF_MODE,
+                CaptureRequest.CONTROL_AF_MODE_OFF
+            )
+
+            set(
+                CaptureRequest.CONTROL_AWB_MODE,
+                CaptureRequest.CONTROL_AWB_MODE_OFF
+            )
+
+            characteristics?.get(
+                CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE
+            )?.apply {
+                set(
+                    CaptureRequest.SENSOR_SENSITIVITY,
+                    (lower + (upper - lower) * 0.5f).toInt()
+                )
+            }
+        }
 
         targets?.forEach {
             request.addTarget(it)

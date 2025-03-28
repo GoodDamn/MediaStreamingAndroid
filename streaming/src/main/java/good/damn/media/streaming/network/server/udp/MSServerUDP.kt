@@ -66,7 +66,10 @@ open class MSServerUDP(
 
     override fun release() {
         isRunning = false
-        mSocket.close()
+        try {
+            mSocket.disconnect()
+            mSocket.close()
+        } catch (ignored: Exception) {}
     }
 
     private suspend inline fun listen() {

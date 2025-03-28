@@ -39,6 +39,10 @@ class MSCamera(
     ): Boolean {
         Log.d(TAG, "openCameraStream: $cameraId")
 
+        mCameraSession.characteristics = manager.getCharacteristics(
+            cameraId.preciseId
+        )
+
         mCameraSession.handler = handler
 
         if (mCurrentDevice?.id == cameraId) {

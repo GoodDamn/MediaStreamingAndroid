@@ -1,6 +1,7 @@
 package good.damn.media.streaming.extensions.camera2
 
 import android.media.MediaCodecInfo
+import android.media.MediaCodecInfo.CodecProfileLevel
 import android.media.MediaFormat
 
 inline fun MediaFormat.default() {
@@ -9,6 +10,11 @@ inline fun MediaFormat.default() {
         MediaCodecInfo.CodecCapabilities
             .COLOR_FormatSurface
     )
+
+    /*setInteger(
+        MediaFormat.KEY_PROFILE,
+        CodecProfileLevel.AVCProfileConstrainedBaseline
+    )*/
 
     setInteger(
         MediaFormat.KEY_BIT_RATE,
