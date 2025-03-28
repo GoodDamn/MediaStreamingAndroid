@@ -2,14 +2,11 @@ package good.damn.media.streaming.camera.avc
 
 import android.media.MediaCodec
 import android.media.MediaFormat
-import android.provider.MediaStore.Audio.Media
-import android.util.Log
 import good.damn.media.streaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.media.streaming.network.MSStateable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.nio.ByteBuffer
 
 class MSEncoderAvc
 : MSCoder(),
@@ -17,7 +14,7 @@ class MSEncoderAvc
 
     companion object {
         private const val TAG = "MSEncoderAvc"
-        private const val TIMEOUT_USAGE_MS = 10_000L
+        private const val TIMEOUT_USAGE_MCRS = 33_000L
     }
 
     // may throws Exception with no h264 codec
@@ -49,11 +46,11 @@ class MSEncoderAvc
         CoroutineScope(
             Dispatchers.IO
         ).launch {
-            while (true) {
+            while (isRunning) {
                 try {
                     val status = mCoder.dequeueOutputBuffer(
                         mBufferInfo,
-                        TIMEOUT_USAGE_MS
+                        TIMEOUT_USAGE_MCRS
                     )
 
                     when (status) {

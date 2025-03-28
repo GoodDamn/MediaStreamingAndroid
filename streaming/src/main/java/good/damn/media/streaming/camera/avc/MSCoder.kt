@@ -5,8 +5,7 @@ import android.media.MediaFormat
 import good.damn.media.streaming.network.MSStateable
 
 abstract class MSCoder
-: MediaCodec.Callback(),
-MSStateable {
+: MSStateable {
 
     companion object {
         private const val TAG = "MSCoder"
@@ -32,25 +31,4 @@ MSStateable {
         isRunning = false
         mCoder.reset()
     }
-
-    override fun onInputBufferAvailable(
-        codec: MediaCodec,
-        index: Int
-    ) = Unit
-
-    override fun onOutputBufferAvailable(
-        codec: MediaCodec,
-        index: Int,
-        info: MediaCodec.BufferInfo
-    ) = Unit
-
-    override fun onError(
-        codec: MediaCodec,
-        e: MediaCodec.CodecException
-    ) = Unit
-
-    override fun onOutputFormatChanged(
-        codec: MediaCodec,
-        format: MediaFormat
-    ) = Unit
 }

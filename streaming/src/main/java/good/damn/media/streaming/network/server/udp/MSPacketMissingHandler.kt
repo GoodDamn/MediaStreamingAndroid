@@ -5,26 +5,30 @@ import good.damn.media.streaming.camera.avc.cache.MSIOnEachMissedPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.setIntegerOnPosition
 import good.damn.media.streaming.extensions.setShortOnPosition
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 
-class MSPacketMissingHandler {
+class MSPacketMissingHandler
+: MSIOnEachMissedPacket {
 
-    var bufferizer: MSPacketBufferizer? = null
-    var isRunning = false
+    private val mSocket = DatagramSocket()
 
     var host: InetAddress? = null
 
-    fun handlingMissedPackets() = CoroutineScope(
-        Dispatchers.IO
-    ).launch {
-        isRunning = true
+    fun handlingMissedPackets(
+        bufferizer: MSPacketBufferizer?
+    ) {
+        bufferizer?.findFirstMissingPacket(
+            this
+        )
+    }
+
+    override fun onEachMissedPacket(
+        frameId: Int,
+        packetId: Short
+    ) {
         val buffer = ByteArray(6)
-        val socket = DatagramSocket()
         val packet = DatagramPacket(
             buffer,
             0,
@@ -33,30 +37,22 @@ class MSPacketMissingHandler {
             MSStreamConstants.PORT_VIDEO_RESTORE_REQUEST
         )
 
-        val onEach = MSIOnEachMissedPacket { frameId, packetId ->
-            buffer.setIntegerOnPosition(
-                frameId,
-                0
-            )
+        buffer.setIntegerOnPosition(
+            frameId,
+            0
+        )
 
-            buffer.setShortOnPosition(
-                packetId.toInt(),
-                4
-            )
+        buffer.setShortOnPosition(
+            packetId.toInt(),
+            4
+        )
 
-            packet.setData(
-                buffer,
-                0,
-                buffer.size
-            )
+        packet.setData(
+            buffer,
+            0,
+            buffer.size
+        )
 
-            socket.send(packet)
-        }
-
-        while (isRunning) {
-            bufferizer?.findFirstMissingPacket(
-                onEach
-            )
-        }
+        mSocket.send(packet)
     }
 }

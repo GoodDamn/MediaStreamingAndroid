@@ -1,7 +1,8 @@
 package good.damn.editor.mediastreaming
 
-import android.content.Context
 import android.media.MediaFormat
+import android.os.Handler
+import android.os.HandlerThread
 import android.util.Log
 import android.util.Size
 import android.view.Surface
@@ -9,8 +10,9 @@ import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.avc.MSCoder
+import good.damn.media.streaming.camera.avc.MSDecoderAvc
 import good.damn.media.streaming.camera.avc.MSUtilsAvc
-import good.damn.media.streaming.camera.avc.cache.MSListenerOnOrderPacket
+import good.damn.media.streaming.camera.avc.cache.MSFrame
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.camera2.default
 import good.damn.media.streaming.network.server.udp.MSPacketMissingHandler
@@ -23,7 +25,7 @@ import java.net.InetAddress
 
 class MSEnvironmentVideo(
     private val mServiceStreamWrapper: MSServiceStreamWrapper
-): MSListenerOnOrderPacket {
+): Runnable {
 
     companion object {
         private const val TAG = "MSStreamEnvironmentCame"
@@ -46,12 +48,12 @@ class MSEnvironmentVideo(
 
     private val mReceiverFrame = MSReceiverCameraFrame()
 
+    private val mDecoderVideo = MSDecoderAvc()
+
     private val mHandlerPacketMissing = MSPacketMissingHandler()
 
     private val mBufferizerRemote = MSPacketBufferizer().apply {
-        onGetOrderedFrame = mReceiverFrame
         mReceiverFrame.bufferizer = this
-        mHandlerPacketMissing.bufferizer = this
     }
 
     private val mServerVideo = MSServerUDP(
@@ -73,41 +75,50 @@ class MSEnvironmentVideo(
         mReceiverFrame
     )
 
+    private var mThreadDecoding: HandlerThread? = null
+    private var mHandlerDecoding: Handler? = null
+
     fun startReceiving(
         surfaceOutput: Surface,
         host: InetAddress
     ) {
         mHandlerPacketMissing.host = host
 
-        mReceiverFrame.configure(
-            surfaceOutput,
-            MediaFormat.createVideoFormat(
-                MSCoder.TYPE_AVC,
-                resolution.width,
-                resolution.height
-            ).apply {
-                default()
-                setInteger(
-                    MediaFormat.KEY_ROTATION,
-                    90
+        mThreadDecoding = HandlerThread(
+            "decodingEnvironment"
+        ).apply {
+            start()
+
+            mHandlerDecoding = Handler(
+                looper
+            )
+
+            mHandlerDecoding?.post {
+                mDecoderVideo.configure(
+                    surfaceOutput,
+                    MediaFormat.createVideoFormat(
+                        MSCoder.TYPE_AVC,
+                        resolution.width,
+                        resolution.height
+                    ).apply {
+                        default()
+                        setInteger(
+                            MediaFormat.KEY_ROTATION,
+                            90
+                        )
+                    }
                 )
+
+                // Bufferizing
+                mServerVideo.start()
+                mServerRestorePackets.start()
+
+                mHandlerDecoding?.post(
+                    this@MSEnvironmentVideo
+                )
+
+                mDecoderVideo.start()
             }
-        )
-
-        // Bufferizing
-        mServerVideo.start()
-        mServerRestorePackets.start()
-
-        mBufferizerRemote.onOrderPacket = this@MSEnvironmentVideo
-
-        CoroutineScope(
-            Dispatchers.IO
-        ).launch {
-            while (mServerVideo.isRunning) {
-                mBufferizerRemote.orderPacket()
-            }
-
-            mBufferizerRemote.clear()
         }
     }
 
@@ -116,16 +127,21 @@ class MSEnvironmentVideo(
             return
         }
 
-        mReceiverFrame.stop()
+        mDecoderVideo.stop()
         mServerVideo.stop()
         mServerRestorePackets.stop()
-        mHandlerPacketMissing.isRunning = false
     }
 
     fun releaseReceiving() {
-        mReceiverFrame.release()
+        mDecoderVideo.release()
         mServerVideo.release()
         mServerRestorePackets.release()
+
+        mHandlerDecoding?.removeCallbacks(
+            this
+        )
+
+        mThreadDecoding?.interrupt()
 
         mServerVideo.apply {
             stop()
@@ -154,19 +170,64 @@ class MSEnvironmentVideo(
             resolution.height
         )
 
-    override fun onOrderPacket(
-        currentFrameId: Int
-    ) {
-        Log.d(TAG, "onCreateView: MSListenerOnOrderPacket: $currentFrameId")
-        if (currentFrameId > 15 && !mHandlerPacketMissing.isRunning) {
-            // Checking
-            mHandlerPacketMissing.handlingMissedPackets()
+    override fun run() {
+        Log.d(TAG, "run: ")
+        if (!mServerVideo.isRunning) {
+            mBufferizerRemote.clear()
+            return
         }
 
-        if (currentFrameId > 30 && !mReceiverFrame.isDecoding) {
-            // Decoding
-            mReceiverFrame.startDecoding()
-            mBufferizerRemote.onOrderPacket = null;
+        val frame = mBufferizerRemote.orderedFrame
+        if (frame == null) {
+            mHandlerDecoding?.post(
+                this
+            )
+            return
         }
+
+        var capturedTime: Long
+        var currentTime: Long
+
+        capturedTime = System.currentTimeMillis()
+
+        var currentPacketSize = frame.packetsAdded.toInt()
+        var delta: Long
+        var nextPartMissed = 0L
+
+        do {
+            currentTime = System.currentTimeMillis()
+            delta = currentTime - capturedTime
+
+            if (frame.packetsAdded > currentPacketSize) {
+                currentPacketSize = frame.packetsAdded.toInt()
+                capturedTime = currentTime
+            }
+
+            // Waiting when frame will be combined
+            // if it's not, drop it because of timeout
+            if (currentPacketSize >= frame.packets.size) {
+                mDecoderVideo.addFrame(
+                    frame
+                )
+                mBufferizerRemote.removeFirstFrameFromQueue(
+                    frame
+                )
+                break
+            }
+
+            if (delta > nextPartMissed) {
+                nextPartMissed += MSPacketBufferizer
+                    .INTERVAL_MISS_PACKET
+                    .toLong()
+                mHandlerPacketMissing.handlingMissedPackets(
+                    mBufferizerRemote
+                )
+            }
+        } while (delta < MSPacketBufferizer.TIMEOUT_DEFAULT_PACKET_MS)
+
+        mHandlerDecoding?.post(
+            this
+        )
     }
+
 }

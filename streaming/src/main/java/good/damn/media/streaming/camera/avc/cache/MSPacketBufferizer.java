@@ -1,7 +1,5 @@
 package good.damn.media.streaming.camera.avc.cache;
 
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -14,17 +12,12 @@ public final class MSPacketBufferizer {
 
     public static final int CACHE_PACKET_SIZE = 2048;
     public static final int TIMEOUT_DEFAULT_PACKET_MS = 33;
+    public static final int INTERVAL_MISS_PACKET = TIMEOUT_DEFAULT_PACKET_MS / 3;
 
     // Think about dynamic timeout
     // which depends from captured frame's packet count
     // if it's near to full frame, wait more than 5000 ms
     // if it's not, may be 200 ms or drop it now
-
-    @Nullable
-    public MSListenerOnGetOrderedFrame onGetOrderedFrame;
-
-    @Nullable
-    public MSListenerOnOrderPacket onOrderPacket;
 
     // Algorithm which targets Key frames
     // if buffer has next combined key frame, it needs to update
@@ -34,12 +27,7 @@ public final class MSPacketBufferizer {
         CACHE_PACKET_SIZE
     ];
 
-    private long mCurrentTime = 0L;
-    private long mCapturedTime = 0L;
-
     private volatile int mCurrentQueueIndex = 0;
-
-    private int mCurrentFrame = 0;
 
     public MSPacketBufferizer() {
         for (int i = 0; i < CACHE_PACKET_SIZE; i++) {
@@ -53,7 +41,14 @@ public final class MSPacketBufferizer {
         }
     }
 
-    public final void orderPacket() {
+    public final void removeFirstFrameFromQueue(
+        @NonNull MSFrame frame
+    ) {
+        mQueues[frame.getId() % CACHE_PACKET_SIZE].queue.removeFirst();
+    }
+
+    @Nullable
+    public final MSFrame getOrderedFrame() {
         synchronized (mQueues) {
             mCurrentQueueIndex++;
             if (mCurrentQueueIndex >= mQueues.length) {
@@ -68,15 +63,7 @@ public final class MSPacketBufferizer {
             ].queue;
 
             if (queue.isEmpty()) {
-                return;
-            }
-
-            mCurrentFrame++;
-
-            if (onOrderPacket != null) {
-                onOrderPacket.onOrderPacket(
-                    mCurrentFrame
-                );
+                return null;
             }
 
             @NonNull
@@ -84,37 +71,10 @@ public final class MSPacketBufferizer {
             try {
                 frame = queue.getFirst();
             } catch (NoSuchElementException e) {
-                return;
+                return null;
             }
 
-            mCapturedTime = System.currentTimeMillis();
-            mCurrentTime = mCapturedTime;
-
-            int currentPacketSize = frame.getPacketsAdded();
-
-            while (
-                mCurrentTime - mCapturedTime < TIMEOUT_DEFAULT_PACKET_MS
-            ) {
-                mCurrentTime = System.currentTimeMillis();
-
-                if (frame.getPacketsAdded() > currentPacketSize) {
-                    currentPacketSize = frame.getPacketsAdded();
-                    mCapturedTime = mCurrentTime;
-                }
-
-                // Waiting when frame will be combined
-                // if it's not, drop it because of timeout
-                if (currentPacketSize >= frame.getPackets().length) {
-                    if (onGetOrderedFrame != null) {
-                        onGetOrderedFrame.onGetOrderedFrame(
-                            frame
-                        );
-                    }
-                    break;
-                }
-            }
-
-            queue.removeFirst();
+            return frame;
         }
     }
 

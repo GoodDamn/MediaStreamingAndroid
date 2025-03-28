@@ -2,21 +2,15 @@ package good.damn.media.streaming.camera.avc
 
 import android.media.MediaCodec
 import android.media.MediaFormat
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
+import good.damn.media.streaming.camera.MSCameraCallbackDecoder
 import good.damn.media.streaming.camera.avc.cache.MSFrame
-import good.damn.media.streaming.camera.avc.cache.MSListenerOnGetOrderedFrame
-import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
-import good.damn.media.streaming.extensions.integer
-import good.damn.media.streaming.extensions.short
+import good.damn.media.streaming.extensions.camera2.setCallbackCompat
 import good.damn.media.streaming.network.MSStateable
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.net.DatagramSocket
-import java.util.concurrent.ConcurrentLinkedQueue
 
 class MSDecoderAvc
 : MSCoder(),
@@ -31,14 +25,10 @@ MSStateable {
         TYPE_AVC
     )
 
-    private val mQueueFrame = ConcurrentLinkedQueue<
-        MSFrame
-    >()
+    private val mCallbackDecoder = MSCameraCallbackDecoder()
 
     var isConfigured = false
         private set
-
-    var isRender = true
 
     override fun stop() {
         isConfigured = false
@@ -63,9 +53,11 @@ MSStateable {
         format: MediaFormat
     ) = mCoder.run {
         isConfigured = true
+
         setCallback(
-            this@MSDecoderAvc
+            mCallbackDecoder
         )
+
         configure(
             format,
             decodeSurface,
@@ -74,87 +66,10 @@ MSStateable {
         )
     }
 
-    fun addOrderedFrame(
+    fun addFrame(
         frame: MSFrame
-    ) {
-        mQueueFrame.add(
-            frame
-        )
-    }
-
-    override fun onInputBufferAvailable(
-        codec: MediaCodec,
-        index: Int
-    ) {
-        Thread.sleep(24)
-        try {
-            val inp = codec.getInputBuffer(
-                index
-            )
-            if (inp == null) {
-                Log.d(TAG, "onInputBufferAvailable: NULL")
-                return
-            }
-
-            inp.clear()
-            var mSizeFrame = 0
-            if (mQueueFrame.isNotEmpty()) {
-                mQueueFrame.remove().packets.forEach {
-                    it?.apply {
-                        val a = data.short(
-                            MSUtilsAvc.OFFSET_PACKET_SIZE
-                        )
-                        inp.put(
-                            data,
-                            MSUtilsAvc.LEN_META,
-                            a
-                        )
-                        mSizeFrame += a
-                    }
-                }
-            }
-
-            codec.queueInputBuffer(
-                index,
-                0,
-                mSizeFrame,
-                0,
-                0
-            )
-        } catch (e: Exception) {
-            Log.d(TAG, "onInputBufferAvailable: EXCEPTION: ${e.localizedMessage}")
-        }
-    }
-
-    override fun onError(
-        codec: MediaCodec,
-        e: MediaCodec.CodecException
-    ) {
-        Log.d(TAG, "onError: ")
-    }
-
-    override fun onOutputFormatChanged(
-        codec: MediaCodec, 
-        format: MediaFormat
-    ) {
-        Log.d(TAG, "onOutputFormatChanged: ")
-    }
+    ) = mCallbackDecoder.addFrame(
+        frame
+    )
     
-    override fun onOutputBufferAvailable(
-        codec: MediaCodec,
-        index: Int,
-        info: MediaCodec.BufferInfo
-    ) {
-        try {
-            codec.getOutputBuffer(
-                index
-            )
-
-            codec.releaseOutputBuffer(
-                index,
-                isRender
-            )
-        } catch (_: Exception) {}
-    }
-
 }
