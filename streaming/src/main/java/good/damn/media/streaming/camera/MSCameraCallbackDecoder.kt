@@ -91,18 +91,24 @@ class MSCameraCallbackDecoder
         var mSizeFrame = 0
 
         if (mQueueFrames.isNotEmpty()) {
-            mQueueFrames.remove().packets.forEach {
-                it?.apply {
-                    val a = data.short(
-                        MSUtilsAvc.OFFSET_PACKET_SIZE
-                    )
-                    inp.put(
-                        data,
-                        MSUtilsAvc.LEN_META,
-                        a
-                    )
-                    mSizeFrame += a
+            mQueueFrames.remove().apply {
+                packets.forEach {
+                    it?.apply {
+                        val a = data.short(
+                            MSUtilsAvc.OFFSET_PACKET_SIZE
+                        )
+                        inp.put(
+                            data,
+                            MSUtilsAvc.LEN_META,
+                            a
+                        )
+                        mSizeFrame += a
+                    }
                 }
+                /*if (id >= mLastFrameId) {
+
+                    mLastFrameId = id
+                }*/
             }
         }
 

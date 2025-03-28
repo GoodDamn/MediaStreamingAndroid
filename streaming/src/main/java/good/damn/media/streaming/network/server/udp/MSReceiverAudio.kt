@@ -43,9 +43,11 @@ class MSReceiverAudio
             0,
             BUFFER_SIZE
         )
-        play()
-    }
 
+        if (mAudioTrack.state == AudioTrack.STATE_INITIALIZED) {
+            play()
+        }
+    }
 
     fun stop() {
         mAudioTrack.stop()

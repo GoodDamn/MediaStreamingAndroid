@@ -12,7 +12,7 @@ inline fun MediaFormat.default() {
 
     setInteger(
         MediaFormat.KEY_BIT_RATE,
-        4000 * 8
+        2000 * 8
     )
 
     setInteger(

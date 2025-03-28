@@ -12,7 +12,6 @@ import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
 import good.damn.media.streaming.camera.avc.MSUtilsAvc
-import good.damn.media.streaming.camera.avc.cache.MSFrame
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.camera2.default
 import good.damn.media.streaming.network.server.udp.MSPacketMissingHandler
@@ -20,7 +19,6 @@ import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrame
 import good.damn.media.streaming.network.server.udp.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.net.InetAddress
 
 class MSEnvironmentVideo(
@@ -32,8 +30,8 @@ class MSEnvironmentVideo(
     }
 
     val resolution = Size(
-        1280,
-        720
+        640,
+        480
     )
 
     val isReceiving: Boolean
@@ -143,6 +141,9 @@ class MSEnvironmentVideo(
 
         mThreadDecoding?.interrupt()
 
+        mThreadDecoding = null
+        mHandlerDecoding = null
+
         mServerVideo.apply {
             stop()
             release()
@@ -171,13 +172,16 @@ class MSEnvironmentVideo(
         )
 
     override fun run() {
-        Log.d(TAG, "run: ")
         if (!mServerVideo.isRunning) {
             mBufferizerRemote.clear()
             return
         }
 
-        val frame = mBufferizerRemote.orderedFrame
+        val queue = mBufferizerRemote.orderedQueue
+        val frame = if (
+            queue.isEmpty()
+        ) null else queue.removeFirst()
+
         if (frame == null) {
             mHandlerDecoding?.post(
                 this
@@ -207,9 +211,6 @@ class MSEnvironmentVideo(
             // if it's not, drop it because of timeout
             if (currentPacketSize >= frame.packets.size) {
                 mDecoderVideo.addFrame(
-                    frame
-                )
-                mBufferizerRemote.removeFirstFrameFromQueue(
                     frame
                 )
                 break

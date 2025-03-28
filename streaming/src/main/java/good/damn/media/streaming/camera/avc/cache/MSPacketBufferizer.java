@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public final class MSPacketBufferizer {
 
@@ -41,40 +42,17 @@ public final class MSPacketBufferizer {
         }
     }
 
-    public final void removeFirstFrameFromQueue(
-        @NonNull MSFrame frame
-    ) {
-        mQueues[frame.getId() % CACHE_PACKET_SIZE].queue.removeFirst();
-    }
-
-    @Nullable
-    public final MSFrame getOrderedFrame() {
+    @NonNull
+    public final ConcurrentLinkedDeque<MSFrame> getOrderedQueue() {
         synchronized (mQueues) {
             mCurrentQueueIndex++;
             if (mCurrentQueueIndex >= mQueues.length) {
                 mCurrentQueueIndex = 0;
             }
 
-            @NonNull
-            final ConcurrentLinkedDeque<
-                MSFrame
-            > queue = mQueues[
+            return mQueues[
                 mCurrentQueueIndex
             ].queue;
-
-            if (queue.isEmpty()) {
-                return null;
-            }
-
-            @NonNull
-            MSFrame frame;
-            try {
-                frame = queue.getFirst();
-            } catch (NoSuchElementException e) {
-                return null;
-            }
-
-            return frame;
         }
     }
 

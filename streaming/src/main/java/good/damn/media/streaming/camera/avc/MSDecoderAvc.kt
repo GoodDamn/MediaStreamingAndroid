@@ -9,7 +9,6 @@ import android.util.Log
 import android.view.Surface
 import good.damn.media.streaming.camera.MSCameraCallbackDecoder
 import good.damn.media.streaming.camera.avc.cache.MSFrame
-import good.damn.media.streaming.extensions.camera2.setCallbackCompat
 import good.damn.media.streaming.network.MSStateable
 
 class MSDecoderAvc
