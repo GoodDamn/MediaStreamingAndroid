@@ -157,10 +157,13 @@ MSListenerOnChangeSurface {
 
                 onChangeSurface = this@MSFragmentTestH264
 
-                layoutParams = ViewGroup.LayoutParams(
-                    MSApp.width,
-                    (mStreamCamera.resolution.width.toFloat() / mStreamCamera.resolution.height * MSApp.width).toInt()
-                )
+                val w = (MSApp.width * 0.4f).toInt()
+                layoutParams = FrameLayout.LayoutParams(
+                    w,
+                    (mStreamCamera.resolution.width.toFloat() / mStreamCamera.resolution.height * w).toInt()
+                ).apply {
+                    gravity = Gravity.CENTER
+                }
                 it.addView(
                     this
                 )

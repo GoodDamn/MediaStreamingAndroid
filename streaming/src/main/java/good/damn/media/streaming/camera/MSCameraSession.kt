@@ -40,7 +40,10 @@ class MSCameraSession
             CameraDevice.TEMPLATE_PREVIEW
         ).apply {
             characteristics?.apply {
-                default(this)
+                default(
+                    this,
+                    0.2f
+                )
             }
         }
 

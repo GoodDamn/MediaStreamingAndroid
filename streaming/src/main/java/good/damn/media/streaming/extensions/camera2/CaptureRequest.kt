@@ -4,7 +4,8 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 
 inline fun CaptureRequest.Builder.default(
-    characteristics: CameraCharacteristics
+    characteristics: CameraCharacteristics,
+    nSensitivity: Float
 ) {
     set(
         CaptureRequest.CONTROL_AE_MODE,
@@ -26,7 +27,7 @@ inline fun CaptureRequest.Builder.default(
     )?.apply {
         set(
             CaptureRequest.SENSOR_SENSITIVITY,
-            (lower + (upper - lower) * 0.2f).toInt()
+            (lower + (upper - lower) * nSensitivity).toInt()
         )
     }
 }
