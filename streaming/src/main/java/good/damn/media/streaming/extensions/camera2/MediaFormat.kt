@@ -11,11 +11,6 @@ inline fun MediaFormat.default() {
             .COLOR_FormatSurface
     )
 
-    /*setInteger(
-        MediaFormat.KEY_PROFILE,
-        CodecProfileLevel.AVCProfileConstrainedBaseline
-    )*/
-
     setInteger(
         MediaFormat.KEY_BIT_RATE,
         2000 * 8
