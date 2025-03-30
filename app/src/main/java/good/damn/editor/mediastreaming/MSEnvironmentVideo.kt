@@ -140,7 +140,7 @@ class MSEnvironmentVideo(
             this
         )
 
-        mThreadDecoding?.interrupt()
+        mThreadDecoding?.quitSafely()
 
         mThreadDecoding = null
         mHandlerDecoding = null

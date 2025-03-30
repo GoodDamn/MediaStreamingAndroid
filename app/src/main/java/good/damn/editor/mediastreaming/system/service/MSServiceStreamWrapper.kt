@@ -43,6 +43,11 @@ class MSServiceStreamWrapper {
         context: Context
     ) {
         isStarted = false
+
+        context.unbindService(
+            serviceConnectionStream
+        )
+
         context.stopService(
             intentStream(context)
         )

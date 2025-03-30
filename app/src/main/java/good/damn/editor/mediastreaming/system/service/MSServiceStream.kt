@@ -84,13 +84,12 @@ class MSServiceStream
             mReceiverCameraFrameRestore!!
         )
 
-        mStreamAudio = MSStreamAudioInput()
+        //mStreamAudio = MSStreamAudioInput()
 
         mBinder = MSServiceStreamBinder(
             managerCamera!!,
             mSubscriber!!,
             mStreamCamera!!,
-            mStreamAudio!!,
             mServerRestorePackets!!,
             mReceiverCameraFrameRestore!!,
             Handler(
@@ -115,32 +114,19 @@ class MSServiceStream
         return true
     }
 
+    override fun onRebind(
+        intent: Intent?
+    ) {
+        Log.d(TAG, "onRebind: ")
+    }
+    
     override fun onDestroy() {
-        Log.d(TAG, "onDestroy: ")
-
+        super.onDestroy()
         mThread?.quitSafely()
         mThread = null
 
-        mSubscriber?.apply {
-            release()
-        }
+        mBinder.release()
 
-        mStreamCamera?.apply {
-            stop()
-            release()
-        }
-
-        mServerRestorePackets?.apply {
-            stop()
-            release()
-        }
-
-        mStreamAudio?.apply {
-            stop()
-            release()
-        }
-
-        super.onDestroy()
     }
 
 }

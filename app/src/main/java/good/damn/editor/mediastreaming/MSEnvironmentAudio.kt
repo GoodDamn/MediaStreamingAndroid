@@ -18,11 +18,6 @@ class MSEnvironmentAudio(
     val isReceiving: Boolean
         get() = mServerAudio.isRunning
 
-    val isStreamingAudio: Boolean
-        get() = serviceConnection
-            .binder
-            ?.isStreamingAudio ?: false
-
     private val mReceiverAudio = MSReceiverAudio()
     private var mServerAudio = MSServerUDP(
         MSStreamConstants.PORT_AUDIO,
@@ -46,15 +41,5 @@ class MSEnvironmentAudio(
     fun startReceiving() {
         mServerAudio.start()
     }
-
-    fun startStreaming(
-        host: String
-    ) = serviceConnection.binder?.startStreamingAudio(
-        host
-    )
-
-    fun stopStreaming() = serviceConnection
-        .binder
-        ?.stopStreamingAudio()
 
 }

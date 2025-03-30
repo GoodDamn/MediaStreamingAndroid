@@ -17,34 +17,38 @@ class MSServiceStreamBinder(
     private val managerCamera: MSManagerCamera,
     private val mSubscriber: MSStreamSubscriberUDP,
     private val mStreamCamera: MSStreamCameraInput,
-    private val mStreamAudio: MSStreamAudioInput,
     private val mServerRestore: MSServerUDP,
     private val mReceiverCameraFrameRestore: MSReceiverCameraFrameRestore,
     private val mHandler: Handler
 ): Binder() {
 
-    val isStreamingAudio: Boolean
-        get() = mStreamAudio.isRunning
-
     val isStreamingCamera: Boolean
         get() = mStreamCamera.isRunning
 
-    fun stopStreamingAudio() {
-        mStreamAudio.stop()
+    fun release() {
+        mSubscriber.apply {
+            release()
+        }
+
+        mStreamCamera.apply {
+            stop()
+            release()
+        }
+
+        mServerRestore.apply {
+            stop()
+            release()
+        }
+
+        /*mStreamAudio?.apply {
+            stop()
+            release()
+        }*/
     }
 
     fun stopStreamingCamera() {
         mStreamCamera.stop()
         mServerRestore.stop()
-    }
-
-    fun startStreamingAudio(
-        host: String,
-    ) {
-        mStreamAudio.start(
-            host.toInetAddress(),
-            mHandler
-        )
     }
 
     fun startStreamingVideo(

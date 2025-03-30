@@ -39,8 +39,6 @@ class MSCameraCallbackEncoder
                 mRemaining
             )
 
-            Log.d(TAG, "onOutputBufferAvailable: $mRemaining")
-
             codec.releaseOutputBuffer(
                 index,
                 false

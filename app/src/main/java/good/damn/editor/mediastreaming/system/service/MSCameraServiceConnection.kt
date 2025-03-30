@@ -26,6 +26,7 @@ class MSCameraServiceConnection
     override fun onServiceDisconnected(
         name: ComponentName?
     ) {
+        Log.d(TAG, "onServiceDisconnected: ")
         binder = null
     }
 }

@@ -46,9 +46,9 @@ MSListenerOnChangeSurface {
         mServiceStreamWrapper.serviceConnectionStream
     )
 
-    private val mStreamAudio = MSEnvironmentAudio(
+    /*private val mStreamAudio = MSEnvironmentAudio(
         mServiceStreamWrapper.serviceConnectionStream
-    )
+    )*/
 
     private var mSurfaceReceive: Surface? = null
 
@@ -57,10 +57,16 @@ MSListenerOnChangeSurface {
         mStreamCamera.stopReceiving()
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "onDestroy: ")
+        //mStreamAudio.releaseReceiving()
 
-        mStreamAudio.releaseReceiving()
+        mServiceStreamWrapper
+            .serviceConnectionStream
+            .binder
+            ?.release()
+
         mStreamCamera.releaseReceiving()
 
         mServiceStreamWrapper.destroy(
@@ -118,7 +124,7 @@ MSListenerOnChangeSurface {
                 if (mStreamCamera.isReceiving) {
                     text = "Start receiving"
                     mStreamCamera.stopReceiving()
-                    mStreamAudio.stopReceiving()
+                    //mStreamAudio.stopReceiving()
                     return@setOnClickListener
                 }
 
@@ -135,7 +141,7 @@ MSListenerOnChangeSurface {
                     )
                 }
 
-                mStreamAudio.startReceiving()
+                //mStreamAudio.startReceiving()
             }
 
             addView(
@@ -233,11 +239,11 @@ MSListenerOnChangeSurface {
                                 0xff0000ff.toInt()
                             )
 
-                            mEditTextHost?.text?.toString()?.apply {
+                            /*mEditTextHost?.text?.toString()?.apply {
                                 mStreamAudio.startStreaming(
                                     this
                                 )
-                            }
+                            }*/
                         }
                         return@setOnClickListener
                     }
@@ -246,7 +252,7 @@ MSListenerOnChangeSurface {
                         0xffff0000.toInt()
                     )
 
-                    mStreamAudio.stopStreaming()
+                    //mStreamAudio.stopStreaming()
                 }
 
                 it.addView(
