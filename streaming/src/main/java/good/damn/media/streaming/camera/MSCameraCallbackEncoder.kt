@@ -2,10 +2,15 @@ package good.damn.media.streaming.camera
 
 import android.media.MediaCodec
 import android.media.MediaFormat
+import android.util.Log
 import good.damn.media.streaming.camera.avc.listeners.MSListenerOnGetFrameData
 
 class MSCameraCallbackEncoder
 : MediaCodec.Callback() {
+
+    companion object {
+        private const val TAG = "MSCameraCallbackEncoder"
+    }
 
     private var mRemaining = 0
 
@@ -33,6 +38,8 @@ class MSCameraCallbackEncoder
                 0,
                 mRemaining
             )
+
+            Log.d(TAG, "onOutputBufferAvailable: $mRemaining")
 
             codec.releaseOutputBuffer(
                 index,

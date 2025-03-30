@@ -42,7 +42,7 @@ class MSCameraSession
             characteristics?.apply {
                 default(
                     this,
-                    0.2f
+                    0.0f
                 )
             }
         }
