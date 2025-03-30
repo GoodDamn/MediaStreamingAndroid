@@ -1,5 +1,6 @@
 package good.damn.media.streaming.camera
 
+import android.os.Handler
 import android.util.Log
 import good.damn.media.streaming.camera.avc.MSCameraAVC
 import good.damn.media.streaming.camera.avc.MSUtilsAvc
@@ -38,17 +39,20 @@ class MSStreamCameraInput(
     fun start(
         cameraId: MSCameraModelID,
         width: Int,
-        height: Int
+        height: Int,
+        handler: Handler
     ) {
         mCamera.apply {
             configure(
                 width,
                 height,
-                cameraId.characteristics
+                cameraId.characteristics,
+                handler
             )
 
             start(
-                cameraId
+                cameraId,
+                handler
             )
         }
     }
@@ -66,6 +70,7 @@ class MSStreamCameraInput(
         offset: Int,
         len: Int
     ) {
+        Log.d(TAG, "onGetFrameData: $len")
         var i = offset
 
         var packetCount = len / PACKET_MAX_SIZE
@@ -150,7 +155,7 @@ class MSStreamCameraInput(
             packetCount.toShort(),
             chunk
         )
-
+        
         Thread.sleep(3)
         subscribers?.forEach {
             it.onGetPacket(chunk)

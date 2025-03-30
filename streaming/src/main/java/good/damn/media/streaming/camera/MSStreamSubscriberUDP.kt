@@ -1,17 +1,15 @@
 package good.damn.media.streaming.camera
 
-import good.damn.media.streaming.network.client.MSClientStreamUDPChunk
+import good.damn.media.streaming.network.client.MSClientUDP
 import kotlinx.coroutines.CoroutineScope
 import java.net.InetAddress
 
 class MSStreamSubscriberUDP(
-    port: Int,
-    scope: CoroutineScope
+    port: Int
 ): MSStreamSubscriber {
 
-    private val mClient = MSClientStreamUDPChunk(
-        port,
-        scope
+    private val mClient = MSClientUDP(
+        port
     )
 
     var host: InetAddress
@@ -19,10 +17,6 @@ class MSStreamSubscriberUDP(
         set(v) {
             mClient.host = v
         }
-
-    fun start() = mClient.start()
-
-    fun stop() = mClient.stop()
 
     fun release() = mClient.release()
 

@@ -2,6 +2,8 @@ package good.damn.editor.mediastreaming.system.service
 
 import android.app.Service
 import android.content.Intent
+import android.os.Handler
+import android.os.HandlerThread
 import android.os.IBinder
 import android.util.Log
 import good.damn.media.streaming.MSStreamConstants
@@ -37,6 +39,8 @@ class MSServiceStream
 
     private lateinit var mBinder: MSServiceStreamBinder
 
+    private var mThread: HandlerThread? = null
+
     override fun onStartCommand(
         intent: Intent?,
         flags: Int,
@@ -44,15 +48,18 @@ class MSServiceStream
     ): Int {
         Log.d(TAG, "onStartCommand: ")
 
+        mThread = HandlerThread(
+            "communicationThread"
+        ).apply {
+            start()
+        }
+
         managerCamera = MSManagerCamera(
             applicationContext
         )
 
         mSubscriber = MSStreamSubscriberUDP(
-            MSStreamConstants.PORT_VIDEO,
-            CoroutineScope(
-                Dispatchers.IO
-            )
+            MSStreamConstants.PORT_VIDEO
         )
 
         mStreamCamera = MSStreamCameraInput(
@@ -85,7 +92,10 @@ class MSServiceStream
             mStreamCamera!!,
             mStreamAudio!!,
             mServerRestorePackets!!,
-            mReceiverCameraFrameRestore!!
+            mReceiverCameraFrameRestore!!,
+            Handler(
+                mThread!!.looper
+            )
         )
 
         return START_STICKY
@@ -107,8 +117,11 @@ class MSServiceStream
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: ")
+
+        mThread?.quitSafely()
+        mThread = null
+
         mSubscriber?.apply {
-            stop()
             release()
         }
 

@@ -1,5 +1,7 @@
 package good.damn.editor.mediastreaming
 
+import good.damn.editor.mediastreaming.system.service.MSCameraServiceConnection
+import good.damn.editor.mediastreaming.system.service.MSServiceStreamBinder
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.audio.stream.MSStreamAudioInput
@@ -10,20 +12,19 @@ import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
 
 class MSEnvironmentAudio(
-    private val mServiceStreamWrapper: MSServiceStreamWrapper
+    private val serviceConnection: MSCameraServiceConnection
 ) {
 
     val isReceiving: Boolean
         get() = mServerAudio.isRunning
 
     val isStreamingAudio: Boolean
-        get() = mServiceStreamWrapper
-            .serviceConnectionStream
+        get() = serviceConnection
             .binder
             ?.isStreamingAudio ?: false
 
     private val mReceiverAudio = MSReceiverAudio()
-    private val mServerAudio = MSServerUDP(
+    private var mServerAudio = MSServerUDP(
         MSStreamConstants.PORT_AUDIO,
         1024,
         CoroutineScope(
@@ -48,15 +49,11 @@ class MSEnvironmentAudio(
 
     fun startStreaming(
         host: String
-    ) = mServiceStreamWrapper
-        .serviceConnectionStream
-        .binder
-        ?.startStreamingAudio(
-            host
-        )
+    ) = serviceConnection.binder?.startStreamingAudio(
+        host
+    )
 
-    fun stopStreaming() = mServiceStreamWrapper
-        .serviceConnectionStream
+    fun stopStreaming() = serviceConnection
         .binder
         ?.stopStreamingAudio()
 

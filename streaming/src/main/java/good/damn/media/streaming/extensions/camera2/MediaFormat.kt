@@ -14,7 +14,7 @@ inline fun MediaFormat.default() {
 
     setInteger(
         MediaFormat.KEY_BIT_RATE,
-        512 * 8
+        1024 * 8
     )
 
     setInteger(
@@ -41,6 +41,6 @@ inline fun MediaFormat.default() {
 
     setInteger(
         MediaFormat.KEY_I_FRAME_INTERVAL,
-        -1
+        1
     )
 }

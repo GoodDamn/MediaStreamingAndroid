@@ -1,11 +1,10 @@
 package good.damn.media.streaming.audio.stream
 
+import android.os.Handler
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.audio.MSListenerOnSamplesRecord
 import good.damn.media.streaming.audio.MSRecordAudio
-import good.damn.media.streaming.network.client.MSClientStreamUDPAudio
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import good.damn.media.streaming.network.client.MSClientUDP
 import java.net.InetAddress
 
 class MSStreamAudioInput
@@ -16,42 +15,33 @@ class MSStreamAudioInput
     }
 
     val isRunning: Boolean
-        get() = mClientAudioStream.isStreamRunning
+        get() = mAudioRecord.isRunning
 
-    private val mAudioRecord = MSRecordAudio(
-        CoroutineScope(
-            Dispatchers.IO
-        )
-    ).apply {
+    private val mAudioRecord = MSRecordAudio().apply {
         onSampleListener = this@MSStreamAudioInput
     }
 
-    private val mClientAudioStream = MSClientStreamUDPAudio(
+    private val mClientAudio = MSClientUDP(
         MSStreamConstants.PORT_AUDIO,
-        CoroutineScope(
-            Dispatchers.IO
-        ),
-        1024
     )
 
     fun start(
-        host: InetAddress
+        host: InetAddress,
+        handler: Handler
     ) {
-        mAudioRecord.startRecording()
-        mClientAudioStream.apply {
-            this.host = host
-            start()
-        }
+        mAudioRecord.start(
+            handler
+        )
+        mClientAudio.host = host
     }
 
     fun stop() {
         mAudioRecord.stop()
-        mClientAudioStream.stop()
     }
 
     fun release() {
         mAudioRecord.release()
-        mClientAudioStream.release()
+        mClientAudio.release()
     }
 
     override fun onRecordSamples(
@@ -59,11 +49,9 @@ class MSStreamAudioInput
         position: Int,
         len: Int
     ) {
-        samples.forEach {
-            mClientAudioStream.sendToStream(
-                it
-            )
-        }
+        mClientAudio.sendToStream(
+            samples
+        )
     }
 
 

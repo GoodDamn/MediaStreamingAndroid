@@ -5,6 +5,8 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Size
 import android.view.Surface
+import good.damn.editor.mediastreaming.system.service.MSCameraServiceConnection
+import good.damn.editor.mediastreaming.system.service.MSServiceStreamBinder
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.MSStreamCameraInput
@@ -21,7 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
 
 class MSEnvironmentVideo(
-    private val mServiceStreamWrapper: MSServiceStreamWrapper
+    private val serviceConnection: MSCameraServiceConnection
 ): Runnable {
 
     companion object {
@@ -38,10 +40,8 @@ class MSEnvironmentVideo(
     val isReceiving: Boolean
         get() = mServerVideo.isRunning
 
-
     val isStreamingVideo: Boolean
-        get() = mServiceStreamWrapper
-            .serviceConnectionStream
+        get() = serviceConnection
             .binder
             ?.isStreamingCamera ?: false
 
@@ -151,26 +151,21 @@ class MSEnvironmentVideo(
         }
     }
 
-    fun stopStreamingCamera() = mServiceStreamWrapper
-        .serviceConnectionStream
+    fun stopStreamingCamera() = serviceConnection
         .binder
         ?.stopStreamingCamera()
-
 
     fun startStreamingCamera(
         idLogical: String,
         idPhysical: String?,
         host: String
-    ) = mServiceStreamWrapper
-        .serviceConnectionStream
-        .binder
-        ?.startStreamingVideo(
-            idLogical,
-            idPhysical,
-            host,
-            resolution.width,
-            resolution.height
-        )
+    ) = serviceConnection.binder?.startStreamingVideo(
+        idLogical,
+        idPhysical,
+        host,
+        resolution.width,
+        resolution.height
+    )
 
     override fun run() {
         if (!mServerVideo.isRunning) {

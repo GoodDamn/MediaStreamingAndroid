@@ -4,21 +4,13 @@ import android.annotation.SuppressLint
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder.AudioSource
+import android.os.Handler
 import android.util.Log
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @SuppressLint("MissingPermission")
-class MSRecordAudio(
-    private val scope: CoroutineScope
-): AudioRecord(
-    AudioSource.MIC,
-    DEFAULT_SAMPLE_RATE,
-    DEFAULT_CHANNEL,
-    DEFAULT_ENCODING,
-    DEFAULT_BUFFER_SIZE
-) {
+class MSRecordAudio
+: Runnable {
 
     companion object {
         private val TAG = MSRecordAudio::class.simpleName
@@ -29,70 +21,76 @@ class MSRecordAudio(
         const val DEFAULT_ENCODING = AudioFormat.ENCODING_PCM_16BIT
     }
 
-    init {
-        Log.d(TAG, "init:")
-    }
-
     var onSampleListener: MSListenerOnSamplesRecord? = null
+    var isRunning = false
+        private set
 
-    private var mIsPaused = false
+    private var mHandler: Handler? = null
+
+    private val mRecorder = AudioRecord(
+        AudioSource.MIC,
+        DEFAULT_SAMPLE_RATE,
+        DEFAULT_CHANNEL,
+        DEFAULT_ENCODING,
+        DEFAULT_BUFFER_SIZE
+    )
 
     private val mSampleData = ByteArray(
         DEFAULT_BUFFER_SIZE
     )
 
-    override fun release() {
-        super.release()
-        mIsPaused = true
+    fun release() {
+        mRecorder.release()
+        isRunning = false
     }
 
-    override fun stop() {
-        super.stop()
-        mIsPaused = true
+    fun stop() {
+        mRecorder.stop()
+        isRunning = false
     }
 
-    override fun startRecording() {
-        super.startRecording()
-        mIsPaused = false
-        scope.launch {
-            while (!mIsPaused) {
-                runStream()
-            }
+    fun start(
+        handler: Handler
+    ) {
+        mHandler = handler
+        mRecorder.startRecording()
+        isRunning = true
+        handler.post(this)
+    }
+
+    override fun run() {
+        if (!isRunning) {
+            return
         }
-    }
 
-    private inline fun runStream() {
-        val sample = read(
+        val sample = mRecorder.read(
             mSampleData,
             0,
             mSampleData.size
         )
 
         when (sample) {
-            ERROR_INVALID_OPERATION -> {
+            AudioRecord.ERROR_INVALID_OPERATION -> {
                 Log.d(TAG, "runStream: INVALID_OPERATION")
             }
 
-            ERROR_BAD_VALUE -> {
+            AudioRecord.ERROR_BAD_VALUE -> {
                 Log.d(TAG, "runStream: BAD_VALUE")
             }
 
-            ERROR_DEAD_OBJECT -> {
+            AudioRecord.ERROR_DEAD_OBJECT -> {
                 Log.d(TAG, "runStream: DEAD_OBJECT")
             }
 
-            ERROR -> {
+            AudioRecord.ERROR -> {
                 Log.d(TAG, "runStream: ERROR")
             }
 
-            else -> {
-                onSampleListener?.onRecordSamples(
-                    mSampleData,
-                    0,
-                    sample
-                )
-            }
+            else -> onSampleListener?.onRecordSamples(
+                mSampleData,
+                0,
+                sample
+            )
         }
-
     }
 }

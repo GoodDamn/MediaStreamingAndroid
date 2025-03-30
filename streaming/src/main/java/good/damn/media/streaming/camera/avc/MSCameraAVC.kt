@@ -24,9 +24,6 @@ class MSCameraAVC(
         private const val TAG = "MSCameraAVC"
     }
 
-    private var mThread: HandlerThread? = null
-    private lateinit var mHandler: Handler
-
     private val mCamera = MSCamera(
         manager
     )
@@ -41,33 +38,22 @@ class MSCameraAVC(
     fun configure(
         width: Int,
         height: Int,
-        character: CameraCharacteristics
-    ) {
-        mThread = HandlerThread(
-            "cameraThread"
-        ).apply {
-            start()
-
-            mHandler = Handler(
-                looper
-            )
-
-            mHandler.post {
-                mEncoder.configure(
-                    MediaFormat.createVideoFormat(
-                        MSCoder.TYPE_AVC,
-                        width,
-                        height
-                    ).apply {
-                        default()
-                        setInteger(
-                            MediaFormat.KEY_ROTATION,
-                            character.getRotation() ?: 0
-                        )
-                    }
+        character: CameraCharacteristics,
+        handler: Handler
+    ) = handler.post {
+        mEncoder.configure(
+            MediaFormat.createVideoFormat(
+                MSCoder.TYPE_AVC,
+                width,
+                height
+            ).apply {
+                default()
+                setInteger(
+                    MediaFormat.KEY_ROTATION,
+                    character.getRotation() ?: 0
                 )
             }
-        }
+        )
     }
 
     fun stop() {
@@ -78,8 +64,9 @@ class MSCameraAVC(
     }
 
     fun start(
-        cameraId: MSCameraModelID
-    ) = mHandler.post {
+        cameraId: MSCameraModelID,
+        handler: Handler
+    ) = handler.post {
         isRunning = true
         mCamera.apply {
             surfaces = arrayListOf(
@@ -87,7 +74,7 @@ class MSCameraAVC(
             )
             openCameraStream(
                 cameraId,
-                mHandler
+                handler
             )
         }
 
@@ -97,7 +84,6 @@ class MSCameraAVC(
     fun release() {
         isRunning = false
         mEncoder.release()
-        mThread?.interrupt()
 
         mCamera.apply {
             surfaces?.forEach {

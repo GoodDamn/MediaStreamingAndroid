@@ -2,6 +2,7 @@ package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Surface
@@ -42,11 +43,11 @@ MSListenerOnChangeSurface {
 
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
     private val mStreamCamera = MSEnvironmentVideo(
-        mServiceStreamWrapper
+        mServiceStreamWrapper.serviceConnectionStream
     )
 
     private val mStreamAudio = MSEnvironmentAudio(
-        mServiceStreamWrapper
+        mServiceStreamWrapper.serviceConnectionStream
     )
 
     private var mSurfaceReceive: Surface? = null
@@ -56,17 +57,15 @@ MSListenerOnChangeSurface {
         mStreamCamera.stopReceiving()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun onStop() {
+        super.onStop()
 
         mStreamAudio.releaseReceiving()
         mStreamCamera.releaseReceiving()
 
-        context?.apply {
-            mServiceStreamWrapper.destroy(
-                this
-            )
-        }
+        mServiceStreamWrapper.destroy(
+            requireContext()
+        )
     }
 
     override fun onCreate(
@@ -77,7 +76,7 @@ MSListenerOnChangeSurface {
         )
 
         mServiceStreamWrapper.start(
-            requireActivity().applicationContext
+            requireContext()
         )
     }
 
