@@ -3,7 +3,6 @@ package good.damn.editor.mediastreaming
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
-import android.util.Log
 import android.util.Size
 import android.view.Surface
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
@@ -26,6 +25,8 @@ class MSEnvironmentVideo(
 ): Runnable {
 
     companion object {
+        const val TIMEOUT_DEFAULT_PACKET_MS = 33;
+        const val INTERVAL_MISS_PACKET = TIMEOUT_DEFAULT_PACKET_MS / 3
         private const val TAG = "MSStreamEnvironmentCame"
     }
 
@@ -198,6 +199,10 @@ class MSEnvironmentVideo(
         var delta: Long
         var nextPartMissed = 0L
 
+        val timeout = if (
+            currentPacketSize >= 9
+        ) TIMEOUT_DEFAULT_PACKET_MS * 10 else TIMEOUT_DEFAULT_PACKET_MS
+
         do {
             currentTime = System.currentTimeMillis()
             delta = currentTime - capturedTime
@@ -217,14 +222,13 @@ class MSEnvironmentVideo(
             }
 
             if (delta > nextPartMissed) {
-                nextPartMissed += MSPacketBufferizer
-                    .INTERVAL_MISS_PACKET
+                nextPartMissed += INTERVAL_MISS_PACKET
                     .toLong()
                 mHandlerPacketMissing.handlingMissedPackets(
                     mBufferizerRemote
                 )
             }
-        } while (delta < MSPacketBufferizer.TIMEOUT_DEFAULT_PACKET_MS)
+        } while (delta < timeout)
 
         mHandlerDecoding?.post(
             this

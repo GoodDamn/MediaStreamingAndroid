@@ -12,8 +12,6 @@ public final class MSPacketBufferizer {
     private static final String TAG = "MSPacketBufferizer";
 
     public static final int CACHE_PACKET_SIZE = 2048;
-    public static final int TIMEOUT_DEFAULT_PACKET_MS = 33;
-    public static final int INTERVAL_MISS_PACKET = TIMEOUT_DEFAULT_PACKET_MS / 3;
 
     // Think about dynamic timeout
     // which depends from captured frame's packet count
