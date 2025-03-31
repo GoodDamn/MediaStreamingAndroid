@@ -2,7 +2,7 @@ package good.damn.media.streaming.network.server.udp
 
 import android.util.Log
 import good.damn.media.streaming.network.MSStateable
-import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveData
+import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveNetworkData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -14,7 +14,7 @@ open class MSServerUDP(
     private val port: Int,
     bufferSize: Int,
     private val scope: CoroutineScope,
-    private val onReceiveData: MSListenerOnReceiveData
+    private val onReceiveData: MSListenerOnReceiveNetworkData
 ): MSStateable {
 
     companion object {
@@ -37,8 +37,6 @@ open class MSServerUDP(
         port
     ).apply {
         reuseAddress = true
-        receiveBufferSize = 1
-        sendBufferSize = 1
     }
 
     override fun start() {
@@ -67,12 +65,13 @@ open class MSServerUDP(
     override fun release() {
         isRunning = false
         try {
-            mSocket.disconnect()
+            // causes infinite loop
+            //mSocket.disconnect()
             mSocket.close()
         } catch (ignored: Exception) {}
     }
 
-    private suspend inline fun listen() {
+    private suspend fun listen() {
         try {
             mPacket.setData(
                 mBuffer,
@@ -89,8 +88,9 @@ open class MSServerUDP(
         withContext(
             Dispatchers.IO
         ) {
-            onReceiveData.onReceiveData(
-                saved
+            onReceiveData.onReceiveNetworkData(
+                saved,
+                mPacket.address
             )
         }
 

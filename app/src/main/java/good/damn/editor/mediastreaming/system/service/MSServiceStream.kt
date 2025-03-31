@@ -10,15 +10,19 @@ import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.audio.stream.MSStreamAudioInput
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
-import good.damn.media.streaming.camera.MSStreamSubscriberUDP
+import good.damn.media.streaming.camera.MSStreamSubscriber
+import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.extensions.toInetAddress
+import good.damn.media.streaming.network.client.MSClientUDP
 import good.damn.media.streaming.network.server.udp.MSReceiverAudio
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameRestore
 import good.damn.media.streaming.network.server.udp.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlin.math.log
 
 class MSServiceStream
-: Service() {
+: Service(), MSStreamSubscriber {
 
     companion object {
         private val TAG = MSServiceStream::class.simpleName
@@ -29,15 +33,9 @@ class MSServiceStream
         const val EXTRA_HOST = "h"
     }
 
-    private var managerCamera: MSManagerCamera? = null
-    private var mSubscriber: MSStreamSubscriberUDP? = null
     private var mStreamCamera: MSStreamCameraInput? = null
-    private var mStreamAudio: MSStreamAudioInput? = null
-
+    private var mClientStreamCamera: MSClientUDP? = null
     private var mServerRestorePackets: MSServerUDP? = null
-    private var mReceiverCameraFrameRestore: MSReceiverCameraFrameRestore? = null
-
-    private lateinit var mBinder: MSServiceStreamBinder
 
     private var mThread: HandlerThread? = null
 
@@ -54,26 +52,19 @@ class MSServiceStream
             start()
         }
 
-        managerCamera = MSManagerCamera(
-            applicationContext
-        )
-
-        mSubscriber = MSStreamSubscriberUDP(
+        mClientStreamCamera = MSClientUDP(
             MSStreamConstants.PORT_VIDEO
         )
 
         mStreamCamera = MSStreamCameraInput(
-            managerCamera!!
+            MSManagerCamera(
+                baseContext
+            )
         ).apply {
             subscribers = arrayListOf(
-                mSubscriber!!
+                this@MSServiceStream
             )
         }
-
-        mReceiverCameraFrameRestore = MSReceiverCameraFrameRestore().apply {
-            bufferizer = mStreamCamera!!.bufferizer
-        }
-
 
         mServerRestorePackets = MSServerUDP(
             MSStreamConstants.PORT_VIDEO_RESTORE_REQUEST,
@@ -81,52 +72,101 @@ class MSServiceStream
             CoroutineScope(
                 Dispatchers.IO
             ),
-            mReceiverCameraFrameRestore!!
+            MSReceiverCameraFrameRestore().apply {
+                bufferizer = mStreamCamera!!.bufferizer
+            }
         )
 
-        //mStreamAudio = MSStreamAudioInput()
-
-        mBinder = MSServiceStreamBinder(
-            managerCamera!!,
-            mSubscriber!!,
-            mStreamCamera!!,
-            mServerRestorePackets!!,
-            mReceiverCameraFrameRestore!!,
-            Handler(
-                mThread!!.looper
-            )
-        )
-
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     override fun onBind(
         intent: Intent?
-    ): IBinder {
+    ): IBinder? {
         Log.d(TAG, "onBind: $intent")
-        return mBinder
+        return startStream(intent)
     }
-
+    
     override fun onUnbind(
         intent: Intent?
     ): Boolean {
         Log.d(TAG, "onUnbind: ")
+        mStreamCamera?.stop()
+        mServerRestorePackets?.stop()
+
         return true
     }
 
     override fun onRebind(
         intent: Intent?
     ) {
-        Log.d(TAG, "onRebind: ")
+        Log.d(TAG, "onRebind: $intent")
+        startStream(intent)
     }
     
     override fun onDestroy() {
-        super.onDestroy()
         mThread?.quitSafely()
         mThread = null
-
-        mBinder.release()
-
+        mStreamCamera?.release()
+        mClientStreamCamera?.release()
+        mServerRestorePackets?.release()
+        Log.d(TAG, "onDestroy: ")
     }
 
+    override fun onGetPacket(
+        data: ByteArray
+    ) {
+        mClientStreamCamera?.sendToStream(
+            data
+        )
+    }
+
+    private inline fun startStream(
+        intent: Intent?
+    ): IBinder? {
+        intent ?: return null
+
+        mClientStreamCamera?.host = intent.getStringExtra(
+            EXTRA_HOST
+        )?.toInetAddress()
+
+        val logical = intent.getStringExtra(
+            EXTRA_CAMERA_ID_LOGICAL
+        ) ?: return null
+
+        val physical = intent.getStringExtra(
+            EXTRA_CAMERA_ID_PHYSICAL
+        )
+
+
+        Log.d(TAG, "startStream: $logical: $physical")
+
+        mStreamCamera?.start(
+            MSCameraModelID(
+                logical,
+                physical,
+                false,
+                MSManagerCamera(
+                    baseContext
+                ).getCharacteristics(
+                    physical ?: logical
+                )
+            ),
+            intent.getIntExtra(
+                EXTRA_VIDEO_WIDTH,
+                0
+            ),
+            intent.getIntExtra(
+                EXTRA_VIDEO_HEIGHT,
+                0
+            ),
+            Handler(
+                mThread!!.looper
+            )
+        )
+
+        mServerRestorePackets?.start()
+
+        return null
+    }
 }

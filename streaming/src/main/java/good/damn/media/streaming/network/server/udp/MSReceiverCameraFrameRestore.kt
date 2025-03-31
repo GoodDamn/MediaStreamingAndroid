@@ -4,13 +4,13 @@ import android.util.Log
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.integer
 import good.damn.media.streaming.extensions.short
-import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveData
+import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveNetworkData
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 
 class MSReceiverCameraFrameRestore
-: MSListenerOnReceiveData {
+: MSListenerOnReceiveNetworkData {
 
     companion object {
         private const val TAG = "MSReceiverCameraFrameRe"
@@ -24,13 +24,6 @@ class MSReceiverCameraFrameRestore
             mPacket.port = v
         }
 
-    var host: InetAddress
-        get() = mPacket.address
-        set(v) {
-            mPacket.address = v
-        }
-
-
     private val mSocket = DatagramSocket()
 
     private val mPacket = DatagramPacket(
@@ -41,8 +34,9 @@ class MSReceiverCameraFrameRestore
         port = 6667
     }
 
-    override suspend fun onReceiveData(
-        data: ByteArray
+    override suspend fun onReceiveNetworkData(
+        data: ByteArray,
+        src: InetAddress
     ) {
 
         val frameId = data.integer(0)
@@ -61,6 +55,8 @@ class MSReceiverCameraFrameRestore
         ) ?: return
 
         Log.d(TAG, "onReceiveData: $frameId:$packetId")
+
+        mPacket.address = src
 
         mPacket.setData(
             packet.data,

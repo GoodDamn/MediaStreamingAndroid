@@ -1,8 +1,10 @@
 package good.damn.editor.mediastreaming
 
+import android.content.Context
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.Log
 import android.util.Size
 import android.view.Surface
 import good.damn.editor.mediastreaming.system.service.MSCameraServiceConnection
@@ -23,7 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
 
 class MSEnvironmentVideo(
-    private val serviceConnection: MSCameraServiceConnection
+    private val mServiceWrapper: MSServiceStreamWrapper
 ): Runnable {
 
     companion object {
@@ -41,9 +43,7 @@ class MSEnvironmentVideo(
         get() = mServerVideo.isRunning
 
     val isStreamingVideo: Boolean
-        get() = serviceConnection
-            .binder
-            ?.isStreamingCamera ?: false
+        get() = mServiceWrapper.isBound
 
     private val mReceiverFrame = MSReceiverCameraFrame()
 
@@ -136,11 +136,7 @@ class MSEnvironmentVideo(
         mServerVideo.release()
         mServerRestorePackets.release()
 
-        mHandlerDecoding?.removeCallbacks(
-            this
-        )
-
-        mThreadDecoding?.quitSafely()
+        mThreadDecoding?.quit()
 
         mThreadDecoding = null
         mHandlerDecoding = null
@@ -151,20 +147,24 @@ class MSEnvironmentVideo(
         }
     }
 
-    fun stopStreamingCamera() = serviceConnection
-        .binder
-        ?.stopStreamingCamera()
+    fun stopStreamingCamera(
+        context: Context?
+    ) = mServiceWrapper.unbindCamera(
+        context
+    )
 
     fun startStreamingCamera(
+        context: Context?,
         idLogical: String,
         idPhysical: String?,
         host: String
-    ) = serviceConnection.binder?.startStreamingVideo(
-        idLogical,
-        idPhysical,
+    ) = mServiceWrapper.bindCamera(
+        context,
         host,
         resolution.width,
-        resolution.height
+        resolution.height,
+        idPhysical,
+        idLogical
     )
 
     override fun run() {
@@ -224,6 +224,11 @@ class MSEnvironmentVideo(
                 )
             }
         } while (delta < timeout)
+
+        if (!mServerVideo.isRunning) {
+            mBufferizerRemote.clear()
+            return
+        }
 
         mHandlerDecoding?.post(
             this

@@ -13,7 +13,7 @@ class MSClientUDP(
         private val TAG = MSClientUDP::class.simpleName
     }
 
-    var host: InetAddress
+    var host: InetAddress?
         get() = mPacket.address
         set(v) {
             mPacket.address = v

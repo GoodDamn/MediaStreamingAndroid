@@ -1,15 +1,12 @@
 package good.damn.media.streaming.network.server.udp
 
-import android.media.MediaFormat
-import android.view.Surface
-import good.damn.media.streaming.camera.avc.MSDecoderAvc
-import good.damn.media.streaming.camera.avc.cache.MSFrame
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.writeDefault
-import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveData
+import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveNetworkData
+import java.net.InetAddress
 
 class MSReceiverCameraFrame
-: MSListenerOnReceiveData {
+: MSListenerOnReceiveNetworkData {
 
     companion object {
         private const val TAG = "MSReceiverCameraFramePi"
@@ -17,8 +14,9 @@ class MSReceiverCameraFrame
 
     var bufferizer: MSPacketBufferizer? = null
 
-    override suspend fun onReceiveData(
-        data: ByteArray
+    override suspend fun onReceiveNetworkData(
+        data: ByteArray,
+        src: InetAddress
     ) {
         bufferizer?.writeDefault(
             data

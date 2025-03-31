@@ -5,10 +5,11 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import good.damn.media.streaming.audio.MSRecordAudio
-import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveData
+import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveNetworkData
+import java.net.InetAddress
 
 class MSReceiverAudio
-: MSListenerOnReceiveData {
+: MSListenerOnReceiveNetworkData {
 
     companion object {
         private const val TAG = "MSReceiverAudio"
@@ -35,8 +36,9 @@ class MSReceiverAudio
         AudioManager.AUDIO_SESSION_ID_GENERATE
     )
 
-    override suspend fun onReceiveData(
-        data: ByteArray
+    override suspend fun onReceiveNetworkData(
+        data: ByteArray,
+        src: InetAddress
     ) = mAudioTrack.run {
         write(
             data,

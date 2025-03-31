@@ -43,12 +43,8 @@ MSListenerOnChangeSurface {
 
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
     private val mStreamCamera = MSEnvironmentVideo(
-        mServiceStreamWrapper.serviceConnectionStream
+        mServiceStreamWrapper
     )
-
-    /*private val mStreamAudio = MSEnvironmentAudio(
-        mServiceStreamWrapper.serviceConnectionStream
-    )*/
 
     private var mSurfaceReceive: Surface? = null
 
@@ -58,20 +54,16 @@ MSListenerOnChangeSurface {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         Log.d(TAG, "onDestroy: ")
-        //mStreamAudio.releaseReceiving()
-
-        mServiceStreamWrapper
-            .serviceConnectionStream
-            .binder
-            ?.release()
+        mStreamCamera.stopStreamingCamera(
+            context
+        )
 
         mStreamCamera.releaseReceiving()
-
         mServiceStreamWrapper.destroy(
-            requireContext()
+            context
         )
+        super.onDestroy()
     }
 
     override fun onCreate(
@@ -81,9 +73,11 @@ MSListenerOnChangeSurface {
             savedInstanceState
         )
 
-        mServiceStreamWrapper.start(
-            requireContext()
-        )
+        (activity as? MSActivityMain)
+            ?.launcherPermission
+            ?.launch(
+                Manifest.permission.CAMERA
+            )
     }
 
     override fun onCreateView(
@@ -270,7 +264,16 @@ MSListenerOnChangeSurface {
     override fun onResultPermission(
         permission: String,
         result: Boolean
-    ) = Unit
+    ) {
+        if (!result) {
+            activity?.finish()
+            return
+        }
+
+        mServiceStreamWrapper.start(
+            requireContext()
+        )
+    }
 
     override fun onSelectCamera(
         cameraId: MSCameraModelID
@@ -291,10 +294,13 @@ MSListenerOnChangeSurface {
 
         mStreamCamera.apply {
             if (isStreamingVideo) {
-                stopStreamingCamera()
+                stopStreamingCamera(
+                    context
+                )
             }
 
             startStreamingCamera(
+                context,
                 cameraId.logical,
                 cameraId.physical,
                 ip
