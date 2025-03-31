@@ -13,10 +13,10 @@ inline fun CaptureRequest.Builder.default(
         CaptureRequest.CONTROL_AE_MODE_ON
     )
 
-    set(
+    /*set(
         CaptureRequest.CONTROL_AF_MODE,
-        CaptureRequest.CONTROL_AF_MODE_OFF
-    )
+        CaptureRequest.CONTROL_AF_MODE_AUTO
+    )*/
 
     set(
         CaptureRequest.LENS_FOCUS_DISTANCE,

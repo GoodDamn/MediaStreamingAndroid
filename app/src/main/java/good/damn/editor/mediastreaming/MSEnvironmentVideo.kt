@@ -1,6 +1,10 @@
 package good.damn.editor.mediastreaming
 
 import android.content.Context
+import android.graphics.Camera
+import android.graphics.ImageFormat
+import android.graphics.PixelFormat
+import android.hardware.camera2.CameraCharacteristics
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
@@ -195,8 +199,8 @@ class MSEnvironmentVideo(
         var nextPartMissed = 0L
 
         val timeout = if (
-            currentPacketSize >= 9
-        ) TIMEOUT_DEFAULT_PACKET_MS * 10 else TIMEOUT_DEFAULT_PACKET_MS
+            currentPacketSize >= 8
+        ) TIMEOUT_DEFAULT_PACKET_MS * 100 else TIMEOUT_DEFAULT_PACKET_MS
 
         do {
             currentTime = System.currentTimeMillis()

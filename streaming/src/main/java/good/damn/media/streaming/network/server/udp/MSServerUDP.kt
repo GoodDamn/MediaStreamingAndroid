@@ -84,14 +84,17 @@ open class MSServerUDP(
         } catch (e: Exception) {
             Log.d(TAG, "listen: ${e.localizedMessage}")
         }
+        val address = mPacket.address
         val saved = mBuffer
-        withContext(
-            Dispatchers.IO
-        ) {
-            onReceiveData.onReceiveNetworkData(
-                saved,
-                mPacket.address
-            )
+        if (address != null) {
+            withContext(
+                Dispatchers.IO
+            ) {
+                onReceiveData.onReceiveNetworkData(
+                    saved,
+                    address
+                )
+            }
         }
 
         mBuffer = ByteArray(

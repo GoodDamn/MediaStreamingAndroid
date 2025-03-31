@@ -7,6 +7,12 @@ import android.os.Build
 import android.provider.MediaStore.Audio.Media
 
 inline fun MediaFormat.default() {
+
+    setInteger(
+        MediaFormat.KEY_BITRATE_MODE,
+        MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR
+    )
+
     setInteger(
         MediaFormat.KEY_COLOR_FORMAT,
         MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
@@ -14,7 +20,12 @@ inline fun MediaFormat.default() {
 
     setInteger(
         MediaFormat.KEY_BIT_RATE,
-        1024 * 8
+        20000 * 8
+    )
+
+    setInteger(
+        MediaFormat.KEY_CAPTURE_RATE,
+        1
     )
 
     setInteger(
@@ -36,6 +47,13 @@ inline fun MediaFormat.default() {
         setInteger(
             MediaFormat.KEY_COLOR_RANGE,
             MediaFormat.COLOR_RANGE_LIMITED
+        )
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+        setInteger(
+            MediaFormat.KEY_PROFILE,
+            CodecProfileLevel.AVCProfileConstrainedBaseline
         )
     }
 
