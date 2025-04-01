@@ -161,7 +161,7 @@ class MSEnvironmentVideo(
         host
     )
 
-    private inline fun startDecoder(
+    private fun startDecoder(
         surfaceOutput: Surface
     ) {
         mDecoderVideo.configure(
