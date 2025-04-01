@@ -37,6 +37,8 @@ class MSServiceStream
     private var mClientStreamCamera: MSClientUDP? = null
     private var mServerRestorePackets: MSServerUDP? = null
 
+    private var mBinder: MSServiceStreamBinder? = null
+
     private var mThread: HandlerThread? = null
 
     override fun onStartCommand(
@@ -77,36 +79,29 @@ class MSServiceStream
             }
         )
 
+        mBinder = MSServiceStreamBinder(
+            mClientStreamCamera,
+            mStreamCamera,
+            mServerRestorePackets,
+            Handler(
+                mThread!!.looper
+            )
+        )
+
         return START_NOT_STICKY
     }
 
     override fun onBind(
         intent: Intent?
-    ): IBinder? {
-        Log.d(TAG, "onBind: $intent")
-        return startStream(intent)
-    }
-    
-    override fun onUnbind(
-        intent: Intent?
-    ): Boolean {
-        Log.d(TAG, "onUnbind: ")
+    ) = mBinder
+
+    override fun onDestroy() {
         mStreamCamera?.stop()
         mServerRestorePackets?.stop()
 
-        return true
-    }
-
-    override fun onRebind(
-        intent: Intent?
-    ) {
-        Log.d(TAG, "onRebind: $intent")
-        startStream(intent)
-    }
-    
-    override fun onDestroy() {
         mThread?.quitSafely()
         mThread = null
+
         mStreamCamera?.release()
         mClientStreamCamera?.release()
         mServerRestorePackets?.release()
@@ -119,54 +114,5 @@ class MSServiceStream
         mClientStreamCamera?.sendToStream(
             data
         )
-    }
-
-    private inline fun startStream(
-        intent: Intent?
-    ): IBinder? {
-        intent ?: return null
-
-        mClientStreamCamera?.host = intent.getStringExtra(
-            EXTRA_HOST
-        )?.toInetAddress()
-
-        val logical = intent.getStringExtra(
-            EXTRA_CAMERA_ID_LOGICAL
-        ) ?: return null
-
-        val physical = intent.getStringExtra(
-            EXTRA_CAMERA_ID_PHYSICAL
-        )
-
-
-        Log.d(TAG, "startStream: $logical: $physical")
-
-        mStreamCamera?.start(
-            MSCameraModelID(
-                logical,
-                physical,
-                false,
-                MSManagerCamera(
-                    baseContext
-                ).getCharacteristics(
-                    physical ?: logical
-                )
-            ),
-            intent.getIntExtra(
-                EXTRA_VIDEO_WIDTH,
-                0
-            ),
-            intent.getIntExtra(
-                EXTRA_VIDEO_HEIGHT,
-                0
-            ),
-            Handler(
-                mThread!!.looper
-            )
-        )
-
-        mServerRestorePackets?.start()
-
-        return null
     }
 }

@@ -2,13 +2,12 @@ package good.damn.editor.mediastreaming.system.service
 
 import android.content.Context
 import android.content.Intent
-import android.health.connect.datatypes.HeightRecord
 import android.util.Log
 import good.damn.media.streaming.camera.models.MSCameraModelID
 
 class MSServiceStreamWrapper {
 
-    val serviceConnectionStream = MSCameraServiceConnection()
+    private val mServiceConnectionStream = MSCameraServiceConnection()
 
     companion object {
         private const val TAG = "MSServiceStreamWrapper"
@@ -20,29 +19,49 @@ class MSServiceStreamWrapper {
     var isBound = false
         private set
 
-    fun start(
+    var isStreamingVideo = false
+        private set
+
+    fun startStreamingVideo(
+        modelID: MSCameraModelID,
+        width: Int,
+        height: Int,
+        host: String
+    ) {
+        mServiceConnectionStream.startStreamingVideo(
+            modelID,
+            width,
+            height,
+            host
+        )
+        isStreamingVideo = true
+    }
+
+    fun stopStreamingVideo() {
+        mServiceConnectionStream
+            .stopStreamingVideo()
+        isStreamingVideo = false
+    }
+
+    fun startServiceStream(
         context: Context?
     ) {
+        context ?: return
+
         if (isStarted) {
             return
         }
 
         isStarted = true
 
-        context?.apply {
-            startService(
-                intentStream(this)
-            )
-        }
+        context.startService(
+            intentStream(context)
+        )
+
     }
 
-    fun bindCamera(
-        context: Context?,
-        host: String?,
-        width: Int,
-        height: Int,
-        physicalId: String?,
-        logicalId: String
+    fun bind(
+        context: Context?
     ) {
         context ?: return
         if (isBound) {
@@ -50,53 +69,26 @@ class MSServiceStreamWrapper {
         }
         isBound = true
 
-        val intent = intentStream(
-            context
-        ).apply {
-            putExtra(
-                MSServiceStream.EXTRA_HOST,
-                host
-            )
-
-            putExtra(
-                MSServiceStream.EXTRA_VIDEO_WIDTH,
-                width
-            )
-
-            putExtra(
-                MSServiceStream.EXTRA_VIDEO_HEIGHT,
-                height
-            )
-
-            putExtra(
-                MSServiceStream.EXTRA_CAMERA_ID_PHYSICAL,
-                physicalId
-            )
-
-            putExtra(
-                MSServiceStream.EXTRA_CAMERA_ID_LOGICAL,
-                logicalId
-            )
-        }
-
         context.bindService(
-            intent,
-            serviceConnectionStream,
+            intentStream(context),
+            mServiceConnectionStream,
             Context.BIND_AUTO_CREATE
         )
     }
 
-    fun unbindCamera(
+    fun unbind(
         context: Context?
     ) {
         Log.d(TAG, "unbindCamera: $isBound")
+        context ?: return
+
         if (!isBound) {
             return
         }
         isBound = false
 
-        context?.unbindService(
-            serviceConnectionStream
+        context.unbindService(
+            mServiceConnectionStream
         )
     }
 

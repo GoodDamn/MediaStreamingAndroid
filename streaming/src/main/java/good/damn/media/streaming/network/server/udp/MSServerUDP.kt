@@ -5,6 +5,7 @@ import good.damn.media.streaming.network.MSStateable
 import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveNetworkData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.DatagramPacket
@@ -39,6 +40,8 @@ open class MSServerUDP(
         reuseAddress = true
     }
 
+    private var mJob: Job? = null
+
     override fun start() {
         if (mSocket.isClosed) {
             mSocket = DatagramSocket(
@@ -49,21 +52,23 @@ open class MSServerUDP(
         }
 
         isRunning = true
-        scope.launch {
-            Log.d(TAG, "start: isRunning: START:")
+        mJob = scope.launch {
+            Log.d(TAG, "start: isRunning: START: $onReceiveData")
             while (
                 isRunning
             ) { listen() }
-            Log.d(TAG, "start: isRunning: END")
+            Log.d(TAG, "start: isRunning: END: $onReceiveData")
         }
     }
 
     override fun stop() {
         isRunning = false
+        mJob?.cancel()
     }
 
     override fun release() {
         isRunning = false
+        mJob?.cancel()
         try {
             // causes infinite loop
             //mSocket.disconnect()

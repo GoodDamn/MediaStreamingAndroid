@@ -55,6 +55,8 @@ class MSDecoderAvc
             mCallbackDecoder
         )
 
+        Log.d(TAG, "dfg: configure: ")
+
         configure(
             format,
             decodeSurface,

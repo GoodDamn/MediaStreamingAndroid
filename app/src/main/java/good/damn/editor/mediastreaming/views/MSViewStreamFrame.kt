@@ -35,7 +35,7 @@ class MSViewStreamFrame(
         width: Int,
         height: Int
     ) {
-        Log.d(TAG, "surfaceChanged: ")
+        Log.d(TAG, "surfaceChanged: ${holder.surface}")
         onChangeSurface?.onChangeSurface(
             holder.surface
         )

@@ -1,25 +1,21 @@
 package good.damn.editor.mediastreaming
 
 import android.content.Context
-import android.graphics.Camera
-import android.graphics.ImageFormat
-import android.graphics.PixelFormat
-import android.hardware.camera2.CameraCharacteristics
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.util.Size
 import android.view.Surface
-import good.damn.editor.mediastreaming.system.service.MSCameraServiceConnection
-import good.damn.editor.mediastreaming.system.service.MSServiceStreamBinder
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.media.streaming.MSStreamConstants
+import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
 import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
+import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.media.streaming.extensions.camera2.default
 import good.damn.media.streaming.network.server.udp.MSPacketMissingHandler
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrame
@@ -47,7 +43,13 @@ class MSEnvironmentVideo(
         get() = mServerVideo.isRunning
 
     val isStreamingVideo: Boolean
-        get() = mServiceWrapper.isBound
+        get() = mServiceWrapper.isStreamingVideo
+
+    var hostTo: InetAddress?
+        get() = mHandlerPacketMissing.host
+        private set(v) {
+            mHandlerPacketMissing.host = v
+        }
 
     private val mReceiverFrame = MSReceiverCameraFrame()
 
@@ -83,9 +85,21 @@ class MSEnvironmentVideo(
 
     fun startReceiving(
         surfaceOutput: Surface,
-        host: InetAddress
+        host: InetAddress?
     ) {
-        mHandlerPacketMissing.host = host
+        hostTo = host
+        mHandlerDecoding?.apply {
+            removeCallbacks(
+                this@MSEnvironmentVideo
+            )
+            post {
+                startDecoder(surfaceOutput)
+            }
+        }
+
+        if (mHandlerDecoding != null) {
+            return
+        }
 
         mThreadDecoding = HandlerThread(
             "decodingEnvironment"
@@ -96,32 +110,7 @@ class MSEnvironmentVideo(
                 looper
             )
 
-            mHandlerDecoding?.post {
-                mDecoderVideo.configure(
-                    surfaceOutput,
-                    MediaFormat.createVideoFormat(
-                        MSCoder.TYPE_AVC,
-                        resolution.width,
-                        resolution.height
-                    ).apply {
-                        default()
-                        setInteger(
-                            MediaFormat.KEY_ROTATION,
-                            90
-                        )
-                    }
-                )
-
-                // Bufferizing
-                mServerVideo.start()
-                mServerRestorePackets.start()
-
-                mHandlerDecoding?.post(
-                    this@MSEnvironmentVideo
-                )
-
-                mDecoderVideo.start()
-            }
+            startDecoder(surfaceOutput)
         }
     }
 
@@ -129,7 +118,6 @@ class MSEnvironmentVideo(
         if (!mServerVideo.isRunning) {
             return
         }
-
         mDecoderVideo.stop()
         mServerVideo.stop()
         mServerRestorePackets.stop()
@@ -141,7 +129,6 @@ class MSEnvironmentVideo(
         mServerRestorePackets.release()
 
         mThreadDecoding?.quit()
-
         mThreadDecoding = null
         mHandlerDecoding = null
 
@@ -151,25 +138,57 @@ class MSEnvironmentVideo(
         }
     }
 
-    fun stopStreamingCamera(
-        context: Context?
-    ) = mServiceWrapper.unbindCamera(
-        context
-    )
+    fun stopStreamingCamera() = mServiceWrapper.stopStreamingVideo()
 
     fun startStreamingCamera(
         context: Context?,
         idLogical: String,
         idPhysical: String?,
         host: String
-    ) = mServiceWrapper.bindCamera(
-        context,
-        host,
+    ) = mServiceWrapper.startStreamingVideo(
+        MSCameraModelID(
+            idLogical,
+            idPhysical,
+            true,
+            MSManagerCamera(
+                context
+            ).getCharacteristics(
+                idPhysical ?: idLogical
+            )
+        ),
         resolution.width,
         resolution.height,
-        idPhysical,
-        idLogical
+        host
     )
+
+    private inline fun startDecoder(
+        surfaceOutput: Surface
+    ) {
+        mDecoderVideo.configure(
+            surfaceOutput,
+            MediaFormat.createVideoFormat(
+                MSCoder.TYPE_AVC,
+                resolution.width,
+                resolution.height
+            ).apply {
+                default()
+                setInteger(
+                    MediaFormat.KEY_ROTATION,
+                    90
+                )
+            }
+        )
+
+        // Bufferizing
+        mServerVideo.start()
+        mServerRestorePackets.start()
+
+        mHandlerDecoding?.post(
+            this@MSEnvironmentVideo
+        )
+
+        mDecoderVideo.start()
+    }
 
     override fun run() {
         if (!mServerVideo.isRunning) {

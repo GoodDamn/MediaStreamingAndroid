@@ -5,6 +5,7 @@ import good.damn.media.streaming.camera.avc.cache.MSIOnEachMissedPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.setIntegerOnPosition
 import good.damn.media.streaming.extensions.setShortOnPosition
+import good.damn.media.streaming.network.client.MSClientUDP
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -12,9 +13,15 @@ import java.net.InetAddress
 class MSPacketMissingHandler
 : MSIOnEachMissedPacket {
 
-    private val mSocket = DatagramSocket()
+    private val mClient = MSClientUDP(
+        MSStreamConstants.PORT_VIDEO_RESTORE_REQUEST
+    )
 
-    var host: InetAddress? = null
+    var host: InetAddress?
+        get() = mClient.host
+        set(v) {
+            mClient.host = v
+        }
 
     fun handlingMissedPackets(
         bufferizer: MSPacketBufferizer?
@@ -29,14 +36,6 @@ class MSPacketMissingHandler
         packetId: Short
     ) {
         val buffer = ByteArray(6)
-        val packet = DatagramPacket(
-            buffer,
-            0,
-            buffer.size,
-            host,
-            MSStreamConstants.PORT_VIDEO_RESTORE_REQUEST
-        )
-
         buffer.setIntegerOnPosition(
             frameId,
             0
@@ -46,13 +45,8 @@ class MSPacketMissingHandler
             packetId.toInt(),
             4
         )
-
-        packet.setData(
-            buffer,
-            0,
-            buffer.size
+        mClient.sendToStream(
+            buffer
         )
-
-        mSocket.send(packet)
     }
 }

@@ -17,10 +17,10 @@ import kotlin.math.log
 
 @SuppressLint("MissingPermission")
 class MSManagerCamera(
-    context: Context
+    context: Context?
 ) {
 
-    private val manager = context.getSystemService(
+    private val manager = context?.getSystemService(
         Context.CAMERA_SERVICE
     ) as CameraManager
 

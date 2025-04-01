@@ -62,7 +62,9 @@ class MSCameraCallbackDecoder
     override fun onOutputFormatChanged(
         codec: MediaCodec,
         format: MediaFormat
-    ) = Unit
+    ) {
+
+    }
 
     private inline fun processOutputBuffer(
         index: Int,

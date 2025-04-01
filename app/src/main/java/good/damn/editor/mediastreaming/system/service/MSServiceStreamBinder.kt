@@ -8,8 +8,37 @@ import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.media.streaming.extensions.toInetAddress
+import good.damn.media.streaming.network.client.MSClientUDP
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameRestore
 import good.damn.media.streaming.network.server.udp.MSServerUDP
 import java.net.InetAddress
 
-class MSServiceStreamBinder: Binder()
+class MSServiceStreamBinder(
+    private var mStreamClient: MSClientUDP?,
+    private var mStreamCamera: MSStreamCameraInput?,
+    private var mServerRestorePackets: MSServerUDP?,
+    private var mHandler: Handler?
+): Binder() {
+
+    fun startStreamingCamera(
+        modelID: MSCameraModelID,
+        width: Int,
+        height: Int,
+        host: String
+    ) {
+        mStreamClient?.host = host.toInetAddress()
+        mServerRestorePackets?.start()
+        mStreamCamera?.start(
+            modelID,
+            width,
+            height,
+            mHandler!!
+        )
+    }
+
+    fun stopStreamingCamera() {
+        mServerRestorePackets?.stop()
+        mStreamCamera?.stop()
+    }
+
+}

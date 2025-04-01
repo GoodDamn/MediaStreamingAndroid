@@ -2,6 +2,8 @@ package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -14,7 +16,6 @@ import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.MSApp
-import good.damn.editor.mediastreaming.MSEnvironmentAudio
 import good.damn.editor.mediastreaming.MSEnvironmentVideo
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
@@ -48,18 +49,28 @@ MSListenerOnChangeSurface {
 
     private var mSurfaceReceive: Surface? = null
 
+    private var mIsNeedToReceive = false
+
+    override fun onResume() {
+        super.onResume()
+        mServiceStreamWrapper.bind(
+            context
+        )
+    }
+
     override fun onPause() {
-        super.onPause()
         mStreamCamera.stopReceiving()
+        mServiceStreamWrapper.unbind(
+            context
+        )
+        super.onPause()
     }
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: ")
-        mStreamCamera.stopStreamingCamera(
-            context
-        )
-
+        mStreamCamera.stopStreamingCamera()
         mStreamCamera.releaseReceiving()
+
         mServiceStreamWrapper.destroy(
             context
         )
@@ -71,6 +82,10 @@ MSListenerOnChangeSurface {
     ) {
         super.onCreate(
             savedInstanceState
+        )
+
+        mServiceStreamWrapper.startServiceStream(
+            context
         )
 
         (activity as? MSActivityMain)
@@ -118,6 +133,7 @@ MSListenerOnChangeSurface {
                 if (mStreamCamera.isReceiving) {
                     text = "Start receiving"
                     mStreamCamera.stopReceiving()
+                    mIsNeedToReceive = false
                     //mStreamAudio.stopReceiving()
                     return@setOnClickListener
                 }
@@ -127,6 +143,7 @@ MSListenerOnChangeSurface {
 
                 val inet = ip.toInetAddress()
 
+                mIsNeedToReceive = true
                 text = "Stop receiving"
                 mSurfaceReceive?.apply {
                     mStreamCamera.startReceiving(
@@ -269,10 +286,6 @@ MSListenerOnChangeSurface {
             activity?.finish()
             return
         }
-
-        mServiceStreamWrapper.start(
-            requireContext()
-        )
     }
 
     override fun onSelectCamera(
@@ -294,9 +307,7 @@ MSListenerOnChangeSurface {
 
         mStreamCamera.apply {
             if (isStreamingVideo) {
-                stopStreamingCamera(
-                    context
-                )
+                stopStreamingCamera()
             }
 
             startStreamingCamera(
@@ -314,6 +325,17 @@ MSListenerOnChangeSurface {
         surface: Surface
     ) {
         mSurfaceReceive = surface
+        Log.d(TAG, "onChangeSurface: $mIsNeedToReceive ${mStreamCamera.hostTo}")
+        if (mIsNeedToReceive) {
+            Handler(
+                Looper.getMainLooper()
+            ).post {
+                mStreamCamera.startReceiving(
+                    surface,
+                    mStreamCamera.hostTo
+                )
+            }
+        }
     }
 
 }

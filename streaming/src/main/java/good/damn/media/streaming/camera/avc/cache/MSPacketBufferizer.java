@@ -36,6 +36,7 @@ public final class MSPacketBufferizer {
 
     public final void clear() {
         for (int i = 0; i < CACHE_PACKET_SIZE; i++) {
+            mQueues[i].lastFrameId = 0;
             mQueues[i].queue.clear();
         }
     }
