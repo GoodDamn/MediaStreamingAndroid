@@ -1,28 +1,24 @@
-package good.damn.editor.mediastreaming.system.service
+package good.damn.editor.mediastreaming.system.service.serv
 
 import android.app.Service
 import android.content.Intent
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.IBinder
 import android.util.Log
+import good.damn.editor.mediastreaming.system.service.MSServiceStreamBinder
 import good.damn.media.streaming.MSStreamConstants
-import good.damn.media.streaming.audio.stream.MSStreamAudioInput
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.MSStreamSubscriber
-import good.damn.media.streaming.camera.models.MSCameraModelID
-import good.damn.media.streaming.extensions.toInetAddress
 import good.damn.media.streaming.network.client.MSClientUDP
-import good.damn.media.streaming.network.server.udp.MSReceiverAudio
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameRestore
 import good.damn.media.streaming.network.server.udp.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlin.math.log
 
-class MSServiceStream
-: Service(), MSStreamSubscriber {
+open class MSServiceStream
+: Service(),
+MSStreamSubscriber {
 
     companion object {
         private val TAG = MSServiceStream::class.simpleName
@@ -91,7 +87,7 @@ class MSServiceStream
         return START_NOT_STICKY
     }
 
-    override fun onBind(
+    final override fun onBind(
         intent: Intent?
     ) = mBinder
 
@@ -108,7 +104,7 @@ class MSServiceStream
         Log.d(TAG, "onDestroy: ")
     }
 
-    override fun onGetPacket(
+    final override fun onGetPacket(
         data: ByteArray
     ) {
         mClientStreamCamera?.sendToStream(

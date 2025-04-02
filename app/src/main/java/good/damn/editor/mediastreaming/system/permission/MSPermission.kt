@@ -6,40 +6,41 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 
 class MSPermission
-: ActivityResultCallback<Boolean> {
+: ActivityResultCallback<Map<String, Boolean>> {
 
     var onResultPermission: MSListenerOnResultPermission? = null
 
-    private var mLauncher: ActivityResultLauncher<String>? = null
-
-    private var mRequestedPermission: String? = null
+    private var mLauncher: ActivityResultLauncher<Array<String>>? = null
 
     fun register(
         activity: AppCompatActivity
     ) {
         mLauncher = activity.registerForActivityResult(
-            ActivityResultContracts.RequestPermission(),
+            ActivityResultContracts.RequestMultiplePermissions(),
             this
         )
     }
 
-    fun launch(
+    inline fun launch(
         permission: String
-    ) {
-        mRequestedPermission = permission
-        mLauncher?.launch(
+    ) = launch(
+        arrayOf(
             permission
+        )
+    )
+
+    fun launch(
+        permissions: Array<String>
+    ) {
+        mLauncher?.launch(
+            permissions
         )
     }
 
     override fun onActivityResult(
-        result: Boolean
+        result: Map<String, Boolean>
     ) {
-        val perm = mRequestedPermission
-            ?: return
-
-        onResultPermission?.onResultPermission(
-            perm,
+        onResultPermission?.onResultPermissions(
             result
         )
     }

@@ -63,14 +63,12 @@ MSListenerOnResultPermission {
 
     }
 
-    override fun onResultPermission(
-        permission: String,
-        result: Boolean
+    override fun onResultPermissions(
+        result: Map<String,Boolean>
     ) {
         mFragments.forEach {
             (it as? MSListenerOnResultPermission)
-                ?.onResultPermission(
-                    permission,
+                ?.onResultPermissions(
                     result
                 )
         }

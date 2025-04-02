@@ -1,6 +1,7 @@
 package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -29,6 +30,7 @@ import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
 import good.damn.editor.mediastreaming.views.MSViewColor
+import good.damn.media.streaming.extensions.hasOsVersion
 
 class MSFragmentTestH264
 : Fragment(),
@@ -84,15 +86,21 @@ MSListenerOnChangeSurface {
             savedInstanceState
         )
 
-        mServiceStreamWrapper.startServiceStream(
-            context
-        )
+        (activity as? MSActivityMain)?.launcherPermission?.apply {
+            if (hasOsVersion(Build.VERSION_CODES.TIRAMISU)) {
+                launch(
+                    arrayOf(
+                        Manifest.permission.CAMERA,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    )
+                )
+                return
+            }
 
-        (activity as? MSActivityMain)
-            ?.launcherPermission
-            ?.launch(
+            launch(
                 Manifest.permission.CAMERA
             )
+        }
     }
 
     override fun onCreateView(
@@ -278,14 +286,19 @@ MSListenerOnChangeSurface {
     }
 
 
-    override fun onResultPermission(
-        permission: String,
-        result: Boolean
+    override fun onResultPermissions(
+        result: Map<String, Boolean>
     ) {
-        if (!result) {
-            activity?.finish()
-            return
+        for (entry in result) {
+            if (!entry.value) {
+                activity?.finish()
+                return
+            }
         }
+
+        mServiceStreamWrapper.startServiceStream(
+            context
+        )
     }
 
     override fun onSelectCamera(

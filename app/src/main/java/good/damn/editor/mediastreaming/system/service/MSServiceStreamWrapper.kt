@@ -2,8 +2,13 @@ package good.damn.editor.mediastreaming.system.service
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
+import good.damn.editor.mediastreaming.extensions.supportsForegroundService
+import good.damn.editor.mediastreaming.system.service.serv.MSServiceStream
+import good.damn.editor.mediastreaming.system.service.serv.MSServiceStreamForeground
 import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.extensions.hasOsVersion
 
 class MSServiceStreamWrapper {
 
@@ -54,10 +59,16 @@ class MSServiceStreamWrapper {
 
         isStarted = true
 
+        if (context.supportsForegroundService()) {
+            context.startForegroundService(
+                intentStream(context)
+            )
+            return
+        }
+
         context.startService(
             intentStream(context)
         )
-
     }
 
     fun bind(
@@ -102,7 +113,6 @@ class MSServiceStreamWrapper {
         }
 
         isStarted = false
-
         context.stopService(
             intentStream(context)
         )
@@ -112,7 +122,12 @@ class MSServiceStreamWrapper {
 
 private inline fun intentStream(
     context: Context
-) = Intent(
+) = if (
+    context.supportsForegroundService()
+) Intent(
+    context,
+    MSServiceStreamForeground::class.java
+) else Intent(
     context,
     MSServiceStream::class.java
 )

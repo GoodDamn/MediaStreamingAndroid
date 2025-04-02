@@ -1,6 +1,7 @@
 package good.damn.editor.mediastreaming.extensions
 
 import android.Manifest
+import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.eap.EapSessionConfig.Builder
@@ -35,3 +36,7 @@ inline fun Context.toast(
     msg,
     Toast.LENGTH_SHORT
 ).show()
+
+inline fun Context.getNotificationManager() = getSystemService(
+    Context.NOTIFICATION_SERVICE
+) as? NotificationManager

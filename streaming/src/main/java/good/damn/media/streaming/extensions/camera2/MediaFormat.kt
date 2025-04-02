@@ -10,12 +10,6 @@ import android.provider.MediaStore.Audio.Media
 
 inline fun MediaFormat.default() {
 
-    /*if (capabilities.encoderCapabilities.isBitrateModeSupported(
-        MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR
-    )) {
-
-    }*/
-
     setInteger(
         MediaFormat.KEY_BITRATE_MODE,
         MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR
@@ -23,12 +17,12 @@ inline fun MediaFormat.default() {
 
     setInteger(
         MediaFormat.KEY_COLOR_FORMAT,
-        MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface
+        CodecCapabilities.COLOR_FormatSurface
     )
 
     setInteger(
         MediaFormat.KEY_BIT_RATE,
-        20000 * 8
+        1024 * 8
     )
 
     setInteger(
@@ -41,7 +35,7 @@ inline fun MediaFormat.default() {
         1
     )
 
-    /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         setInteger(
             MediaFormat.KEY_COLOR_STANDARD,
             MediaFormat.COLOR_STANDARD_BT2020
@@ -56,7 +50,7 @@ inline fun MediaFormat.default() {
             MediaFormat.KEY_COLOR_RANGE,
             MediaFormat.COLOR_RANGE_LIMITED
         )
-    }*/
+    }
 
     /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
         setInteger(
