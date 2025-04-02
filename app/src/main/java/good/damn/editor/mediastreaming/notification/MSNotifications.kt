@@ -22,8 +22,8 @@ class MSNotifications {
         ): Notification? {
             val channel = NotificationChannel(
                 CHANNEL_ID_FOREGROUND_STREAM,
-                "It uses foreground streaming",
-                NotificationManager.IMPORTANCE_DEFAULT
+                "Foreground streaming",
+                NotificationManager.IMPORTANCE_LOW
             )
 
             context.getNotificationManager()
@@ -33,6 +33,8 @@ class MSNotifications {
             return NotificationCompat.Builder(
                 context,
                 CHANNEL_ID_FOREGROUND_STREAM
+            ).setSound(
+                null
             ).setContentTitle(
                 title
             ).setContentText(

@@ -16,99 +16,27 @@ import good.damn.media.streaming.network.server.udp.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
-open class MSServiceStream
-: Service(),
-MSStreamSubscriber {
+class MSServiceStream
+: Service() {
 
-    companion object {
-        private val TAG = MSServiceStream::class.simpleName
-        const val EXTRA_CAMERA_ID_LOGICAL = "l"
-        const val EXTRA_CAMERA_ID_PHYSICAL = "P"
-        const val EXTRA_VIDEO_WIDTH = "W"
-        const val EXTRA_VIDEO_HEIGHT = "H"
-        const val EXTRA_HOST = "h"
-    }
-
-    private var mStreamCamera: MSStreamCameraInput? = null
-    private var mClientStreamCamera: MSClientUDP? = null
-    private var mServerRestorePackets: MSServerUDP? = null
-
-    private var mBinder: MSServiceStreamBinder? = null
-
-    private var mThread: HandlerThread? = null
+    private val mImpl = MSServiceStreamImpl()
 
     override fun onStartCommand(
         intent: Intent?,
         flags: Int,
         startId: Int
     ): Int {
-        Log.d(TAG, "onStartCommand: ")
-
-        mThread = HandlerThread(
-            "communicationThread"
-        ).apply {
-            start()
-        }
-
-        mClientStreamCamera = MSClientUDP(
-            MSStreamConstants.PORT_VIDEO
+        mImpl.startCommand(
+            baseContext
         )
-
-        mStreamCamera = MSStreamCameraInput(
-            MSManagerCamera(
-                baseContext
-            )
-        ).apply {
-            subscribers = arrayListOf(
-                this@MSServiceStream
-            )
-        }
-
-        mServerRestorePackets = MSServerUDP(
-            MSStreamConstants.PORT_VIDEO_RESTORE_REQUEST,
-            64,
-            CoroutineScope(
-                Dispatchers.IO
-            ),
-            MSReceiverCameraFrameRestore().apply {
-                bufferizer = mStreamCamera!!.bufferizer
-            }
-        )
-
-        mBinder = MSServiceStreamBinder(
-            mClientStreamCamera,
-            mStreamCamera,
-            mServerRestorePackets,
-            Handler(
-                mThread!!.looper
-            )
-        )
-
         return START_NOT_STICKY
     }
 
-    final override fun onBind(
+    override fun onBind(
         intent: Intent?
-    ) = mBinder
+    ) = mImpl.getBinder()
 
     override fun onDestroy() {
-        mStreamCamera?.stop()
-        mServerRestorePackets?.stop()
-
-        mThread?.quitSafely()
-        mThread = null
-
-        mStreamCamera?.release()
-        mClientStreamCamera?.release()
-        mServerRestorePackets?.release()
-        Log.d(TAG, "onDestroy: ")
-    }
-
-    final override fun onGetPacket(
-        data: ByteArray
-    ) {
-        mClientStreamCamera?.sendToStream(
-            data
-        )
+        mImpl.destroy()
     }
 }
