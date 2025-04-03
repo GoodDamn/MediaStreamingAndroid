@@ -296,9 +296,10 @@ MSListenerOnChangeSurface {
             }
         }
 
-        mServiceStreamWrapper.startServiceStream(
-            context
-        )
+        mServiceStreamWrapper.apply {
+            startServiceStream(context)
+            bind(context)
+        }
     }
 
     override fun onSelectCamera(

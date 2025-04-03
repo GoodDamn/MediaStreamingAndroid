@@ -2,6 +2,7 @@ package good.damn.editor.mediastreaming.system.service.serv
 
 import android.content.Context
 import android.content.Intent
+import android.os.Binder
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
@@ -18,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 
 class MSServiceStreamImpl
 : MSStreamSubscriber {
+
     companion object {
         private const val TAG = "MSServiceStreamImpl"
         const val EXTRA_CAMERA_ID_LOGICAL = "l"

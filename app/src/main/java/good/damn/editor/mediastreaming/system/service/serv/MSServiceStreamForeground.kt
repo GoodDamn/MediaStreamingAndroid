@@ -51,7 +51,7 @@ class MSServiceStreamForeground
         startId: Int
     ): Int {
         mImpl.startCommand(
-            baseContext
+            applicationContext
         )
         return START_NOT_STICKY
     }

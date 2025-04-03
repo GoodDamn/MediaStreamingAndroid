@@ -1,5 +1,6 @@
 package good.damn.media.streaming.network.server.udp
 
+import android.util.Log
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.avc.cache.MSIOnEachMissedPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
@@ -12,6 +13,10 @@ import java.net.InetAddress
 
 class MSPacketMissingHandler
 : MSIOnEachMissedPacket {
+
+    companion object {
+        private const val TAG = "MSPacketMissingHandler"
+    }
 
     private val mClient = MSClientUDP(
         MSStreamConstants.PORT_VIDEO_RESTORE_REQUEST
@@ -35,6 +40,7 @@ class MSPacketMissingHandler
         frameId: Int,
         packetId: Short
     ) {
+        Log.d(TAG, "onEachMissedPacket: $frameId:$packetId")
         val buffer = ByteArray(6)
         buffer.setIntegerOnPosition(
             frameId,

@@ -75,9 +75,11 @@ class MSServiceStreamWrapper {
         context: Context?
     ) {
         context ?: return
-        if (isBound) {
+        Log.d(TAG, "bind: $isBound:${isStarted}")
+        if (isBound || !isStarted) {
             return
         }
+
         isBound = true
 
         context.bindService(
@@ -93,7 +95,7 @@ class MSServiceStreamWrapper {
         Log.d(TAG, "unbindCamera: $isBound")
         context ?: return
 
-        if (!isBound) {
+        if (!isBound || !isStarted) {
             return
         }
         isBound = false
