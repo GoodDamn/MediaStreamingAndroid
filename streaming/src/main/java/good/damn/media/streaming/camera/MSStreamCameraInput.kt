@@ -2,6 +2,7 @@ package good.damn.media.streaming.camera
 
 import android.os.Handler
 import android.util.Log
+import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.avc.MSCameraAVC
 import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.avc.MSUtilsAvc.Companion.LEN_META
@@ -19,7 +20,7 @@ class MSStreamCameraInput(
 
     companion object {
         private val TAG = MSStreamCameraInput::class.simpleName
-        const val PACKET_MAX_SIZE = 1024 - LEN_META
+        private const val PACKET_MAX_SIZE = MSStreamConstants.PACKET_MAX_SIZE - LEN_META
     }
 
     private val mCamera = MSCameraAVC(
@@ -41,20 +42,18 @@ class MSStreamCameraInput(
         width: Int,
         height: Int,
         handler: Handler
-    ) {
-        mCamera.apply {
-            configure(
-                width,
-                height,
-                cameraId.characteristics,
-                handler
-            )
+    ) = mCamera.run {
+        configure(
+            width,
+            height,
+            cameraId.characteristics,
+            handler
+        )
 
-            start(
-                cameraId,
-                handler
-            )
-        }
+        start(
+            cameraId,
+            handler
+        )
     }
 
     fun stop() {
@@ -154,8 +153,7 @@ class MSStreamCameraInput(
             packetCount.toShort(),
             chunk
         )
-        
-        Thread.sleep(3)
+
         subscribers?.forEach {
             it.onGetPacket(chunk)
         }

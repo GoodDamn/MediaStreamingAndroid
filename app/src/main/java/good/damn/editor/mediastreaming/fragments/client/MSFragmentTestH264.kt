@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Surface
@@ -47,6 +48,11 @@ MSListenerOnChangeSurface {
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
     private val mStreamCamera = MSEnvironmentVideo(
         mServiceStreamWrapper
+    )
+
+    private val mResolution = Size(
+        640,
+        480
     )
 
     private var mSurfaceReceive: Surface? = null
@@ -138,7 +144,7 @@ MSListenerOnChangeSurface {
             text = "Start receiving"
 
             setOnClickListener {
-                if (mStreamCamera.isReceiving) {
+                if (mIsNeedToReceive) {
                     text = "Start receiving"
                     mStreamCamera.stopReceiving()
                     mIsNeedToReceive = false
@@ -156,11 +162,11 @@ MSListenerOnChangeSurface {
                 mSurfaceReceive?.apply {
                     mStreamCamera.startReceiving(
                         this,
+                        mResolution.width,
+                        mResolution.height,
                         inet
                     )
                 }
-
-                //mStreamAudio.startReceiving()
             }
 
             addView(
@@ -184,7 +190,7 @@ MSListenerOnChangeSurface {
                 val w = (MSApp.width * 0.4f).toInt()
                 layoutParams = FrameLayout.LayoutParams(
                     w,
-                    (mStreamCamera.resolution.width.toFloat() / mStreamCamera.resolution.height * w).toInt()
+                    (mResolution.width.toFloat() / mResolution.height * w).toInt()
                 ).apply {
                     gravity = Gravity.CENTER
                 }
@@ -257,12 +263,6 @@ MSListenerOnChangeSurface {
                             setBackgroundColor(
                                 0xff0000ff.toInt()
                             )
-
-                            /*mEditTextHost?.text?.toString()?.apply {
-                                mStreamAudio.startStreaming(
-                                    this
-                                )
-                            }*/
                         }
                         return@setOnClickListener
                     }
@@ -270,8 +270,6 @@ MSListenerOnChangeSurface {
                     setBackgroundColor(
                         0xffff0000.toInt()
                     )
-
-                    //mStreamAudio.stopStreaming()
                 }
 
                 it.addView(
@@ -328,7 +326,9 @@ MSListenerOnChangeSurface {
                 context,
                 cameraId.logical,
                 cameraId.physical,
-                ip
+                ip,
+                mResolution.width,
+                mResolution.height
             )
         }
 
@@ -341,14 +341,12 @@ MSListenerOnChangeSurface {
         mSurfaceReceive = surface
         Log.d(TAG, "onChangeSurface: $mIsNeedToReceive ${mStreamCamera.hostTo}")
         if (mIsNeedToReceive) {
-            Handler(
-                Looper.getMainLooper()
-            ).post {
-                mStreamCamera.startReceiving(
-                    surface,
-                    mStreamCamera.hostTo
-                )
-            }
+            mStreamCamera.startReceiving(
+                surface,
+                mResolution.width,
+                mResolution.height,
+                mStreamCamera.hostTo
+            )
         }
     }
 

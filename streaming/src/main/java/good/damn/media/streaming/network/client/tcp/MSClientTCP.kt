@@ -11,31 +11,30 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketAddress
 
-class MSClientTCP(
-    private val scope: CoroutineScope
-): Closeable {
+class MSClientTCP
+: Closeable {
 
     companion object {
         const val TIMEOUT = 3000
     }
 
-    var onConnect: MSListenerOnConnectClientTCP? = null
-
-    private val mSocket = Socket()
+    private val mSocket = Socket().apply {
+        soTimeout = TIMEOUT
+    }
 
     fun connect(
         host: InetSocketAddress
-    ) = scope.launch {
+    ) = mSocket.run {
         try {
-            mSocket.connect(
+            connect(
                 host,
                 TIMEOUT
             )
         } catch (e: Exception) {
-            return@launch
+            return@run null
         }
 
-        onConnect?.onConnect(
+        return@run Pair(
             mSocket.getInputStream(),
             mSocket.getOutputStream()
         )

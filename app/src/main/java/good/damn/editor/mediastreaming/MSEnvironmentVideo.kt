@@ -34,10 +34,6 @@ class MSEnvironmentVideo(
         private const val TAG = "MSStreamEnvironmentCame"
     }
 
-    val resolution = Size(
-        640,
-        480
-    )
 
     val isReceiving: Boolean
         get() = mServerVideo.isRunning
@@ -63,7 +59,7 @@ class MSEnvironmentVideo(
 
     private val mServerVideo = MSServerUDP(
         MSStreamConstants.PORT_VIDEO,
-        MSStreamCameraInput.PACKET_MAX_SIZE + MSUtilsAvc.LEN_META,
+        MSStreamConstants.PACKET_MAX_SIZE,
         CoroutineScope(
             Dispatchers.IO
         ),
@@ -73,7 +69,7 @@ class MSEnvironmentVideo(
 
     private val mServerRestorePackets = MSServerUDP(
         MSStreamConstants.PORT_VIDEO_RESTORE,
-        MSStreamCameraInput.PACKET_MAX_SIZE + MSUtilsAvc.LEN_META,
+        MSStreamConstants.PACKET_MAX_SIZE,
         CoroutineScope(
             Dispatchers.IO
         ),
@@ -85,6 +81,8 @@ class MSEnvironmentVideo(
 
     fun startReceiving(
         surfaceOutput: Surface,
+        width: Int,
+        height: Int,
         host: InetAddress?
     ) {
         hostTo = host
@@ -93,7 +91,11 @@ class MSEnvironmentVideo(
                 this@MSEnvironmentVideo
             )
             post {
-                startDecoder(surfaceOutput)
+                startDecoder(
+                    surfaceOutput,
+                    width,
+                    height
+                )
             }
         }
 
@@ -110,7 +112,11 @@ class MSEnvironmentVideo(
                 looper
             )
 
-            startDecoder(surfaceOutput)
+            startDecoder(
+                surfaceOutput,
+                width,
+                height
+            )
         }
     }
 
@@ -144,7 +150,9 @@ class MSEnvironmentVideo(
         context: Context?,
         idLogical: String,
         idPhysical: String?,
-        host: String
+        host: String,
+        width: Int,
+        height: Int
     ) = mServiceWrapper.startStreamingVideo(
         MSCameraModelID(
             idLogical,
@@ -156,20 +164,22 @@ class MSEnvironmentVideo(
                 idPhysical ?: idLogical
             )
         ),
-        resolution.width,
-        resolution.height,
+        width,
+        height,
         host
     )
 
     private fun startDecoder(
-        surfaceOutput: Surface
+        surfaceOutput: Surface,
+        width: Int,
+        height: Int
     ) {
         mDecoderVideo.configure(
             surfaceOutput,
             MediaFormat.createVideoFormat(
                 MSCoder.TYPE_AVC,
-                resolution.width,
-                resolution.height
+                width,
+                height
             ).apply {
                 default()
                 setInteger(
