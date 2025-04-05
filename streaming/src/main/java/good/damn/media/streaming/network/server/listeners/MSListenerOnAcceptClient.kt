@@ -7,8 +7,7 @@ import java.net.InetAddress
 import java.net.Socket
 
 interface MSListenerOnAcceptClient {
-    fun onAcceptClient(
-        socket: Socket,
-        scope: CoroutineScope
+    suspend fun onAcceptClient(
+        socket: Socket
     )
 }

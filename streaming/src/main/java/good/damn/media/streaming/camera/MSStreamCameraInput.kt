@@ -1,5 +1,6 @@
 package good.damn.media.streaming.camera
 
+import android.media.MediaFormat
 import android.os.Handler
 import android.util.Log
 import good.damn.media.streaming.MSStreamConstants
@@ -39,14 +40,11 @@ class MSStreamCameraInput(
 
     fun start(
         cameraId: MSCameraModelID,
-        width: Int,
-        height: Int,
+        mediaFormat: MediaFormat,
         handler: Handler
     ) = mCamera.run {
         configure(
-            width,
-            height,
-            cameraId.characteristics,
+            mediaFormat,
             handler
         )
 

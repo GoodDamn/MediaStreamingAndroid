@@ -1,8 +1,6 @@
 package good.damn.editor.mediastreaming.system.service.serv
 
 import android.content.Context
-import android.content.Intent
-import android.os.Binder
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
@@ -48,7 +46,7 @@ class MSServiceStreamImpl
         }
 
         mClientStreamCamera = MSClientUDP(
-            MSStreamConstants.PORT_VIDEO
+            MSStreamConstants.PORT_MEDIA
         )
 
         mStreamCamera = MSStreamCameraInput(

@@ -1,30 +1,34 @@
 package good.damn.media.streaming.network.server.tcp
 
+import android.os.Handler
 import android.util.Log
 import good.damn.media.streaming.network.MSStateable
 import good.damn.media.streaming.network.server.listeners.MSListenerOnAcceptClient
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.net.ServerSocket
 
 class MSServerTCP(
-    private val port: Int,
-    private val scope: CoroutineScope,
-    private val accepter: MSListenerOnAcceptClient
-): MSStateable {
+    private val accepter: MSListenerOnAcceptClient,
+    private val scope: CoroutineScope
+) {
 
     companion object {
         private val TAG = MSServerTCP::class.simpleName
     }
     
     private var mSocket: ServerSocket? = null
+    private var mJob: Job? = null
 
     var isRunning = false
         private set
 
-    override fun start() {
+    fun start(
+        port: Int
+    ) {
         isRunning = true
-        scope.launch {
+        mJob = scope.launch {
             mSocket = ServerSocket(
                 port
             ).apply {
@@ -35,27 +39,28 @@ class MSServerTCP(
         }
     }
 
-    override fun stop() {
-        release()
+    fun stop() {
+        isRunning = false
+        mJob?.cancel()
+        mJob = null
     }
 
-    override fun release() {
-        isRunning = false
+    fun release() {
+        stop()
         mSocket?.close()
         mSocket = null
     }
 
-    private inline fun listen(
+    private suspend inline fun listen(
         socket: ServerSocket
     ) {
         Log.d(TAG, "listen: ")
         val user = socket.accept()
         Log.d(TAG, "listen: accept")
-        user.soTimeout = 4000
+        user.soTimeout = 7000
 
         accepter.onAcceptClient(
-            user,
-            scope
+            user
         )
     }
 }

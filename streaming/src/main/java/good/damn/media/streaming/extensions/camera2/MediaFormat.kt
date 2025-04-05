@@ -20,7 +20,7 @@ inline fun MediaFormat.default() {
         CodecCapabilities.COLOR_FormatSurface
     )
 
-    setInteger(
+    /*setInteger(
         MediaFormat.KEY_BIT_RATE,
         1024 * 8
     )
@@ -33,7 +33,7 @@ inline fun MediaFormat.default() {
     setInteger(
         MediaFormat.KEY_FRAME_RATE,
         1
-    )
+    )*/
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         setInteger(
@@ -59,8 +59,8 @@ inline fun MediaFormat.default() {
         )
     }*/
 
-    setInteger(
+    /*setInteger(
         MediaFormat.KEY_I_FRAME_INTERVAL,
         1
-    )
+    )*/
 }

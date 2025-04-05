@@ -1,15 +1,14 @@
 package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
+import android.content.Context
+import android.media.MediaFormat
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
-import android.view.Surface
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
@@ -18,12 +17,11 @@ import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
 import good.damn.editor.mediastreaming.MSActivityMain
 import good.damn.editor.mediastreaming.MSApp
+import good.damn.editor.mediastreaming.MSEnvironmentHandshake
 import good.damn.editor.mediastreaming.MSEnvironmentVideo
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
-import good.damn.editor.mediastreaming.extensions.hasPermissionMicrophone
-import good.damn.media.streaming.extensions.toInetAddress
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.editor.mediastreaming.views.MSViewStreamFrame
@@ -31,31 +29,45 @@ import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
 import good.damn.editor.mediastreaming.views.MSViewColor
+import good.damn.media.streaming.MSTypeDecoderSettings
+import good.damn.media.streaming.camera.avc.MSCoder
+import good.damn.media.streaming.extensions.camera2.default
+import good.damn.media.streaming.extensions.camera2.getRotation
 import good.damn.media.streaming.extensions.hasOsVersion
+import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.InetAddress
 
 class MSFragmentTestH264
 : Fragment(),
 MSListenerOnResultPermission,
 MSListenerOnSelectCamera,
-MSListenerOnChangeSurface {
+MSListenerOnHandshakeSettings {
 
     companion object {
         private const val TAG = "MSFragmentTestH264"
     }
 
     private var mEditTextHost: EditText? = null
+    private var mLayoutSurfaces: LinearLayout? = null
 
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
+
     private val mStreamCamera = MSEnvironmentVideo(
         mServiceStreamWrapper
     )
+
+    private val mEnvHandshake = MSEnvironmentHandshake().apply {
+        onHandshakeSettings = this@MSFragmentTestH264
+    }
 
     private val mResolution = Size(
         640,
         480
     )
-
-    private var mSurfaceReceive: Surface? = null
 
     private var mIsNeedToReceive = false
 
@@ -76,6 +88,7 @@ MSListenerOnChangeSurface {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: ")
+        mEnvHandshake.release()
         mStreamCamera.stopStreamingCamera()
         mStreamCamera.releaseReceiving()
 
@@ -145,28 +158,15 @@ MSListenerOnChangeSurface {
 
             setOnClickListener {
                 if (mIsNeedToReceive) {
-                    text = "Start receiving"
-                    mStreamCamera.stopReceiving()
+                    text = "Start listening peers"
+                    mEnvHandshake.stop()
                     mIsNeedToReceive = false
-                    //mStreamAudio.stopReceiving()
                     return@setOnClickListener
                 }
 
-                val ip = mEditTextHost?.text?.toString()
-                    ?: return@setOnClickListener
-
-                val inet = ip.toInetAddress()
-
                 mIsNeedToReceive = true
-                text = "Stop receiving"
-                mSurfaceReceive?.apply {
-                    mStreamCamera.startReceiving(
-                        this,
-                        mResolution.width,
-                        mResolution.height,
-                        inet
-                    )
-                }
+                text = "Stop listening peers"
+                mEnvHandshake.startListeningSettings()
             }
 
             addView(
@@ -181,19 +181,20 @@ MSListenerOnChangeSurface {
         ).let {
             setBackgroundColor(0)
 
-            MSViewStreamFrame(
+            LinearLayout(
                 context
             ).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setBackgroundColor(0)
+                mLayoutSurfaces = this
 
-                onChangeSurface = this@MSFragmentTestH264
-
-                val w = (MSApp.width * 0.4f).toInt()
                 layoutParams = FrameLayout.LayoutParams(
-                    w,
-                    (mResolution.width.toFloat() / mResolution.height * w).toInt()
+                    -2,
+                    -2
                 ).apply {
-                    gravity = Gravity.CENTER
+                    gravity = Gravity.CENTER_HORIZONTAL
                 }
+
                 it.addView(
                     this
                 )
@@ -232,48 +233,6 @@ MSListenerOnChangeSurface {
                     this,
                     -1,
                     -2
-                )
-            }
-
-            MSViewColor(
-                context
-            ).apply {
-                setBackgroundColor(
-                    0xffff0000.toInt()
-                )
-
-                val s = (MSApp.width * 0.1f).toInt()
-                layoutParams = FrameLayout.LayoutParams(
-                    s, s
-                ).apply {
-                    gravity = Gravity.END or Gravity.TOP
-                }
-
-                setOnClickListener {
-                    if (color == 0xffff0000.toInt()) {
-                        // Audio disabled
-                        (activity as? MSActivityMain)?.apply {
-                            if (!hasPermissionMicrophone()) {
-                                launcherPermission.launch(
-                                    Manifest.permission.RECORD_AUDIO
-                                )
-                                return@setOnClickListener
-                            }
-
-                            setBackgroundColor(
-                                0xff0000ff.toInt()
-                            )
-                        }
-                        return@setOnClickListener
-                    }
-
-                    setBackgroundColor(
-                        0xffff0000.toInt()
-                    )
-                }
-
-                it.addView(
-                    this
                 )
             }
 
@@ -316,38 +275,137 @@ MSListenerOnChangeSurface {
         val ip = mEditTextHost?.text?.toString()
             ?: return
 
+        val settings = hashMapOf(
+            "width" to mResolution.width,
+            "height" to mResolution.height,
+            MediaFormat.KEY_ROTATION to 90,
+            MediaFormat.KEY_BIT_RATE to 1024 * 8,
+            MediaFormat.KEY_CAPTURE_RATE to 1,
+            MediaFormat.KEY_FRAME_RATE to 1,
+            MediaFormat.KEY_I_FRAME_INTERVAL to 1
+        )
 
-        mStreamCamera.apply {
-            if (isStreamingVideo) {
-                stopStreamingCamera()
-            }
-
-            startStreamingCamera(
-                context,
-                cameraId.logical,
-                cameraId.physical,
+        CoroutineScope(
+            Dispatchers.IO
+        ).launch {
+            sendHandshake(
                 ip,
-                mResolution.width,
-                mResolution.height
+                cameraId,
+                settings
             )
         }
 
     }
 
 
-    override fun onChangeSurface(
-        surface: Surface
+    override suspend fun onHandshakeSettings(
+        settings: MSTypeDecoderSettings,
+        fromIp: InetAddress
     ) {
-        mSurfaceReceive = surface
-        Log.d(TAG, "onChangeSurface: $mIsNeedToReceive ${mStreamCamera.hostTo}")
-        if (mIsNeedToReceive) {
-            mStreamCamera.startReceiving(
-                surface,
-                mResolution.width,
-                mResolution.height,
-                mStreamCamera.hostTo
+        val width = settings["width"] ?: 640
+        val height = settings["height"] ?: 480
+
+        settings.remove("width")
+        settings.remove("height")
+
+        withContext(
+            Dispatchers.Main
+        ) {
+            handshakeSurface(
+                fromIp,
+                width,
+                height,
+                settings
             )
         }
+    }
+
+    private inline fun sendHandshake(
+        ip: String,
+        cameraId: MSCameraModelID,
+        settings: MSTypeDecoderSettings
+    ) {
+        val result = mEnvHandshake.sendHandshakeSettings(
+            ip,
+            settings
+        )
+
+        if (!result) {
+            return
+        }
+
+        if (mStreamCamera.isStreamingVideo) {
+            mStreamCamera.stopStreamingCamera()
+        }
+
+        val width = settings["width"] ?: 640
+        val height = settings["height"] ?: 480
+
+        settings.remove("width")
+        settings.remove("height")
+
+        mStreamCamera.startStreamingCamera(
+            cameraId,
+            ip,
+            MediaFormat.createVideoFormat(
+                MSCoder.TYPE_AVC,
+                width,
+                height
+            ).apply {
+                default()
+
+                settings.forEach {
+                    setInteger(
+                        it.key,
+                        it.value
+                    )
+                }
+            }
+        )
+    }
+
+    private inline fun handshakeSurface(
+        fromIp: InetAddress,
+        width: Int,
+        height: Int,
+        settings: MSTypeDecoderSettings
+    ) {
+        val streamFrame = MSViewStreamFrame(
+            context
+        ).apply {
+            val w = MSApp.width * 0.2f
+            layoutParams = LinearLayout.LayoutParams(
+                w.toInt(),
+                ((width.toFloat() / height) * w).toInt()
+            ).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+            }
+        }
+        
+        streamFrame.onChangeSurface = MSListenerOnChangeSurface {
+                surface ->
+            mStreamCamera.startReceiving(
+                surface,
+                MediaFormat.createVideoFormat(
+                    MSCoder.TYPE_AVC,
+                    width,
+                    height
+                ).apply {
+                    default()
+                    settings.forEach {
+                        setInteger(
+                            it.key,
+                            it.value
+                        )
+                    }
+                },
+                fromIp
+            )
+        }
+
+        mLayoutSurfaces?.addView(
+            streamFrame
+        )
     }
 
 }

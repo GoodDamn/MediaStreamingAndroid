@@ -4,19 +4,17 @@ import android.content.Context
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
-import android.util.Log
-import android.util.Size
 import android.view.Surface
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.MSManagerCamera
-import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
-import good.damn.media.streaming.camera.avc.MSUtilsAvc
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.media.streaming.extensions.camera2.default
+import good.damn.media.streaming.network.client.tcp.MSNetworkDecoderSettings
+import good.damn.media.streaming.network.server.tcp.MSServerTCP
 import good.damn.media.streaming.network.server.udp.MSPacketMissingHandler
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrame
 import good.damn.media.streaming.network.server.udp.MSServerUDP
@@ -58,17 +56,7 @@ class MSEnvironmentVideo(
     }
 
     private val mServerVideo = MSServerUDP(
-        MSStreamConstants.PORT_VIDEO,
-        MSStreamConstants.PACKET_MAX_SIZE,
-        CoroutineScope(
-            Dispatchers.IO
-        ),
-        mReceiverFrame
-    )
-
-
-    private val mServerRestorePackets = MSServerUDP(
-        MSStreamConstants.PORT_VIDEO_RESTORE,
+        MSStreamConstants.PORT_MEDIA,
         MSStreamConstants.PACKET_MAX_SIZE,
         CoroutineScope(
             Dispatchers.IO
@@ -81,8 +69,7 @@ class MSEnvironmentVideo(
 
     fun startReceiving(
         surfaceOutput: Surface,
-        width: Int,
-        height: Int,
+        format: MediaFormat,
         host: InetAddress?
     ) {
         hostTo = host
@@ -93,20 +80,17 @@ class MSEnvironmentVideo(
             post {
                 startDecoder(
                     surfaceOutput,
-                    width,
-                    height
+                    format
                 )
             }
-        }
-
-        if (mHandlerDecoding != null) {
             return
         }
 
-        mThreadDecoding = HandlerThread(
+        HandlerThread(
             "decodingEnvironment"
         ).apply {
             start()
+            mThreadDecoding = this
 
             mHandlerDecoding = Handler(
                 looper
@@ -114,8 +98,7 @@ class MSEnvironmentVideo(
 
             startDecoder(
                 surfaceOutput,
-                width,
-                height
+                format
             )
         }
     }
@@ -126,13 +109,11 @@ class MSEnvironmentVideo(
         }
         mDecoderVideo.stop()
         mServerVideo.stop()
-        mServerRestorePackets.stop()
     }
 
     fun releaseReceiving() {
         mDecoderVideo.release()
         mServerVideo.release()
-        mServerRestorePackets.release()
 
         mThreadDecoding?.quit()
         mThreadDecoding = null
@@ -144,54 +125,30 @@ class MSEnvironmentVideo(
         }
     }
 
-    fun stopStreamingCamera() = mServiceWrapper.stopStreamingVideo()
+    fun stopStreamingCamera() = mServiceWrapper
+        .stopStreamingVideo()
 
     fun startStreamingCamera(
-        context: Context?,
-        idLogical: String,
-        idPhysical: String?,
+        cameraId: MSCameraModelID,
         host: String,
-        width: Int,
-        height: Int
+        mediaFormat: MediaFormat,
     ) = mServiceWrapper.startStreamingVideo(
-        MSCameraModelID(
-            idLogical,
-            idPhysical,
-            true,
-            MSManagerCamera(
-                context
-            ).getCharacteristics(
-                idPhysical ?: idLogical
-            )
-        ),
-        width,
-        height,
+        cameraId,
+        mediaFormat,
         host
     )
 
     private fun startDecoder(
         surfaceOutput: Surface,
-        width: Int,
-        height: Int
+        format: MediaFormat
     ) {
         mDecoderVideo.configure(
             surfaceOutput,
-            MediaFormat.createVideoFormat(
-                MSCoder.TYPE_AVC,
-                width,
-                height
-            ).apply {
-                default()
-                setInteger(
-                    MediaFormat.KEY_ROTATION,
-                    90
-                )
-            }
+            format
         )
 
         // Bufferizing
         mServerVideo.start()
-        mServerRestorePackets.start()
 
         mHandlerDecoding?.post(
             this@MSEnvironmentVideo

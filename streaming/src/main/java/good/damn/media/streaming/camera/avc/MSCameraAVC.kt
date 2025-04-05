@@ -36,23 +36,11 @@ class MSCameraAVC(
         private set
 
     fun configure(
-        width: Int,
-        height: Int,
-        character: CameraCharacteristics,
+        mediaFormat: MediaFormat,
         handler: Handler
     ) = handler.post {
         mEncoder.configure(
-            MediaFormat.createVideoFormat(
-                MSCoder.TYPE_AVC,
-                width,
-                height
-            ).apply {
-                default()
-                setInteger(
-                    MediaFormat.KEY_ROTATION,
-                    character.getRotation() ?: 0
-                )
-            }
+            mediaFormat
         )
     }
 

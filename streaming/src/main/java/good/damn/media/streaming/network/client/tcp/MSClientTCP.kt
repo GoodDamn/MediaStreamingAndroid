@@ -1,25 +1,18 @@
 package good.damn.media.streaming.network.client.tcp
 
-import good.damn.media.streaming.network.client.tcp.listeners.MSListenerOnConnectClientTCP
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import java.io.Closeable
-import java.net.Inet4Address
-import java.net.InetAddress
 import java.net.InetSocketAddress
-import java.net.ServerSocket
 import java.net.Socket
-import java.net.SocketAddress
 
 class MSClientTCP
 : Closeable {
 
     companion object {
-        const val TIMEOUT = 3000
+        const val TIMEOUT_MS = 7000
     }
 
     private val mSocket = Socket().apply {
-        soTimeout = TIMEOUT
+        soTimeout = TIMEOUT_MS
     }
 
     fun connect(
@@ -28,9 +21,11 @@ class MSClientTCP
         try {
             connect(
                 host,
-                TIMEOUT
+                TIMEOUT_MS
             )
-        } catch (e: Exception) {
+        } catch (
+            e: Exception
+        ) {
             return@run null
         }
 

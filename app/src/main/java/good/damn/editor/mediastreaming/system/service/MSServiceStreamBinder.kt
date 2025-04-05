@@ -1,5 +1,6 @@
 package good.damn.editor.mediastreaming.system.service
 
+import android.media.MediaFormat
 import android.os.Binder
 import android.os.Handler
 import android.os.HandlerThread
@@ -22,16 +23,14 @@ class MSServiceStreamBinder(
 
     fun startStreamingCamera(
         modelID: MSCameraModelID,
-        width: Int,
-        height: Int,
+        mediaFormat: MediaFormat,
         host: String
     ) {
         mStreamClient?.host = host.toInetAddress()
         mServerRestorePackets?.start()
         mStreamCamera?.start(
             modelID,
-            width,
-            height,
+            mediaFormat,
             mHandler!!
         )
     }
