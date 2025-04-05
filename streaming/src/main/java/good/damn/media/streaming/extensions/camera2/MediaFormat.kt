@@ -7,6 +7,7 @@ import android.media.MediaCodecInfo.CodecProfileLevel
 import android.media.MediaFormat
 import android.os.Build
 import android.provider.MediaStore.Audio.Media
+import androidx.core.location.LocationRequestCompat.Quality
 
 inline fun MediaFormat.default() {
 
@@ -19,21 +20,6 @@ inline fun MediaFormat.default() {
         MediaFormat.KEY_COLOR_FORMAT,
         CodecCapabilities.COLOR_FormatSurface
     )
-
-    /*setInteger(
-        MediaFormat.KEY_BIT_RATE,
-        1024 * 8
-    )
-
-    setInteger(
-        MediaFormat.KEY_CAPTURE_RATE,
-        1
-    )
-
-    setInteger(
-        MediaFormat.KEY_FRAME_RATE,
-        1
-    )*/
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         setInteger(
@@ -51,16 +37,4 @@ inline fun MediaFormat.default() {
             MediaFormat.COLOR_RANGE_LIMITED
         )
     }
-
-    /*if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-        setInteger(
-            MediaFormat.KEY_PROFILE,
-            CodecProfileLevel.AVCProfileConstrainedBaseline
-        )
-    }*/
-
-    /*setInteger(
-        MediaFormat.KEY_I_FRAME_INTERVAL,
-        1
-    )*/
 }

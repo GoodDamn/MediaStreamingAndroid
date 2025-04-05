@@ -186,7 +186,7 @@ class MSEnvironmentVideo(
 
         val timeout = if (
             currentPacketSize >= 8
-        ) TIMEOUT_DEFAULT_PACKET_MS * 100 else TIMEOUT_DEFAULT_PACKET_MS
+        ) TIMEOUT_DEFAULT_PACKET_MS * 10 else TIMEOUT_DEFAULT_PACKET_MS
 
         do {
             currentTime = System.currentTimeMillis()

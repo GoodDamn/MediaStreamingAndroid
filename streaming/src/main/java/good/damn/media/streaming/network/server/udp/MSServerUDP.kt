@@ -36,21 +36,15 @@ open class MSServerUDP(
         mBuffer.size
     )
 
-    private var mSocket = DatagramSocket(
-        port
-    ).apply {
-        reuseAddress = true
-    }
+    private var mSocket: DatagramSocket? = null
 
     private var mJob: Job? = null
 
     override fun start() {
-
-        if (mSocket.isClosed) {
-            mSocket = DatagramSocket(
-                port
-            ).apply {
-                reuseAddress = true
+        mSocket = DatagramSocket().apply {
+            reuseAddress = true
+            if (!isBound) {
+                bind(InetSocketAddress(this@MSServerUDP.port))
             }
         }
 
@@ -75,7 +69,7 @@ open class MSServerUDP(
         try {
             // causes infinite loop
             //mSocket.disconnect()
-            mSocket.close()
+            mSocket?.close()
         } catch (ignored: Exception) {}
     }
 
@@ -86,7 +80,7 @@ open class MSServerUDP(
                 0,
                 mBuffer.size
             )
-            mSocket.receive(
+            mSocket?.receive(
                 mPacket
             )
         } catch (e: Exception) {

@@ -4,7 +4,9 @@ import android.util.Log
 import good.damn.media.streaming.MSTypeDecoderSettings
 import good.damn.media.streaming.extensions.integerBE
 import good.damn.media.streaming.extensions.integerLE
+import good.damn.media.streaming.extensions.readSafely
 import good.damn.media.streaming.extensions.readU
+import good.damn.media.streaming.extensions.readUSafely
 import good.damn.media.streaming.extensions.write
 import good.damn.media.streaming.network.server.listeners.MSListenerOnAcceptClient
 import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
@@ -54,14 +56,13 @@ class MSNetworkDecoderSettings
         }
 
 
-        if (first.read() == ANSWER_OK) {
-            first.close()
-            second.close()
-            client.close()
-            return@run true
-        }
+        val isOk = first.readSafely() == ANSWER_OK
 
-        return@run false
+        first.close()
+        second.close()
+        client.close()
+
+        return@run isOk
     } ?: false
 
     override suspend fun onAcceptClient(
@@ -70,7 +71,7 @@ class MSNetworkDecoderSettings
         val inp = socket.getInputStream()
         val out = socket.getOutputStream()
 
-        val size = inp.readU()
+        val size = inp.readUSafely()
 
         if (size < 0) {
             close()
@@ -85,13 +86,13 @@ class MSNetworkDecoderSettings
         val buffer = ByteArray(512)
 
         for (i in 0 until size) {
-            dataKeySize = inp.readU()
+            dataKeySize = inp.readUSafely()
 
             if (dataKeySize < 0) {
                 continue
             }
 
-            if (inp.read(
+            if (inp.readSafely(
                 buffer,
                 0,
                 dataKeySize
@@ -106,7 +107,7 @@ class MSNetworkDecoderSettings
                 CHARSET_KEY
             )
 
-            if (inp.read(
+            if (inp.readSafely(
                 buffer,
                 0,
                 4
@@ -123,6 +124,7 @@ class MSNetworkDecoderSettings
 
         out.write(ANSWER_OK)
 
+        close()
         onHandshakeSettings?.onHandshakeSettings(
             map,
             socket.inetAddress

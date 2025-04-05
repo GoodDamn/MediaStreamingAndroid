@@ -7,6 +7,7 @@ import good.damn.media.streaming.network.server.listeners.MSListenerOnAcceptClie
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import java.net.InetSocketAddress
 import java.net.ServerSocket
 
 class MSServerTCP(
@@ -29,9 +30,12 @@ class MSServerTCP(
     ) {
         isRunning = true
         mJob = scope.launch {
-            mSocket = ServerSocket(
-                port
-            ).apply {
+            mSocket = ServerSocket().apply {
+                reuseAddress = true
+                if (!isBound) {
+                    bind(InetSocketAddress(port))
+                }
+
                 while (
                     isRunning
                 ) { listen(this) }

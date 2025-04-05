@@ -21,6 +21,7 @@ import good.damn.editor.mediastreaming.MSEnvironmentVideo
 import good.damn.editor.mediastreaming.clicks.MSClickOnSelectCamera
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
 import good.damn.editor.mediastreaming.extensions.hasPermissionCamera
+import good.damn.editor.mediastreaming.extensions.toast
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.editor.mediastreaming.views.MSViewStreamFrame
@@ -330,6 +331,7 @@ MSListenerOnHandshakeSettings {
         settings.remove("width")
         settings.remove("height")
 
+        Log.d(TAG, "onHandshakeSettings: ")
         withContext(
             Dispatchers.Main
         ) {
@@ -342,7 +344,7 @@ MSListenerOnHandshakeSettings {
         }
     }
 
-    private inline fun sendHandshake(
+    private suspend inline fun sendHandshake(
         ip: String,
         cameraId: MSCameraModelID,
         settings: MSTypeDecoderSettings
@@ -353,6 +355,13 @@ MSListenerOnHandshakeSettings {
         )
 
         if (!result) {
+            withContext(
+                Dispatchers.Main
+            ) {
+                context?.toast(
+                    "No result"
+                )
+            }
             return
         }
 
@@ -376,6 +385,10 @@ MSListenerOnHandshakeSettings {
             ).apply {
                 default()
 
+                settings.remove(
+                    MediaFormat.KEY_ROTATION
+                )
+
                 settings.forEach {
                     setInteger(
                         it.key,
@@ -395,7 +408,7 @@ MSListenerOnHandshakeSettings {
         val streamFrame = MSViewStreamFrame(
             context
         ).apply {
-            val w = MSApp.width * 0.2f
+            val w = MSApp.width * 0.4f
             layoutParams = LinearLayout.LayoutParams(
                 w.toInt(),
                 ((width.toFloat() / height) * w).toInt()
