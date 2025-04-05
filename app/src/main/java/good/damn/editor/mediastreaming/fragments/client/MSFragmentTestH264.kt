@@ -1,7 +1,6 @@
 package good.damn.editor.mediastreaming.fragments.client
 
 import android.Manifest
-import android.content.Context
 import android.media.MediaFormat
 import android.os.Build
 import android.os.Bundle
@@ -28,11 +27,10 @@ import good.damn.editor.mediastreaming.views.MSViewStreamFrame
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
-import good.damn.editor.mediastreaming.views.MSViewColor
+import good.damn.editor.mediastreaming.views.dialogs.option.MSDialogOptionsH264
 import good.damn.media.streaming.MSTypeDecoderSettings
 import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.extensions.camera2.default
-import good.damn.media.streaming.extensions.camera2.getRotation
 import good.damn.media.streaming.extensions.hasOsVersion
 import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
 import kotlinx.coroutines.CoroutineScope
@@ -64,9 +62,14 @@ MSListenerOnHandshakeSettings {
         onHandshakeSettings = this@MSFragmentTestH264
     }
 
-    private val mResolution = Size(
-        640,
-        480
+    private val mOptionsHandshake = hashMapOf(
+        "width" to 640,
+        "height" to 480,
+        MediaFormat.KEY_ROTATION to 90,
+        MediaFormat.KEY_BIT_RATE to 1024 * 8,
+        MediaFormat.KEY_CAPTURE_RATE to 1,
+        MediaFormat.KEY_FRAME_RATE to 1,
+        MediaFormat.KEY_I_FRAME_INTERVAL to 1
     )
 
     private var mIsNeedToReceive = false
@@ -228,6 +231,35 @@ MSListenerOnHandshakeSettings {
                     )
                 }
 
+                Button(
+                    context
+                ).apply {
+                    text = "options"
+
+                    setOnClickListener {
+                        val options = MSDialogOptionsH264()
+                        options.show(
+                            childFragmentManager, "options"
+                        )
+                        options.optionsTotal = { opt ->
+                            mOptionsHandshake.clear()
+
+                            opt.forEach { entry ->
+                                mOptionsHandshake[
+                                    entry.key
+                                ] = entry.value
+                            }
+
+                        }
+                    }
+
+                    addView(
+                        this,
+                        -2,
+                        -2
+                    )
+                }
+
 
                 it.addView(
                     this,
@@ -275,23 +307,13 @@ MSListenerOnHandshakeSettings {
         val ip = mEditTextHost?.text?.toString()
             ?: return
 
-        val settings = hashMapOf(
-            "width" to mResolution.width,
-            "height" to mResolution.height,
-            MediaFormat.KEY_ROTATION to 90,
-            MediaFormat.KEY_BIT_RATE to 1024 * 8,
-            MediaFormat.KEY_CAPTURE_RATE to 1,
-            MediaFormat.KEY_FRAME_RATE to 1,
-            MediaFormat.KEY_I_FRAME_INTERVAL to 1
-        )
-
         CoroutineScope(
             Dispatchers.IO
         ).launch {
             sendHandshake(
                 ip,
                 cameraId,
-                settings
+                mOptionsHandshake
             )
         }
 
