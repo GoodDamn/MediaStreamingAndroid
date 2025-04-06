@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
@@ -281,6 +282,7 @@ MSListenerOnHandshakeSettings {
     }
 
     override fun onSelectCamera(
+        v: View?,
         cameraId: MSCameraModelID
     ) {
         val activity = activity as? MSActivityMain
@@ -295,6 +297,15 @@ MSListenerOnHandshakeSettings {
 
         val ip = mEditTextHost?.text?.toString()
             ?: return
+
+        context?.toast("Wait")
+
+        v?.apply {
+            isEnabled = false
+            postDelayed({
+                isEnabled = true
+            }, 1000)
+        }
 
         CoroutineScope(
             Dispatchers.IO

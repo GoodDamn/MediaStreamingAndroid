@@ -42,9 +42,12 @@ open class MSServerUDP(
     private var mJob: Job? = null
 
     override fun start() {
-        mSocket = DatagramSocket(
-            port
-        )
+        mSocket = DatagramSocket(null).apply {
+            reuseAddress = true
+            bind(InetSocketAddress(
+                this@MSServerUDP.port
+            ))
+        }
 
         isRunning = true
         mJob = scope.launch {
@@ -70,19 +73,16 @@ open class MSServerUDP(
         } catch (ignored: Exception) {}
     }
 
-    private suspend fun listen() {
-        try {
-            mPacket.setData(
-                mBuffer,
-                0,
-                mBuffer.size
-            )
-            mSocket?.receive(
-                mPacket
-            )
-        } catch (e: Exception) {
-            Log.d(TAG, "listen: ${e.localizedMessage}")
-        }
+    private suspend fun listen() = try {
+        mPacket.setData(
+            mBuffer,
+            0,
+            mBuffer.size
+        )
+        mSocket?.receive(
+            mPacket
+        )
+
         val address = mPacket.address
         val saved = mBuffer
         if (address != null) {
@@ -99,6 +99,9 @@ open class MSServerUDP(
         mBuffer = ByteArray(
             mBuffer.size
         )
+    } catch (e: Exception) {
+        Log.d(TAG, "listen: ${e.localizedMessage}")
     }
+
 
 }

@@ -29,10 +29,14 @@ class MSServerTCP(
         port: Int
     ) {
         isRunning = true
+
+        mSocket = ServerSocket().apply {
+            reuseAddress = true
+            bind(InetSocketAddress(port))
+        }
+
         mJob = scope.launch {
-            mSocket = ServerSocket(
-                port
-            ).apply {
+            mSocket?.apply {
                 while (
                     isRunning
                 ) { listen(this) }
@@ -41,20 +45,20 @@ class MSServerTCP(
     }
 
     fun stop() {
-        isRunning = false
-        mJob?.cancel()
-        mJob = null
+        release()
     }
 
     fun release() {
-        stop()
+        isRunning = false
+        mJob?.cancel()
+        mJob = null
         mSocket?.close()
         mSocket = null
     }
 
     private suspend inline fun listen(
         socket: ServerSocket
-    ) {
+    ) = try {
         Log.d(TAG, "listen: ")
         val user = socket.accept()
         Log.d(TAG, "listen: accept")
@@ -63,5 +67,7 @@ class MSServerTCP(
         accepter.onAcceptClient(
             user
         )
+    } catch (e: Exception) {
+        Log.d(TAG, "listen: ${e.message}")
     }
 }
