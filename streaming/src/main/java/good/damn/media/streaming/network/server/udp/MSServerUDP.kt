@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.Inet6Address
 import java.net.InetSocketAddress
 import java.net.SocketAddress
 
@@ -36,22 +37,16 @@ open class MSServerUDP(
         mBuffer.size
     )
 
-    private var mSocket = DatagramSocket(
-        port
-    ).apply {
-        reuseAddress = true
-    }
+    private var mSocket: DatagramSocket? = null
 
     private var mJob: Job? = null
 
     override fun start() {
-
-        if (mSocket.isClosed) {
-            mSocket = DatagramSocket(
-                port
-            ).apply {
-                reuseAddress = true
-            }
+        mSocket = DatagramSocket(null).apply {
+            reuseAddress = true
+            bind(InetSocketAddress(
+                this@MSServerUDP.port
+            ))
         }
 
         isRunning = true
@@ -65,8 +60,7 @@ open class MSServerUDP(
     }
 
     override fun stop() {
-        isRunning = false
-        mJob?.cancel()
+        release()
     }
 
     override fun release() {
@@ -75,23 +69,20 @@ open class MSServerUDP(
         try {
             // causes infinite loop
             //mSocket.disconnect()
-            mSocket.close()
+            mSocket?.close()
         } catch (ignored: Exception) {}
     }
 
-    private suspend fun listen() {
-        try {
-            mPacket.setData(
-                mBuffer,
-                0,
-                mBuffer.size
-            )
-            mSocket.receive(
-                mPacket
-            )
-        } catch (e: Exception) {
-            Log.d(TAG, "listen: ${e.localizedMessage}")
-        }
+    private suspend fun listen() = try {
+        mPacket.setData(
+            mBuffer,
+            0,
+            mBuffer.size
+        )
+        mSocket?.receive(
+            mPacket
+        )
+
         val address = mPacket.address
         val saved = mBuffer
         if (address != null) {
@@ -108,6 +99,9 @@ open class MSServerUDP(
         mBuffer = ByteArray(
             mBuffer.size
         )
+    } catch (e: Exception) {
+        Log.d(TAG, "listen: ${e.localizedMessage}")
     }
+
 
 }

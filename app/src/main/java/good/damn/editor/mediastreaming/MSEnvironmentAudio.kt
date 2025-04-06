@@ -11,16 +11,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
 
-class MSEnvironmentAudio(
-    private val serviceConnection: MSCameraServiceConnection
-) {
+class MSEnvironmentAudio {
 
     val isReceiving: Boolean
         get() = mServerAudio.isRunning
 
     private val mReceiverAudio = MSReceiverAudio()
     private var mServerAudio = MSServerUDP(
-        MSStreamConstants.PORT_AUDIO,
+        MSStreamConstants.PORT_MEDIA,
         1024,
         CoroutineScope(
             Dispatchers.IO

@@ -22,7 +22,7 @@ class MSStreamAudioInput
     }
 
     private val mClientAudio = MSClientUDP(
-        MSStreamConstants.PORT_AUDIO,
+        MSStreamConstants.PORT_MEDIA,
     )
 
     fun start(

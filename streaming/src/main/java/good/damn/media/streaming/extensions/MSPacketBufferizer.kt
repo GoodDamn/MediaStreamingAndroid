@@ -6,7 +6,7 @@ import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 inline fun MSPacketBufferizer.writeDefault(
     data: ByteArray
 ) = write(
-    data.integer(
+    data.integerBE(
         MSUtilsAvc.OFFSET_PACKET_FRAME_ID
     ),
     data.short(

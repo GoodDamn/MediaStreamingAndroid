@@ -2,6 +2,7 @@ package good.damn.editor.mediastreaming.system.service
 
 import android.content.ComponentName
 import android.content.ServiceConnection
+import android.media.MediaFormat
 import android.os.IBinder
 import android.util.Log
 import good.damn.editor.mediastreaming.system.interfaces.MSListenerOnGetHotspotHost
@@ -18,13 +19,11 @@ class MSCameraServiceConnection
 
     fun startStreamingVideo(
         modelID: MSCameraModelID,
-        width: Int,
-        height: Int,
+        mediaFormat: MediaFormat,
         host: String
     ) = mBinder?.startStreamingCamera(
         modelID,
-        width,
-        height,
+        mediaFormat,
         host
     )
 

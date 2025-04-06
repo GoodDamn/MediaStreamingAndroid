@@ -13,7 +13,14 @@ inline fun ByteArray.short(
 ) = (get(offset).toInt() and 0xff shl 8) or
     (get(offset+1).toInt() and 0xff)
 
-inline fun ByteArray.integer(
+inline fun ByteArray.integerLE(
+    offset: Int
+) = (get(offset+3).toInt() and 0xff shl 24) or
+    (get(offset+2).toInt() and 0xff shl 16) or
+    (get(offset+1).toInt() and 0xff shl 8) or
+    (get(offset).toInt() and 0xff)
+
+inline fun ByteArray.integerBE(
     offset: Int
 ) = (get(offset).toInt() and 0xff shl 24) or
     (get(offset+1).toInt() and 0xff shl 16) or

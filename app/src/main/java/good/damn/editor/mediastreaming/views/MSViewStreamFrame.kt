@@ -6,7 +6,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 
 class MSViewStreamFrame(
-    context: Context
+    context: Context?
 ): SurfaceView(
     context
 ), SurfaceHolder.Callback {

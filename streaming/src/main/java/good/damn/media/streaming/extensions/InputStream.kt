@@ -4,28 +4,32 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.nio.charset.Charset
 
-inline fun InputStream.readU() = read() and 0xff
+inline fun InputStream.waitNonBlock(): Boolean {
+    val time = System.currentTimeMillis()
 
-fun InputStream.readString(
-    len: Int
-): String {
-    val arr = ByteArray(len)
-    var offset = 0
-    var n: Int
-    while (true) {
-        n = read(arr, offset, len - offset)
-        if (n <= 0) {
-            break
+    while (available() == 0) {
+        if (System.currentTimeMillis() - time > 3000L) {
+            return false
         }
-        offset += n
     }
 
-    return String(
-        arr,
-        0,
-        len,
-        Charset.forName(
-            "UTF-8"
-        )
-    )
+    return true
 }
+
+inline fun InputStream.readU() = read() and 0xff
+
+inline fun InputStream.readUSafely() = readSafely() and 0xff
+
+inline fun InputStream.readSafely(
+    arr: ByteArray,
+    offset: Int = 0,
+    len: Int = arr.size
+) = if (waitNonBlock()) read(
+    arr,
+    offset,
+    len
+) else -1
+
+inline fun InputStream.readSafely() = if (
+    waitNonBlock()
+) read() else -1

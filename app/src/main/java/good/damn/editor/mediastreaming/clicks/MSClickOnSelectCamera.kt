@@ -13,6 +13,7 @@ class MSClickOnSelectCamera(
         v: View?
     ) {
         onSelectCamera?.onSelectCamera(
+            v,
             cameraId
         )
     }

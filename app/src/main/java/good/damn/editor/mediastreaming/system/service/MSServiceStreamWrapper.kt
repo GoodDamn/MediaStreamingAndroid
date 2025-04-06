@@ -2,13 +2,12 @@ package good.damn.editor.mediastreaming.system.service
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
+import android.media.MediaFormat
 import android.util.Log
 import good.damn.editor.mediastreaming.extensions.supportsForegroundService
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStream
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStreamForeground
 import good.damn.media.streaming.camera.models.MSCameraModelID
-import good.damn.media.streaming.extensions.hasOsVersion
 
 class MSServiceStreamWrapper {
 
@@ -29,14 +28,12 @@ class MSServiceStreamWrapper {
 
     fun startStreamingVideo(
         modelID: MSCameraModelID,
-        width: Int,
-        height: Int,
+        mediaFormat: MediaFormat,
         host: String
     ) {
         mServiceConnectionStream.startStreamingVideo(
             modelID,
-            width,
-            height,
+            mediaFormat,
             host
         )
         isStreamingVideo = true

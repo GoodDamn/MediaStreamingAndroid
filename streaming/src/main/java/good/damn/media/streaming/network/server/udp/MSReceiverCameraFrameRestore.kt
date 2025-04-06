@@ -1,8 +1,9 @@
 package good.damn.media.streaming.network.server.udp
 
 import android.util.Log
+import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
-import good.damn.media.streaming.extensions.integer
+import good.damn.media.streaming.extensions.integerBE
 import good.damn.media.streaming.extensions.short
 import good.damn.media.streaming.network.server.listeners.MSListenerOnReceiveNetworkData
 import java.net.DatagramPacket
@@ -18,12 +19,6 @@ class MSReceiverCameraFrameRestore
 
     var bufferizer: MSPacketBufferizer? = null
 
-    var port: Int
-        get() = mPacket.port
-        set(v) {
-            mPacket.port = v
-        }
-
     private val mSocket = DatagramSocket()
 
     private val mPacket = DatagramPacket(
@@ -31,7 +26,7 @@ class MSReceiverCameraFrameRestore
         0,
         0
     ).apply {
-        port = 6667
+        port = MSStreamConstants.PORT_MEDIA
     }
 
     override suspend fun onReceiveNetworkData(
@@ -39,7 +34,7 @@ class MSReceiverCameraFrameRestore
         src: InetAddress
     ) {
 
-        val frameId = data.integer(0)
+        val frameId = data.integerBE(0)
         val packetId = data.short(4)
 
         val frame = bufferizer?.getFrameById(
