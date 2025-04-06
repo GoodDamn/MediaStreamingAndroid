@@ -3,13 +3,11 @@ package good.damn.editor.mediastreaming.system.service
 import android.content.Context
 import android.content.Intent
 import android.media.MediaFormat
-import android.os.Build
 import android.util.Log
 import good.damn.editor.mediastreaming.extensions.supportsForegroundService
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStream
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStreamForeground
 import good.damn.media.streaming.camera.models.MSCameraModelID
-import good.damn.media.streaming.extensions.hasOsVersion
 
 class MSServiceStreamWrapper {
 

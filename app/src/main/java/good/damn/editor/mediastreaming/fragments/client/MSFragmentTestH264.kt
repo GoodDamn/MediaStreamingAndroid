@@ -4,7 +4,6 @@ import android.Manifest
 import android.media.MediaFormat
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore.Audio.Media
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -32,7 +31,7 @@ import good.damn.editor.mediastreaming.views.dialogs.option.MSDialogOptionsH264
 import good.damn.media.streaming.MSTypeDecoderSettings
 import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.extensions.camera2.default
-import good.damn.media.streaming.extensions.hasOsVersion
+import good.damn.media.streaming.extensions.hasUpOsVersion
 import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -110,19 +109,20 @@ MSListenerOnHandshakeSettings {
         )
 
         (activity as? MSActivityMain)?.launcherPermission?.apply {
-            if (hasOsVersion(Build.VERSION_CODES.TIRAMISU)) {
+            if (!hasUpOsVersion(Build.VERSION_CODES.TIRAMISU)) {
                 launch(
-                    arrayOf(
-                        Manifest.permission.CAMERA,
-                        Manifest.permission.POST_NOTIFICATIONS
-                    )
+                    Manifest.permission.CAMERA
                 )
                 return
             }
 
             launch(
-                Manifest.permission.CAMERA
+                arrayOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
             )
+
         }
     }
 
@@ -256,6 +256,7 @@ MSListenerOnHandshakeSettings {
                 )
             }
 
+
             addView(
                 it
             )
@@ -312,8 +313,13 @@ MSListenerOnHandshakeSettings {
         settings: MSTypeDecoderSettings,
         fromIp: InetAddress
     ) {
-        val width = settings[MediaFormat.KEY_WIDTH] ?: 640
-        val height = settings[MediaFormat.KEY_HEIGHT] ?: 480
+        val width = settings[
+            MediaFormat.KEY_WIDTH
+        ] ?: 640
+
+        val height = settings[
+            MediaFormat.KEY_HEIGHT
+        ] ?: 480
 
         Log.d(TAG, "onHandshakeSettings: ")
         withContext(
