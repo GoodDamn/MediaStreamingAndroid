@@ -1,5 +1,6 @@
 package good.damn.media.streaming.network.client.tcp
 
+import android.util.Log
 import java.io.Closeable
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -8,16 +9,17 @@ class MSClientTCP
 : Closeable {
 
     companion object {
-        const val TIMEOUT_MS = 7000
+        const val TIMEOUT_MS = 12000
+        private const val TAG = "MSClientTCP"
     }
 
-    private val mSocket = Socket().apply {
-        soTimeout = TIMEOUT_MS
-    }
+    private var mConnectedSocket: Socket? = null
 
     fun connect(
         host: InetSocketAddress
-    ) = mSocket.run {
+    ) = Socket().run {
+        soTimeout = TIMEOUT_MS
+        mConnectedSocket = this
         try {
             connect(
                 host,
@@ -26,18 +28,19 @@ class MSClientTCP
         } catch (
             e: Exception
         ) {
+            Log.d(TAG, "connect: ${e.message}")
             return@run null
         }
 
         return@run Pair(
-            mSocket.getInputStream(),
-            mSocket.getOutputStream()
+            getInputStream(),
+            getOutputStream()
         )
     }
 
     override fun close() {
         try {
-            mSocket.close()
+            mConnectedSocket?.close()
         } catch (ignored: Exception) { }
     }
 

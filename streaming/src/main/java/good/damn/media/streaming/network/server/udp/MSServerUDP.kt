@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.Inet6Address
 import java.net.InetSocketAddress
 import java.net.SocketAddress
 
@@ -41,12 +42,9 @@ open class MSServerUDP(
     private var mJob: Job? = null
 
     override fun start() {
-        mSocket = DatagramSocket().apply {
-            reuseAddress = true
-            if (!isBound) {
-                bind(InetSocketAddress(this@MSServerUDP.port))
-            }
-        }
+        mSocket = DatagramSocket(
+            port
+        )
 
         isRunning = true
         mJob = scope.launch {
@@ -59,8 +57,7 @@ open class MSServerUDP(
     }
 
     override fun stop() {
-        isRunning = false
-        mJob?.cancel()
+        release()
     }
 
     override fun release() {

@@ -7,6 +7,7 @@ import good.damn.media.streaming.extensions.integerLE
 import good.damn.media.streaming.extensions.readSafely
 import good.damn.media.streaming.extensions.readU
 import good.damn.media.streaming.extensions.readUSafely
+import good.damn.media.streaming.extensions.toByteArray
 import good.damn.media.streaming.extensions.write
 import good.damn.media.streaming.network.server.listeners.MSListenerOnAcceptClient
 import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
@@ -20,7 +21,7 @@ class MSNetworkDecoderSettings
     companion object {
         private const val TAG = "MSNetworkDecoderSetting"
         private const val ANSWER_OK = 0xA
-        private val CHARSET_KEY = StandardCharsets.UTF_8
+        private val CHARSET_KEY = StandardCharsets.US_ASCII
     }
 
     var onHandshakeSettings: MSListenerOnHandshakeSettings? = null
@@ -36,9 +37,10 @@ class MSNetworkDecoderSettings
             settings.size
         )
 
-        var dataKey: ByteArray
+        Log.d(TAG, "sendDecoderSettings: SIZE: ${settings.size}")
+
         settings.forEach {
-            dataKey = it.key.toByteArray(
+            val dataKey = it.key.toByteArray(
                 CHARSET_KEY
             )
 
@@ -50,16 +52,16 @@ class MSNetworkDecoderSettings
                 dataKey
             )
 
-            it.value.write(
-                second
+            second.write(
+                it.value.toByteArray()
             )
+
+            Log.d(TAG, "sendDecoderSettings: ${it.key}(${dataKey.size}) ${it.value}")
         }
 
 
-        val isOk = first.readSafely() == ANSWER_OK
+        val isOk = first.read() == ANSWER_OK
 
-        first.close()
-        second.close()
         client.close()
 
         return@run isOk
@@ -68,10 +70,13 @@ class MSNetworkDecoderSettings
     override suspend fun onAcceptClient(
         socket: Socket
     ) = socket.run {
+        val srcAddr = socket.inetAddress
+
         val inp = socket.getInputStream()
         val out = socket.getOutputStream()
 
-        val size = inp.readUSafely()
+        val size = inp.readU()
+        Log.d(TAG, "onAcceptClient: SIZE: $size")
 
         if (size < 0) {
             close()
@@ -84,15 +89,16 @@ class MSNetworkDecoderSettings
 
         var dataKeySize: Int
         val buffer = ByteArray(512)
+        val bufferVal = ByteArray(4)
 
         for (i in 0 until size) {
-            dataKeySize = inp.readUSafely()
+            dataKeySize = inp.readU()
 
             if (dataKeySize < 0) {
                 continue
             }
 
-            if (inp.readSafely(
+            if (inp.read(
                 buffer,
                 0,
                 dataKeySize
@@ -107,27 +113,28 @@ class MSNetworkDecoderSettings
                 CHARSET_KEY
             )
 
-            if (inp.readSafely(
-                buffer,
+            Log.d(TAG, "onAcceptClient: KEY($dataKeySize): $key")
+
+            if (inp.read(
+                bufferVal,
                 0,
                 4
             ) < 0) {
                 continue
             }
 
-            val value = buffer.integerLE(0)
+            val value = bufferVal.integerBE(0)
 
-            Log.d(TAG, "onAcceptClient: $key:$value")
+            Log.d(TAG, "onAcceptClient: VALUE: $value")
 
             map[key] = value
         }
 
         out.write(ANSWER_OK)
 
-        close()
         onHandshakeSettings?.onHandshakeSettings(
             map,
-            socket.inetAddress
+            srcAddr
         )
     }
 

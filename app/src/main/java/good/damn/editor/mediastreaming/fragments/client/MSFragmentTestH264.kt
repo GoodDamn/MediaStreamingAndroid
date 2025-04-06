@@ -405,6 +405,15 @@ MSListenerOnHandshakeSettings {
         height: Int,
         settings: MSTypeDecoderSettings
     ) {
+        if (mStreamCamera.isReceiving) {
+            mLayoutSurfaces?.apply {
+                removeViewAt(
+                    childCount - 1
+                )
+            }
+            mStreamCamera.stopReceiving()
+        }
+
         val streamFrame = MSViewStreamFrame(
             context
         ).apply {

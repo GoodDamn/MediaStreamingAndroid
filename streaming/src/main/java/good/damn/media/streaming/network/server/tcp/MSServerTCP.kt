@@ -30,12 +30,9 @@ class MSServerTCP(
     ) {
         isRunning = true
         mJob = scope.launch {
-            mSocket = ServerSocket().apply {
-                reuseAddress = true
-                if (!isBound) {
-                    bind(InetSocketAddress(port))
-                }
-
+            mSocket = ServerSocket(
+                port
+            ).apply {
                 while (
                     isRunning
                 ) { listen(this) }
