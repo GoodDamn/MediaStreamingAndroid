@@ -1,8 +1,7 @@
-# Welcome to streaming test environment
-
+# How to run [MediaStreaming test environment](https://github.com/GoodDamn/MediaStreamingAndroid)
 
 ## How to test 📱
-1) Download stable release [.apk](http://raw.githubusercontent.com/GoodDamn/MediaStreamingAndroid/main/test_apps/0.2.1.apk)
+1) Download stable release [.apk](https://github.com/GoodDamn/MediaStreamingAndroid/releases/download/0.2.2/0.2.2.apk)
 2) Install application
 3) Grant video recording permission
 4) Write your IP-address destination (you can test once with 127.0.0.1 individually). You need to stream to peer client which has the same application.
@@ -24,3 +23,13 @@ Press LShift twice and type `CaptureRequest.kt`. Inside the `default()` function
 
 ### How to change camera streaming settings 🎥
 Press LShift twice and type `MediaFormat.kt`. Inside the `default()` function you can change parameters via setInteger() method. See [documentation](https://developer.android.com/reference/android/media/MediaFormat) with available options
+Also, you can change streaming settings inside app with [downloaded stable version .apk](https://github.com/GoodDamn/MediaStreamingAndroid/releases/download/0.2.2/0.2.2.apk). Click on 'options' button and you have:
+* capture-rate
+* i-frame-interval
+* width
+* height
+* rotation-degrees
+* frame-rate
+* bitrate
+
+https://github.com/user-attachments/assets/ac01bcaa-0a70-4798-a28c-90818ec7cefb
