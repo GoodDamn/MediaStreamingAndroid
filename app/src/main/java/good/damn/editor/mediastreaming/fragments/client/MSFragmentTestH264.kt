@@ -4,8 +4,8 @@ import android.Manifest
 import android.media.MediaFormat
 import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore.Audio.Media
 import android.util.Log
-import android.util.Size
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -64,8 +64,8 @@ MSListenerOnHandshakeSettings {
     }
 
     private val mOptionsHandshake = hashMapOf(
-        "width" to 640,
-        "height" to 480,
+        MediaFormat.KEY_WIDTH to 640,
+        MediaFormat.KEY_HEIGHT to 480,
         MediaFormat.KEY_ROTATION to 90,
         MediaFormat.KEY_BIT_RATE to 1024 * 8,
         MediaFormat.KEY_CAPTURE_RATE to 1,
@@ -238,20 +238,7 @@ MSListenerOnHandshakeSettings {
                     text = "options"
 
                     setOnClickListener {
-                        val options = MSDialogOptionsH264()
-                        options.show(
-                            childFragmentManager, "options"
-                        )
-                        options.optionsTotal = { opt ->
-                            mOptionsHandshake.clear()
-
-                            opt.forEach { entry ->
-                                mOptionsHandshake[
-                                    entry.key
-                                ] = entry.value
-                            }
-
-                        }
+                        onClickSetupStreaming()
                     }
 
                     addView(
@@ -325,11 +312,8 @@ MSListenerOnHandshakeSettings {
         settings: MSTypeDecoderSettings,
         fromIp: InetAddress
     ) {
-        val width = settings["width"] ?: 640
-        val height = settings["height"] ?: 480
-
-        settings.remove("width")
-        settings.remove("height")
+        val width = settings[MediaFormat.KEY_WIDTH] ?: 640
+        val height = settings[MediaFormat.KEY_HEIGHT] ?: 480
 
         Log.d(TAG, "onHandshakeSettings: ")
         withContext(
@@ -342,6 +326,15 @@ MSListenerOnHandshakeSettings {
                 settings
             )
         }
+    }
+
+    private inline fun onClickSetupStreaming() {
+        val options = MSDialogOptionsH264(
+            mOptionsHandshake
+        )
+        options.show(
+            childFragmentManager, "options"
+        )
     }
 
     private suspend inline fun sendHandshake(
@@ -369,11 +362,13 @@ MSListenerOnHandshakeSettings {
             mStreamCamera.stopStreamingCamera()
         }
 
-        val width = settings["width"] ?: 640
-        val height = settings["height"] ?: 480
+        val width = settings[
+            MediaFormat.KEY_HEIGHT
+        ] ?: 640
 
-        settings.remove("width")
-        settings.remove("height")
+        val height = settings[
+            MediaFormat.KEY_HEIGHT
+        ] ?: 480
 
         mStreamCamera.startStreamingCamera(
             cameraId,
@@ -385,16 +380,17 @@ MSListenerOnHandshakeSettings {
             ).apply {
                 default()
 
-                settings.remove(
-                    MediaFormat.KEY_ROTATION
-                )
-
                 settings.forEach {
                     setInteger(
                         it.key,
                         it.value
                     )
                 }
+
+                setInteger(
+                    MediaFormat.KEY_ROTATION,
+                    0
+                )
             }
         )
     }

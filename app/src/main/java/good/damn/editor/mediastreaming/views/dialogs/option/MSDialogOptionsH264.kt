@@ -16,34 +16,25 @@ import androidx.recyclerview.widget.RecyclerView
 import good.damn.editor.mediastreaming.MSApp
 import good.damn.media.streaming.MSTypeDecoderSettings
 
-class MSDialogOptionsH264
-: DialogFragment() {
+class MSDialogOptionsH264(
+    private val mOptions: MSTypeDecoderSettings
+): DialogFragment() {
 
     companion object {
         private const val TAG = "MSDialogOptionsH264"
     }
 
-    var optionsTotal: ((MSTypeDecoderSettings) -> Unit)? = null
-
     private var mAdapter: MSAdapterOptions? = null
 
     override fun onCancel(dialog: DialogInterface) {
         mAdapter?.options?.apply {
-            val map = HashMap<String, Int>(size)
-
+            mOptions.clear()
             forEach {
                 if (it.key.isNullOrBlank() || it.value.isNullOrBlank()) {
                     return@forEach
                 }
-
-                Log.d(TAG, "onCancel: ${it.key}")
-
-                map[it.key!!] = it.value?.toInt() ?: 0
+                mOptions[it.key!!] = it.value?.toInt() ?: 0
             }
-
-            optionsTotal?.invoke(
-                map
-            )
         }
         super.onCancel(dialog)
     }
@@ -100,7 +91,8 @@ class MSDialogOptionsH264
             )
 
             mAdapter = MSAdapterOptions(
-                width
+                width,
+                mOptions
             )
 
             it.adapter = mAdapter

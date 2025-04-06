@@ -3,9 +3,11 @@ package good.damn.editor.mediastreaming.views.dialogs.option
 import android.media.MediaFormat
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import good.damn.media.streaming.MSTypeDecoderSettings
 
 class MSAdapterOptions(
-    private val widthItem: Float
+    private val widthItem: Float,
+    src: MSTypeDecoderSettings
 ): RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -17,57 +19,16 @@ class MSAdapterOptions(
         get() = mOptions
 
     private val mOptions = ArrayList<MSMOption>(
-        10
+        src.size
     ).apply {
-        add(
-            MSMOption(
-                MediaFormat.KEY_BIT_RATE,
-                "8192"
+        src.forEach {
+            add(
+                MSMOption(
+                    it.key,
+                    it.value.toString()
+                )
             )
-        )
-
-        add(
-            MSMOption(
-                "width",
-                "640"
-            )
-        )
-
-        add(
-            MSMOption(
-                "height",
-                "480"
-            )
-        )
-
-        add(
-            MSMOption(
-                MediaFormat.KEY_ROTATION,
-                "90"
-            )
-        )
-
-        add(
-            MSMOption(
-                MediaFormat.KEY_I_FRAME_INTERVAL,
-                "1"
-            )
-        )
-
-        add(
-            MSMOption(
-                MediaFormat.KEY_FRAME_RATE,
-                "1"
-            )
-        )
-
-        add(
-            MSMOption(
-                MediaFormat.KEY_CAPTURE_RATE,
-                "1"
-            )
-        )
-
+        }
     }
 
     override fun getItemViewType(
@@ -87,7 +48,7 @@ class MSAdapterOptions(
         )
     }
 
-    override fun getItemCount() = mOptions.size + 1
+    override fun getItemCount() = mOptions.size
 
     override fun onBindViewHolder(
         holder: RecyclerView.ViewHolder,
