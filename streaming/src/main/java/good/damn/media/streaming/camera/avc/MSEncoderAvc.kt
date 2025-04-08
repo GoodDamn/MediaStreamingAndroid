@@ -1,6 +1,8 @@
 package good.damn.media.streaming.camera.avc
 
 import android.media.MediaCodec
+import android.media.MediaCrypto
+import android.media.MediaDrm
 import android.media.MediaFormat
 import good.damn.media.streaming.camera.MSCameraCallbackDecoder
 import good.damn.media.streaming.camera.MSCameraCallbackEncoder
@@ -9,6 +11,7 @@ import good.damn.media.streaming.network.MSStateable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class MSEncoderAvc
 : MSCoder() {
@@ -36,6 +39,7 @@ class MSEncoderAvc
         setCallback(
             mCallbackEncoder
         )
+
         configure(
             format,
             null,

@@ -33,7 +33,10 @@ class MSDialogOptionsH264(
                 if (it.key.isNullOrBlank() || it.value.isNullOrBlank()) {
                     return@forEach
                 }
-                mOptions[it.key!!] = it.value?.toInt() ?: 0
+
+                mOptions[
+                    it.key!!
+                ] = it.value?.toInt() ?: 0
             }
         }
         super.onCancel(dialog)

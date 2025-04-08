@@ -2,6 +2,7 @@ package good.damn.media.streaming.camera.avc
 
 import android.media.MediaCodec
 import android.media.MediaCodecInfo
+import android.media.MediaCrypto
 import android.media.MediaFormat
 import android.os.Build
 import android.os.Handler
@@ -11,6 +12,7 @@ import android.util.Log
 import android.view.Surface
 import good.damn.media.streaming.camera.MSCameraCallbackDecoder
 import good.damn.media.streaming.camera.avc.cache.MSFrame
+import java.util.UUID
 
 class MSDecoderAvc
 : MSCoder() {
@@ -56,8 +58,6 @@ class MSDecoderAvc
         setCallback(
             mCallbackDecoder
         )
-
-        Log.d(TAG, "dfg: configure: ")
 
         configure(
             format,
