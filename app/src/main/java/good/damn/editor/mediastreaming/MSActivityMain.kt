@@ -46,9 +46,11 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
         private const val TAG = "MSActivityMain"
     }
 
-    private var mLauncherPermission: MSPermission? = null
-
     private var mView: MSViewFragmentTestH264? = null
+
+    private val mLauncherPermission = MSPermission().apply {
+        onResultPermission = this@MSActivityMain
+    }
 
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
 
@@ -106,22 +108,14 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
         super.onCreate(
             savedInstanceState
         )
+        Log.d(TAG, "onCreate: ")
 
-        mLauncherPermission?.apply {
-            if (!hasUpOsVersion(Build.VERSION_CODES.TIRAMISU)) {
-                launch(
-                    Manifest.permission.CAMERA
-                )
-                return
-            }
-
-            launch(
-                arrayOf(
-                    Manifest.permission.CAMERA,
-                    Manifest.permission.POST_NOTIFICATIONS
-                )
-            )
-        }
+        StrictMode.setThreadPolicy(
+            StrictMode.ThreadPolicy
+                .Builder()
+                .permitNetwork()
+                .build()
+        )
 
         mView = MSViewFragmentTestH264(
             context,
@@ -138,25 +132,26 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
         setContentView(
             mView
         )
-    }
 
-    override fun onSaveInstanceState(
-        outState: Bundle
-    ) {
-        Log.d(TAG, "onSaveInstanceState: ")
-        super.onSaveInstanceState(
-            outState
+        mLauncherPermission.register(
+            this@MSActivityMain
+        )
+
+        if (!hasUpOsVersion(Build.VERSION_CODES.TIRAMISU)) {
+            mLauncherPermission.launch(
+                Manifest.permission.CAMERA
+            )
+            return
+        }
+
+        mLauncherPermission.launch(
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
         )
     }
 
-    override fun onRestoreInstanceState(
-        savedInstanceState: Bundle
-    ) {
-        Log.d(TAG, "onRestoreInstanceState: ")
-        super.onRestoreInstanceState(
-            savedInstanceState
-        )
-    }
 
     override fun onResultPermissions(
         result: Map<String, Boolean>
@@ -172,6 +167,8 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
             startServiceStream(context)
             bind(context)
         }
+
+        mEnvHandshake.startListeningSettings()
     }
 
 
@@ -248,6 +245,14 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
             return
         }
 
+        withContext(
+            Dispatchers.Main
+        ) {
+            context.toast(
+                "Connected"
+            )
+        }
+
         if (mStreamCamera.isStreamingVideo) {
             mStreamCamera.stopStreamingCamera()
         }
@@ -313,7 +318,7 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
         }
 
         streamFrame.onChangeSurface = MSListenerOnChangeSurface {
-                surface ->
+            surface ->
             mStreamCamera.startReceiving(
                 surface,
                 MediaFormat.createVideoFormat(
