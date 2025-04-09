@@ -72,16 +72,20 @@ public final class MSPacketBufferizer {
         int frameId
     ) {
         try {
-            return mQueues[frameId % CACHE_PACKET_SIZE].queue.getFirst();
+            return mQueues[
+                hashFrame(frameId)
+            ].queue.getFirst();
         } catch (Exception e) {
             return null;
         }
     }
 
-    public final void removeFirstFrameByIndex(
-        int i
+    public final void removeFirstFrameQueueByFrameId(
+        int frameId
     ) {
-        mQueues[i].queue.removeFirst();
+        mQueues[
+            hashFrame(frameId)
+        ].queue.removeFirst();
     }
 
     public final void write(
@@ -94,7 +98,7 @@ public final class MSPacketBufferizer {
             return;
         }
 
-        final int queueId = frameId % CACHE_PACKET_SIZE;
+        final int queueId = hashFrame(frameId);
 
         final MSMFrameQueue frameQueue = mQueues[queueId];
         final ConcurrentLinkedDeque<MSFrame> queue = frameQueue.queue;
@@ -190,6 +194,12 @@ public final class MSPacketBufferizer {
                 }
             } catch (Exception ignored) {}
         }
+    }
+
+    private final int hashFrame(
+        int frameId
+    ) {
+        return frameId % CACHE_PACKET_SIZE;
     }
 
     private final void addFrame(
