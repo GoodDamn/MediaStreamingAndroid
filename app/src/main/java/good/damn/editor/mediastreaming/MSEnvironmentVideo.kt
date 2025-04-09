@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.Log
 import android.view.Surface
 import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.media.streaming.MSStreamConstants
@@ -73,6 +74,7 @@ class MSEnvironmentVideo(
         host: InetAddress?
     ) {
         hostTo = host
+        mBufferizerRemote.unlock()
         mHandlerDecoding?.apply {
             removeCallbacks(
                 this@MSEnvironmentVideo
@@ -103,10 +105,18 @@ class MSEnvironmentVideo(
         }
     }
 
+    fun clearBuffer() {
+        mBufferizerRemote.clear()
+    }
+
     fun stopReceiving() {
         if (!mServerVideo.isRunning) {
             return
         }
+
+        mBufferizerRemote.lock()
+        clearBuffer()
+
         mDecoderVideo.stop()
         mServerVideo.stop()
     }

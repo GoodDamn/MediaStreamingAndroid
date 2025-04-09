@@ -33,6 +33,7 @@ class MSDecoderAvc
 
     override fun stop() {
         isConfigured = false
+        mCallbackDecoder.clearQueue()
         super.stop()
     }
 

@@ -81,7 +81,7 @@ class MSStreamCameraInput(
 
         if (mFrameId >= MSPacketBufferizer.CACHE_PACKET_SIZE) {
             bufferizer.removeFirstFrameByIndex(
-                mFrameId - MSPacketBufferizer.CACHE_PACKET_SIZE
+                mFrameId % MSPacketBufferizer.CACHE_PACKET_SIZE
             )
         }
 

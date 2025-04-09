@@ -26,6 +26,7 @@ class MSCameraCallbackEncoder
         index: Int,
         info: MediaCodec.BufferInfo
     ) {
+        Log.d(TAG, "onOutputBufferAvailable: ")
         try {
             val buffer = codec.getOutputBuffer(
                 index
@@ -33,18 +34,22 @@ class MSCameraCallbackEncoder
 
             mRemaining = buffer.remaining()
 
-            onGetFrameData?.onGetFrameData(
-                buffer,
-                0,
-                mRemaining
-            )
+            try {
+                onGetFrameData?.onGetFrameData(
+                    buffer,
+                    0,
+                    mRemaining
+                )
+            } catch (e: Exception) {
+                Log.d(TAG, "onOutputBufferAvailable: onGetFrameData: ${e.message}")
+            }
 
             codec.releaseOutputBuffer(
                 index,
                 false
             )
         } catch (e: Exception) {
-
+            Log.d(TAG, "onOutputBufferAvailable: ${e.message}")
         }
     }
 

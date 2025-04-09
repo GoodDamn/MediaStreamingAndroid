@@ -1,17 +1,18 @@
 package good.damn.media.streaming.camera.avc.cache;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public final class MSPacketBufferizer {
 
     private static final String TAG = "MSPacketBufferizer";
 
-    public static final int CACHE_PACKET_SIZE = 2048;
+    public static final int CACHE_PACKET_SIZE = 1024;
 
     // Think about dynamic timeout
     // which depends from captured frame's packet count
@@ -26,12 +27,23 @@ public final class MSPacketBufferizer {
         CACHE_PACKET_SIZE
     ];
 
+    private boolean mIsLocked = false;
+
     private volatile int mCurrentQueueIndex = 0;
 
     public MSPacketBufferizer() {
         for (int i = 0; i < CACHE_PACKET_SIZE; i++) {
             mQueues[i] = new MSMFrameQueue();
         }
+    }
+
+    public final void unlock() {
+        mCurrentQueueIndex = 0;
+        mIsLocked = false;
+    }
+
+    public final void lock() {
+        mIsLocked = true;
     }
 
     public final void clear() {
@@ -78,7 +90,7 @@ public final class MSPacketBufferizer {
         final short packetCount,
         final byte[] data
     ) {
-        if (packetCount == 0) {
+        if (packetCount == 0 || mIsLocked) {
             return;
         }
 
