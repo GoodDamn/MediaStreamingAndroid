@@ -10,15 +10,10 @@ abstract class MSCoder
 
     companion object {
         private const val TAG = "MSCoder"
-        const val TYPE_AVC = "video/avc"
+        const val TYPE_AVC = "video/hevc"
     }
 
     protected abstract val mCoder: MediaCodec
-
-    val capabilities: MediaCodecInfo.CodecCapabilities
-        get() = mCoder.codecInfo.getCapabilitiesForType(
-            MediaFormat.MIMETYPE_VIDEO_AVC
-        )
 
     var isRunning = false
         private set

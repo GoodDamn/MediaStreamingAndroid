@@ -26,7 +26,6 @@ class MSCameraCallbackEncoder
         index: Int,
         info: MediaCodec.BufferInfo
     ) {
-        Log.d(TAG, "onOutputBufferAvailable: ")
         try {
             val buffer = codec.getOutputBuffer(
                 index

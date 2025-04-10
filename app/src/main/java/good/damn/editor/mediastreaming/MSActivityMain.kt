@@ -352,7 +352,8 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
             mStreamCamera.stopReceiving()
         }
 
-        //mStreamCamera.clearBuffer()
+        mStreamCamera.clearBuffer()
+        Thread.sleep(1000)
 
         val streamFrame = MSViewStreamFrame(
             context
