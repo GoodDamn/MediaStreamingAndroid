@@ -27,7 +27,7 @@ public final class MSPacketBufferizer {
         CACHE_PACKET_SIZE
     ];
 
-    private boolean mIsLocked = false;
+    private volatile boolean mIsLocked = false;
 
     private volatile int mCurrentQueueIndex = 0;
 

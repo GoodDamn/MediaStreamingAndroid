@@ -88,17 +88,13 @@ class MSEnvironmentVideoHandler
         }
     }
 
-    fun clearBuffer() {
-        mBufferizerRemote.clear()
-    }
-
     fun stopReceiving() {
         if (!mServerVideo.isRunning) {
             return
         }
 
         mBufferizerRemote.lock()
-        clearBuffer()
+        mBufferizerRemote.clear()
 
         mDecoderVideo.stop()
         mServerVideo.stop()

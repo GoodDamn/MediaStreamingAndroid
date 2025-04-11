@@ -17,6 +17,12 @@ class MSCameraServiceConnection
     
     private var mBinder: MSServiceStreamBinder? = null
 
+    var onConnectUser: MSListenerOnConnectUser? = null
+        set(v) {
+            field = v
+            mBinder?.onConnectUser = v
+        }
+
     var onSuccessHandshake: MSListenerOnSuccessHandshake?
         get() = mBinder?.onSuccessHandshake
         set(v) {
@@ -49,6 +55,7 @@ class MSCameraServiceConnection
         service: IBinder?
     ) {
         mBinder = service as? MSServiceStreamBinder
+        mBinder?.onConnectUser = onConnectUser
         Log.d(TAG, "onServiceConnected: ")
     }
 
@@ -56,6 +63,8 @@ class MSCameraServiceConnection
         name: ComponentName?
     ) {
         Log.d(TAG, "onServiceDisconnected: ")
+        mBinder?.onConnectUser = null
+        mBinder?.onSuccessHandshake = null
         mBinder = null
     }
 

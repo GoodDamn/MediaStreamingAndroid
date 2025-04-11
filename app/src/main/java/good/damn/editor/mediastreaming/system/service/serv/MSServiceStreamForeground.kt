@@ -44,13 +44,6 @@ class MSServiceStreamForeground
             else 0
         )
     }
-
-    override fun onTimeout(
-        startId: Int
-    ) {
-        Log.d(TAG, "onTimeout: ")
-        super.onTimeout(startId)
-    }
     
     override fun onStartCommand(
         intent: Intent?,

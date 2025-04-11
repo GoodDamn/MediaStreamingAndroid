@@ -10,6 +10,7 @@ import good.damn.editor.mediastreaming.system.service.serv.MSServiceStreamForegr
 import good.damn.media.streaming.MSTypeDecoderSettings
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.media.streaming.service.MSCameraServiceConnection
+import good.damn.media.streaming.service.MSListenerOnConnectUser
 import good.damn.media.streaming.service.MSListenerOnSuccessHandshake
 
 class MSServiceStreamWrapper {
@@ -19,6 +20,12 @@ class MSServiceStreamWrapper {
     companion object {
         private const val TAG = "MSServiceStreamWrapper"
     }
+
+    var onConnectUser: MSListenerOnConnectUser?
+        get() = mServiceConnectionStream.onConnectUser
+        set(v) {
+            mServiceConnectionStream.onConnectUser = v
+        }
 
     var isStarted = false
         private set

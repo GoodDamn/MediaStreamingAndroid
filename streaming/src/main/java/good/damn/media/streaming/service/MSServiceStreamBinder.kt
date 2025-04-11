@@ -11,6 +11,12 @@ class MSServiceStreamBinder(
     private val mImplHandshake: MSServiceStreamImplHandshake
 ): Binder() {
 
+    var onConnectUser: MSListenerOnConnectUser?
+        get() = mImplHandshake.onConnectUser
+        set(v) {
+            mImplHandshake.onConnectUser = v
+        }
+
     var onSuccessHandshake: MSListenerOnSuccessHandshake?
         get() = mImplHandshake.onSuccessHandshake
         set(v) {

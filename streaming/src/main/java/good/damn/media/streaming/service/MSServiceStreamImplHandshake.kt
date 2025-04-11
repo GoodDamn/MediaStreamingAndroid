@@ -5,13 +5,17 @@ import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeS
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.InetAddress
 
 class MSServiceStreamImplHandshake
 : MSListenerOnHandshakeSettings {
 
+    private val mHandshakes = HashMap<Int, MSTypeDecoderSettings>()
+
     private var mHandshake: MSEnvironmentHandshake? = null
 
+    var onConnectUser: MSListenerOnConnectUser? = null
     var onSuccessHandshake: MSListenerOnSuccessHandshake? = null
 
     fun startCommand() {
@@ -52,6 +56,15 @@ class MSServiceStreamImplHandshake
         settings: MSTypeDecoderSettings,
         fromIp: InetAddress
     ) {
-
+        mHandshakes[1] = settings
+        withContext(
+            Dispatchers.Main
+        ) {
+            onConnectUser?.onConnectUser(
+                1,
+                settings,
+                fromIp
+            )
+        }
     }
 }

@@ -53,6 +53,7 @@ class MSServiceStreamImpl {
         )
 
         mImplHandshake.startCommand()
+        mImplHandshake.startListeningSettings()
     }
 
     fun getBinder() = mBinder

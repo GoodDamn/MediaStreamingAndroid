@@ -5,6 +5,7 @@ import android.media.MediaFormat
 import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
+import android.provider.MediaStore.Audio.Media
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -25,6 +26,7 @@ import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.media.streaming.extensions.camera2.default
 import good.damn.media.streaming.extensions.hasUpOsVersion
+import good.damn.media.streaming.service.MSListenerOnConnectUser
 import good.damn.media.streaming.service.MSListenerOnSuccessHandshake
 import good.damn.media.streaming.service.MSMHandshake
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +36,7 @@ import java.net.InetAddress
 class MSActivityMain
 : AppCompatActivity(),
 MSListenerOnResultPermission,
-MSListenerOnSelectCamera, MSListenerOnSuccessHandshake {
+MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser {
 
     companion object {
         private const val TAG = "MSActivityMain"
@@ -47,8 +49,10 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake {
         onResultPermission = this@MSActivityMain
     }
 
-    private val mServiceStreamWrapper = MSServiceStreamWrapper()
-    private val mStreamCamera = MSEnvironmentVideoHandler()
+    private val mServiceStreamWrapper = MSServiceStreamWrapper().apply {
+        onConnectUser = this@MSActivityMain
+    }
+    private val mVideoHandler = MSEnvironmentVideoHandler()
 
     private var mTarget: MSMTarget? = null
 
@@ -70,7 +74,7 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake {
     }
 
     override fun onPause() {
-        mStreamCamera.stopReceiving()
+        mVideoHandler.stopReceiving()
         mView?.layoutSurfaces?.removeAllViews()
 
         mServiceStreamWrapper.unbind(
@@ -82,7 +86,7 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: ")
-        mStreamCamera.releaseReceiving()
+        mVideoHandler.releaseReceiving()
         mServiceStreamWrapper.destroy(
             context
         )
@@ -186,62 +190,6 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake {
         )
     }
 
-    private fun handshakeSurface(
-        fromIp: InetAddress,
-        width: Int,
-        height: Int,
-        settings: MSTypeDecoderSettings
-    ) {
-        if (mStreamCamera.isReceiving) {
-            mView?.layoutSurfaces?.apply {
-                removeViewAt(
-                    childCount - 1
-                )
-            }
-            mStreamCamera.stopReceiving()
-        }
-
-        mStreamCamera.clearBuffer()
-        Thread.sleep(1000)
-
-        val streamFrame = MSViewStreamFrame(
-            context
-        ).apply {
-            val w = MSApp.width * 0.4f
-            layoutParams = LinearLayout.LayoutParams(
-                w.toInt(),
-                ((width.toFloat() / height) * w).toInt()
-            ).apply {
-                gravity = Gravity.CENTER_HORIZONTAL
-            }
-        }
-
-        streamFrame.onChangeSurface = MSListenerOnChangeSurface {
-            surface ->
-            mStreamCamera.startReceiving(
-                surface,
-                MediaFormat.createVideoFormat(
-                    MSCoder.MIME_TYPE_CODEC,
-                    width,
-                    height
-                ).apply {
-                    default()
-                    settings.forEach {
-                        setInteger(
-                            it.key,
-                            it.value
-                        )
-                    }
-                },
-                fromIp
-            )
-        }
-
-        mView?.layoutSurfaces?.addView(
-            streamFrame
-        )
-    }
-
     override suspend fun onSuccessHandshake(
         result: MSMHandshake
     ) {
@@ -291,6 +239,66 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake {
                     0
                 )
             }
+        )
+    }
+
+    override fun onConnectUser(
+        userId: Int,
+        settings: MSTypeDecoderSettings,
+        fromIp: InetAddress
+    ) {
+        if (mVideoHandler.isReceiving) {
+            mView?.layoutSurfaces?.apply {
+                removeViewAt(
+                    childCount - 1
+                )
+            }
+            mVideoHandler.stopReceiving()
+        }
+
+        val width = settings[
+            MediaFormat.KEY_WIDTH
+        ] ?: 640
+
+        val height = settings[
+            MediaFormat.KEY_HEIGHT
+        ] ?: 480
+
+        val streamFrame = MSViewStreamFrame(
+            context
+        ).apply {
+            val w = MSApp.width * 0.4f
+            layoutParams = LinearLayout.LayoutParams(
+                w.toInt(),
+                ((width.toFloat() / height) * w).toInt()
+            ).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+            }
+        }
+
+        streamFrame.onChangeSurface = MSListenerOnChangeSurface {
+                surface ->
+            mVideoHandler.startReceiving(
+                surface,
+                MediaFormat.createVideoFormat(
+                    MSCoder.MIME_TYPE_CODEC,
+                    width,
+                    height
+                ).apply {
+                    default()
+                    settings.forEach {
+                        setInteger(
+                            it.key,
+                            it.value
+                        )
+                    }
+                },
+                fromIp
+            )
+        }
+
+        mView?.layoutSurfaces?.addView(
+            streamFrame
         )
     }
 }
