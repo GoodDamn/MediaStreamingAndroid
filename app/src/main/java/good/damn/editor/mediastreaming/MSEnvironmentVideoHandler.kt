@@ -1,21 +1,12 @@
 package good.damn.editor.mediastreaming
 
-import android.content.Context
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
-import android.util.Log
 import android.view.Surface
-import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.media.streaming.MSStreamConstants
-import good.damn.media.streaming.camera.MSManagerCamera
-import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
-import good.damn.media.streaming.camera.models.MSCameraModelID
-import good.damn.media.streaming.extensions.camera2.default
-import good.damn.media.streaming.network.client.tcp.MSNetworkDecoderSettings
-import good.damn.media.streaming.network.server.tcp.MSServerTCP
 import good.damn.media.streaming.network.server.udp.MSPacketMissingHandler
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrame
 import good.damn.media.streaming.network.server.udp.MSServerUDP
@@ -23,9 +14,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
 
-class MSEnvironmentVideo(
-    private val mServiceWrapper: MSServiceStreamWrapper
-): Runnable {
+class MSEnvironmentVideoHandler
+: Runnable {
 
     companion object {
         const val TIMEOUT_DEFAULT_PACKET_MS = 33;
@@ -33,12 +23,8 @@ class MSEnvironmentVideo(
         private const val TAG = "MSStreamEnvironmentCame"
     }
 
-
     val isReceiving: Boolean
         get() = mServerVideo.isRunning
-
-    val isStreamingVideo: Boolean
-        get() = mServiceWrapper.isStreamingVideo
 
     var hostTo: InetAddress?
         get() = mHandlerPacketMissing.host
@@ -47,11 +33,8 @@ class MSEnvironmentVideo(
         }
 
     private val mReceiverFrame = MSReceiverCameraFrame()
-
     private val mDecoderVideo = MSDecoderAvc()
-
     private val mHandlerPacketMissing = MSPacketMissingHandler()
-
     private val mBufferizerRemote = MSPacketBufferizer().apply {
         mReceiverFrame.bufferizer = this
     }
@@ -77,7 +60,7 @@ class MSEnvironmentVideo(
         mBufferizerRemote.unlock()
         mHandlerDecoding?.apply {
             removeCallbacks(
-                this@MSEnvironmentVideo
+                this@MSEnvironmentVideoHandler
             )
             post {
                 startDecoder(
@@ -135,19 +118,6 @@ class MSEnvironmentVideo(
         }
     }
 
-    fun stopStreamingCamera() = mServiceWrapper
-        .stopStreamingVideo()
-
-    fun startStreamingCamera(
-        cameraId: MSCameraModelID,
-        host: String,
-        mediaFormat: MediaFormat,
-    ) = mServiceWrapper.startStreamingVideo(
-        cameraId,
-        mediaFormat,
-        host
-    )
-
     private fun startDecoder(
         surfaceOutput: Surface,
         format: MediaFormat
@@ -161,7 +131,7 @@ class MSEnvironmentVideo(
         mServerVideo.start()
 
         mHandlerDecoding?.post(
-            this@MSEnvironmentVideo
+            this@MSEnvironmentVideoHandler
         )
 
         mDecoderVideo.start()

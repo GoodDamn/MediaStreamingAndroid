@@ -12,8 +12,6 @@ import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
 import good.damn.editor.mediastreaming.extensions.context
-import good.damn.editor.mediastreaming.extensions.removeInt
-import good.damn.editor.mediastreaming.extensions.removeString
 import good.damn.editor.mediastreaming.extensions.toast
 import good.damn.editor.mediastreaming.system.permission.MSListenerOnResultPermission
 import good.damn.editor.mediastreaming.system.permission.MSPermission
@@ -27,19 +25,16 @@ import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.media.streaming.extensions.camera2.default
 import good.damn.media.streaming.extensions.hasUpOsVersion
-import good.damn.media.streaming.extensions.toInetAddress
-import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
-import kotlinx.coroutines.CoroutineScope
+import good.damn.media.streaming.service.MSListenerOnSuccessHandshake
+import good.damn.media.streaming.service.MSMHandshake
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.InetAddress
-import java.nio.ByteBuffer
 
 class MSActivityMain
 : AppCompatActivity(),
 MSListenerOnResultPermission,
-MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
+MSListenerOnSelectCamera, MSListenerOnSuccessHandshake {
 
     companion object {
         private const val TAG = "MSActivityMain"
@@ -53,14 +48,9 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
     }
 
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
+    private val mStreamCamera = MSEnvironmentVideoHandler()
 
-    private val mStreamCamera = MSEnvironmentVideo(
-        mServiceStreamWrapper
-    )
-
-    private val mEnvHandshake = MSEnvironmentHandshake().apply {
-        onHandshakeSettings = this@MSActivityMain
-    }
+    private var mTarget: MSMTarget? = null
 
     private val mOptionsHandshake = hashMapOf(
         MediaFormat.KEY_WIDTH to 640,
@@ -77,47 +67,11 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
         mServiceStreamWrapper.bind(
             context
         )
-
-        intent?.apply {
-            val host = removeString(
-                KEY_HOST_CONNECTED
-            ) ?: return
-
-            extras?.keySet()?.forEach {
-                Log.d(TAG, "onResume: ${mOptionsHandshake.size} $it")
-                mOptionsHandshake[
-                    it
-                ] = removeInt(it)
-            }
-
-            val width = mOptionsHandshake[
-                MediaFormat.KEY_WIDTH
-            ] ?: return
-
-            val height = mOptionsHandshake[
-                MediaFormat.KEY_HEIGHT
-            ] ?: return
-
-            handshakeSurface(
-                host.toInetAddress(),
-                width,
-                height,
-                mOptionsHandshake
-            )
-        }
-
     }
 
     override fun onPause() {
         mStreamCamera.stopReceiving()
         mView?.layoutSurfaces?.removeAllViews()
-
-        mOptionsHandshake.forEach {
-            intent?.putExtra(
-                it.key,
-                it.value
-            )
-        }
 
         mServiceStreamWrapper.unbind(
             context
@@ -128,10 +82,7 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: ")
-        mEnvHandshake.release()
-        mStreamCamera.stopStreamingCamera()
         mStreamCamera.releaseReceiving()
-
         mServiceStreamWrapper.destroy(
             context
         )
@@ -204,34 +155,8 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
             startServiceStream(context)
             bind(context)
         }
-
-        mEnvHandshake.startListeningSettings()
     }
 
-
-    override suspend fun onHandshakeSettings(
-        settings: MSTypeDecoderSettings,
-        fromIp: InetAddress
-    ) {
-        val width = settings[
-            MediaFormat.KEY_WIDTH
-        ] ?: 640
-
-        val height = settings[
-            MediaFormat.KEY_HEIGHT
-        ] ?: 480
-
-        withContext(
-            Dispatchers.Main
-        ) {
-            handshakeSurface(
-                fromIp,
-                width,
-                height,
-                settings
-            )
-        }
-    }
 
     override fun onSelectCamera(
         v: View?,
@@ -249,81 +174,15 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
         val ip = mView?.editTextHost?.text?.toString()
             ?: return
 
-        CoroutineScope(
-            Dispatchers.IO
-        ).launch {
-            sendHandshake(
-                ip,
-                cameraId,
-                mOptionsHandshake
-            )
-        }
-
-    }
-
-    private suspend inline fun sendHandshake(
-        ip: String,
-        cameraId: MSCameraModelID,
-        settings: MSTypeDecoderSettings
-    ) {
-        val result = mEnvHandshake.sendHandshakeSettings(
+        mTarget = MSMTarget(
             ip,
-            settings
+            cameraId
         )
 
-        if (!result) {
-            withContext(
-                Dispatchers.Main
-            ) {
-                context.toast(
-                    "No result"
-                )
-            }
-            return
-        }
-
-        withContext(
-            Dispatchers.Main
-        ) {
-            context.toast(
-                "Connected"
-            )
-        }
-
-        if (mStreamCamera.isStreamingVideo) {
-            mStreamCamera.stopStreamingCamera()
-        }
-
-        val width = settings[
-            MediaFormat.KEY_WIDTH
-        ] ?: 640
-
-        val height = settings[
-            MediaFormat.KEY_HEIGHT
-        ] ?: 480
-
-        mStreamCamera.startStreamingCamera(
-            cameraId,
+        mServiceStreamWrapper.sendHandshakeSettings(
             ip,
-            MediaFormat.createVideoFormat(
-                MSCoder.MIME_TYPE_CODEC,
-                width,
-                height
-            ).apply {
-                default()
-
-                settings.forEach {
-                    setInteger(
-                        it.key,
-                        it.value
-                    )
-                }
-
-                setInteger(
-                    MediaFormat.KEY_ROTATION,
-                    0
-                )
-            }
+            mOptionsHandshake,
+            this@MSActivityMain
         )
     }
 
@@ -333,11 +192,6 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
         height: Int,
         settings: MSTypeDecoderSettings
     ) {
-        intent?.putExtra(
-            KEY_HOST_CONNECTED,
-            fromIp.hostAddress
-        )
-
         if (mStreamCamera.isReceiving) {
             mView?.layoutSurfaces?.apply {
                 removeViewAt(
@@ -387,4 +241,61 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
             streamFrame
         )
     }
+
+    override suspend fun onSuccessHandshake(
+        result: MSMHandshake
+    ) {
+        withContext(
+            Dispatchers.Main
+        ) {
+            context.toast(
+                "Connected"
+            )
+        }
+
+        if (mServiceStreamWrapper.isStreamingVideo) {
+            mServiceStreamWrapper.stopStreamingVideo()
+        }
+
+        val width = mOptionsHandshake[
+            MediaFormat.KEY_WIDTH
+        ] ?: 640
+
+        val height = mOptionsHandshake[
+            MediaFormat.KEY_HEIGHT
+        ] ?: 480
+
+        val target = mTarget
+            ?: return
+
+
+        mServiceStreamWrapper.startStreamingVideo(
+            target.camera,
+            target.ip,
+            MediaFormat.createVideoFormat(
+                MSCoder.MIME_TYPE_CODEC,
+                width,
+                height
+            ).apply {
+                default()
+
+                mOptionsHandshake.forEach {
+                    setInteger(
+                        it.key,
+                        it.value
+                    )
+                }
+
+                setInteger(
+                    MediaFormat.KEY_ROTATION,
+                    0
+                )
+            }
+        )
+    }
 }
+
+private data class MSMTarget(
+    val ip: String,
+    val camera: MSCameraModelID
+)

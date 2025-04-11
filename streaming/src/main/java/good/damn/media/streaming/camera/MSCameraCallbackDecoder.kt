@@ -3,7 +3,7 @@ package good.damn.media.streaming.camera
 import android.media.MediaCodec
 import android.media.MediaFormat
 import android.util.Log
-import good.damn.media.streaming.camera.avc.MSUtilsAvc
+import good.damn.media.streaming.camera.avc.MSStreamConstantsPacket
 import good.damn.media.streaming.camera.avc.cache.MSFrame
 import good.damn.media.streaming.extensions.short
 import java.nio.ByteBuffer
@@ -101,12 +101,12 @@ class MSCameraCallbackDecoder
             mQueueFrames.remove().packets.forEach {
                 it?.apply {
                     mSizePacket = data.short(
-                        MSUtilsAvc.OFFSET_PACKET_SIZE
+                        MSStreamConstantsPacket.OFFSET_PACKET_SIZE
                     )
 
                     mInputBuffer!!.put(
                         data,
-                        MSUtilsAvc.LEN_META,
+                        MSStreamConstantsPacket.LEN_META,
                         mSizePacket
                     )
 

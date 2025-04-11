@@ -2,12 +2,10 @@ package good.damn.media.streaming.camera
 
 import android.media.MediaFormat
 import android.os.Handler
-import android.util.Log
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.avc.MSCameraAVC
-import good.damn.media.streaming.camera.avc.MSUtilsAvc
-import good.damn.media.streaming.camera.avc.MSUtilsAvc.Companion.LEN_META
-import good.damn.media.streaming.camera.avc.cache.MSPacket
+import good.damn.media.streaming.camera.avc.MSStreamConstantsPacket
+import good.damn.media.streaming.camera.avc.MSStreamConstantsPacket.Companion.LEN_META
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.media.streaming.camera.models.MSCameraModelID
@@ -123,22 +121,22 @@ class MSStreamCameraInput(
 
         chunk.setIntegerOnPosition(
             mFrameId,
-            pos= MSUtilsAvc.OFFSET_PACKET_FRAME_ID
+            pos= MSStreamConstantsPacket.OFFSET_PACKET_FRAME_ID
         )
 
         chunk.setShortOnPosition(
             dataLen,
-            MSUtilsAvc.OFFSET_PACKET_SIZE
+            MSStreamConstantsPacket.OFFSET_PACKET_SIZE
         )
 
         chunk.setShortOnPosition(
             packetId,
-            MSUtilsAvc.OFFSET_PACKET_ID
+            MSStreamConstantsPacket.OFFSET_PACKET_ID
         )
 
         chunk.setShortOnPosition(
             packetCount,
-            MSUtilsAvc.OFFSET_PACKET_COUNT
+            MSStreamConstantsPacket.OFFSET_PACKET_COUNT
         )
 
         for (j in 0 until dataLen) {
