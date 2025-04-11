@@ -5,7 +5,6 @@ import android.media.MediaFormat
 import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
-import android.provider.MediaStore.Audio.Media
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -21,11 +20,13 @@ import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
 import good.damn.editor.mediastreaming.views.MSViewFragmentTestH264
 import good.damn.editor.mediastreaming.views.MSViewStreamFrame
 import good.damn.editor.mediastreaming.views.dialogs.option.MSDialogOptionsH264
+import good.damn.media.streaming.MSEnvironmentGroupStream
 import good.damn.media.streaming.MSTypeDecoderSettings
 import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.media.streaming.extensions.camera2.default
 import good.damn.media.streaming.extensions.hasUpOsVersion
+import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameUserDefault
 import good.damn.media.streaming.service.MSListenerOnConnectUser
 import good.damn.media.streaming.service.MSListenerOnSuccessHandshake
 import good.damn.media.streaming.service.MSMHandshake
@@ -49,10 +50,11 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
         onResultPermission = this@MSActivityMain
     }
 
+    private val mEnvGroupStream = MSEnvironmentGroupStream()
+
     private val mServiceStreamWrapper = MSServiceStreamWrapper().apply {
         onConnectUser = this@MSActivityMain
     }
-    private val mVideoHandler = MSEnvironmentVideoHandler()
 
     private var mTarget: MSMTarget? = null
 
@@ -74,7 +76,7 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
     }
 
     override fun onPause() {
-        mVideoHandler.stopReceiving()
+        mEnvGroupStream.stop()
         mView?.layoutSurfaces?.removeAllViews()
 
         mServiceStreamWrapper.unbind(
@@ -86,7 +88,7 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: ")
-        mVideoHandler.releaseReceiving()
+        mEnvGroupStream.release()
         mServiceStreamWrapper.destroy(
             context
         )
@@ -100,7 +102,6 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
         super.onCreate(
             savedInstanceState
         )
-        Log.d(TAG, "onCreate: ")
 
         StrictMode.setThreadPolicy(
             StrictMode.ThreadPolicy
@@ -159,6 +160,8 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
             startServiceStream(context)
             bind(context)
         }
+
+        mEnvGroupStream.start()
     }
 
 
@@ -216,7 +219,6 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
         val target = mTarget
             ?: return
 
-
         mServiceStreamWrapper.startStreamingVideo(
             target.camera,
             target.ip,
@@ -247,13 +249,18 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
         settings: MSTypeDecoderSettings,
         fromIp: InetAddress
     ) {
-        if (mVideoHandler.isReceiving) {
-            mView?.layoutSurfaces?.apply {
-                removeViewAt(
-                    childCount - 1
-                )
-            }
-            mVideoHandler.stopReceiving()
+        mEnvGroupStream.getUser(
+            userId
+        )?.apply {
+            release()
+
+            mEnvGroupStream.removeUser(
+                userId
+            )
+
+            mView?.layoutSurfaces?.removeView(
+                surfaceView
+            )
         }
 
         val width = settings[
@@ -276,9 +283,18 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
             }
         }
 
-        streamFrame.onChangeSurface = MSListenerOnChangeSurface {
-                surface ->
-            mVideoHandler.startReceiving(
+        val user = MSReceiverCameraFrameUserDefault(
+            streamFrame
+        )
+
+        mEnvGroupStream.putUser(
+            userId,
+            user
+        )
+
+        streamFrame.onChangeSurface = MSListenerOnChangeSurface { surface ->
+            user.startReceive(
+                userId,
                 surface,
                 MediaFormat.createVideoFormat(
                     MSCoder.MIME_TYPE_CODEC,

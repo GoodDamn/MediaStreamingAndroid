@@ -1,66 +1,51 @@
-package good.damn.editor.mediastreaming
+package good.damn.media.streaming
 
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
-import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
+import good.damn.media.streaming.extensions.writeDefault
 import good.damn.media.streaming.network.server.udp.MSPacketMissingHandler
-import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrame
-import good.damn.media.streaming.network.server.udp.MSServerUDP
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import java.net.InetAddress
 
-class MSEnvironmentVideoHandler
+class MSEnvironmentVideoDecodeStream
 : Runnable {
 
     companion object {
-        const val TIMEOUT_DEFAULT_PACKET_MS = 33;
+        const val TIMEOUT_DEFAULT_PACKET_MS = 33
         const val INTERVAL_MISS_PACKET = TIMEOUT_DEFAULT_PACKET_MS / 3
         private const val TAG = "MSStreamEnvironmentCame"
     }
 
-    val isReceiving: Boolean
-        get() = mServerVideo.isRunning
-
-    var hostTo: InetAddress?
-        get() = mHandlerPacketMissing.host
-        private set(v) {
-            mHandlerPacketMissing.host = v
-        }
-
-    private val mReceiverFrame = MSReceiverCameraFrame()
     private val mDecoderVideo = MSDecoderAvc()
     private val mHandlerPacketMissing = MSPacketMissingHandler()
-    private val mBufferizerRemote = MSPacketBufferizer().apply {
-        mReceiverFrame.bufferizer = this
-    }
-
-    private val mServerVideo = MSServerUDP(
-        MSStreamConstants.PORT_MEDIA,
-        MSStreamConstants.PACKET_MAX_SIZE,
-        CoroutineScope(
-            Dispatchers.IO
-        ),
-        mReceiverFrame
-    )
+    private val mBufferizerRemote = MSPacketBufferizer()
 
     private var mThreadDecoding: HandlerThread? = null
     private var mHandlerDecoding: Handler? = null
 
-    fun startReceiving(
+    var isRunning = false
+        private set
+
+    fun writeToBuffer(
+        data: ByteArray
+    ) = mBufferizerRemote.writeDefault(
+        data
+    )
+
+    fun start(
+        userId: Int,
         surfaceOutput: Surface,
         format: MediaFormat,
         host: InetAddress?
     ) {
-        hostTo = host
+        mHandlerPacketMissing.host = host
         mBufferizerRemote.unlock()
         mHandlerDecoding?.apply {
             removeCallbacks(
-                this@MSEnvironmentVideoHandler
+                this@MSEnvironmentVideoDecodeStream
             )
             post {
                 startDecoder(
@@ -72,7 +57,7 @@ class MSEnvironmentVideoHandler
         }
 
         HandlerThread(
-            "decodingEnvironment"
+            "decodingEnvironment$userId"
         ).apply {
             start()
             mThreadDecoding = this
@@ -88,30 +73,25 @@ class MSEnvironmentVideoHandler
         }
     }
 
-    fun stopReceiving() {
-        if (!mServerVideo.isRunning) {
+    fun stop() {
+        if (!isRunning) {
             return
         }
 
         mBufferizerRemote.lock()
         mBufferizerRemote.clear()
-
         mDecoderVideo.stop()
-        mServerVideo.stop()
+
+        isRunning = false
     }
 
-    fun releaseReceiving() {
+    fun release() {
         mDecoderVideo.release()
-        mServerVideo.release()
 
         mThreadDecoding?.quit()
         mThreadDecoding = null
         mHandlerDecoding = null
-
-        mServerVideo.apply {
-            stop()
-            release()
-        }
+        isRunning = false
     }
 
     private fun startDecoder(
@@ -123,18 +103,16 @@ class MSEnvironmentVideoHandler
             format
         )
 
-        // Bufferizing
-        mServerVideo.start()
-
         mHandlerDecoding?.post(
-            this@MSEnvironmentVideoHandler
+            this@MSEnvironmentVideoDecodeStream
         )
 
         mDecoderVideo.start()
+        isRunning = true
     }
 
     override fun run() {
-        if (!mServerVideo.isRunning) {
+        if (!isRunning) {
             mBufferizerRemote.clear()
             return
         }
@@ -191,7 +169,7 @@ class MSEnvironmentVideoHandler
             }
         } while (delta < timeout)
 
-        if (!mServerVideo.isRunning) {
+        if (!isRunning) {
             mBufferizerRemote.clear()
             return
         }

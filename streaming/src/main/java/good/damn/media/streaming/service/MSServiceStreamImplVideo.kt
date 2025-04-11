@@ -66,6 +66,7 @@ class MSServiceStreamImplVideo
     }
 
     fun startStreamingCamera(
+        userId: Int,
         modelID: MSCameraModelID,
         mediaFormat: MediaFormat,
         host: String
@@ -73,6 +74,7 @@ class MSServiceStreamImplVideo
         mClientStreamCamera?.host = host.toInetAddress()
         mServerRestorePackets?.start()
         mStreamCamera?.start(
+            userId,
             modelID,
             mediaFormat,
             mHandler!!

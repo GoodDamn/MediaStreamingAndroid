@@ -2,6 +2,7 @@ package good.damn.media.streaming.camera
 
 import android.media.MediaFormat
 import android.os.Handler
+import android.util.Log
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.avc.MSCameraAVC
 import good.damn.media.streaming.camera.avc.MSStreamConstantsPacket
@@ -12,6 +13,8 @@ import good.damn.media.streaming.camera.models.MSCameraModelID
 import good.damn.media.streaming.extensions.setIntegerOnPosition
 import good.damn.media.streaming.extensions.setShortOnPosition
 import java.nio.ByteBuffer
+import kotlin.math.log
+import kotlin.random.Random
 
 class MSStreamCameraInput(
     manager: MSManagerCamera
@@ -27,6 +30,8 @@ class MSStreamCameraInput(
         this@MSStreamCameraInput
     )
 
+    private var mUserId = Random.nextInt()
+
     val bufferizer = MSPacketBufferizer()
 
     var subscribers: List<MSStreamSubscriber>? = null
@@ -37,10 +42,12 @@ class MSStreamCameraInput(
     private var mFrameId = 0
 
     fun start(
+        userId: Int,
         cameraId: MSCameraModelID,
         mediaFormat: MediaFormat,
         handler: Handler
     ) = mCamera.run {
+        mUserId = userId
         configure(
             mediaFormat,
             handler
@@ -76,6 +83,8 @@ class MSStreamCameraInput(
         if (reminderDataSize > 0) {
             packetCount++
         }
+
+        Log.d(TAG, "onGetFrameData: $mUserId")
 
         if (mFrameId >= MSPacketBufferizer.CACHE_PACKET_SIZE) {
             bufferizer.removeFirstFrameQueueByFrameId(
@@ -137,6 +146,11 @@ class MSStreamCameraInput(
         chunk.setShortOnPosition(
             packetCount,
             MSStreamConstantsPacket.OFFSET_PACKET_COUNT
+        )
+
+        chunk.setIntegerOnPosition(
+            mUserId,
+            MSStreamConstantsPacket.OFFSET_PACKET_SRC_ID
         )
 
         for (j in 0 until dataLen) {

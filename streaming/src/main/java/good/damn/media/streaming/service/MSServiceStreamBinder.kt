@@ -36,6 +36,7 @@ class MSServiceStreamBinder(
         mediaFormat: MediaFormat,
         host: String
     ) = mImplVideo.startStreamingCamera(
+        userId,
         modelID,
         mediaFormat,
         host
