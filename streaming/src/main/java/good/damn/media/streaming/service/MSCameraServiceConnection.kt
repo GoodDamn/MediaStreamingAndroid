@@ -1,11 +1,10 @@
-package good.damn.editor.mediastreaming.system.service
+package good.damn.media.streaming.service
 
 import android.content.ComponentName
 import android.content.ServiceConnection
 import android.media.MediaFormat
 import android.os.IBinder
 import android.util.Log
-import good.damn.editor.mediastreaming.system.interfaces.MSListenerOnGetHotspotHost
 import good.damn.media.streaming.camera.models.MSCameraModelID
 
 class MSCameraServiceConnection

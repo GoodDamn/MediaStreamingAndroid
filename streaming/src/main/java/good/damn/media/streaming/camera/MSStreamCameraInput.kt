@@ -67,7 +67,6 @@ class MSStreamCameraInput(
         offset: Int,
         len: Int
     ) {
-        Log.d(TAG, "onGetFrameData: $len")
         var i = offset
 
         var packetCount = len / PACKET_MAX_SIZE

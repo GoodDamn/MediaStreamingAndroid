@@ -1,18 +1,11 @@
 package good.damn.media.streaming.camera.avc
 
 import android.media.MediaCodec
-import android.media.MediaCodecInfo
-import android.media.MediaCrypto
 import android.media.MediaFormat
-import android.os.Build
-import android.os.Handler
-import android.os.HandlerThread
-import android.provider.MediaStore.Audio.Media
 import android.util.Log
 import android.view.Surface
 import good.damn.media.streaming.camera.MSCameraCallbackDecoder
 import good.damn.media.streaming.camera.avc.cache.MSFrame
-import java.util.UUID
 
 class MSDecoderAvc
 : MSCoder() {
@@ -23,7 +16,7 @@ class MSDecoderAvc
 
     // may throws Exception with no h264 codec
     override val mCoder = MediaCodec.createDecoderByType(
-        TYPE_AVC
+        MIME_TYPE_CODEC
     )
 
     private val mCallbackDecoder = MSCameraCallbackDecoder()

@@ -4,12 +4,11 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
-import android.os.IBinder
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import good.damn.editor.mediastreaming.extensions.supportsForegroundService
 import good.damn.editor.mediastreaming.notification.MSNotifications
+import good.damn.media.streaming.service.MSServiceStreamImpl
 import kotlin.random.Random
 
 class MSServiceStreamForeground
@@ -20,7 +19,6 @@ class MSServiceStreamForeground
     }
     
     private val mImpl = MSServiceStreamImpl()
-
 
     override fun onCreate() {
         super.onCreate()

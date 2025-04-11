@@ -1,10 +1,9 @@
-package good.damn.editor.mediastreaming.system.service.serv
+package good.damn.media.streaming.service
 
 import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
-import good.damn.editor.mediastreaming.system.service.MSServiceStreamBinder
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput

@@ -7,14 +7,9 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.util.Log
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.LinearLayout
-import androidx.activity.result.ActivityResultLauncher
 import androidx.appcompat.app.AppCompatActivity
-import androidx.viewpager2.adapter.FragmentStateAdapter
-import androidx.viewpager2.widget.ViewPager2
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
 import good.damn.editor.mediastreaming.extensions.context
 import good.damn.editor.mediastreaming.extensions.removeInt
@@ -39,7 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.InetAddress
-import java.util.HashMap
+import java.nio.ByteBuffer
 
 class MSActivityMain
 : AppCompatActivity(),
@@ -311,7 +306,7 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
             cameraId,
             ip,
             MediaFormat.createVideoFormat(
-                MSCoder.TYPE_AVC,
+                MSCoder.MIME_TYPE_CODEC,
                 width,
                 height
             ).apply {
@@ -372,7 +367,7 @@ MSListenerOnHandshakeSettings, MSListenerOnSelectCamera {
             mStreamCamera.startReceiving(
                 surface,
                 MediaFormat.createVideoFormat(
-                    MSCoder.TYPE_AVC,
+                    MSCoder.MIME_TYPE_CODEC,
                     width,
                     height
                 ).apply {

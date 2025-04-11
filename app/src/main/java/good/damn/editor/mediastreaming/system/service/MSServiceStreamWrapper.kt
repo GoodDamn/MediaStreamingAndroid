@@ -8,6 +8,7 @@ import good.damn.editor.mediastreaming.extensions.supportsForegroundService
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStream
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStreamForeground
 import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.service.MSCameraServiceConnection
 
 class MSServiceStreamWrapper {
 
