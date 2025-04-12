@@ -1,12 +1,14 @@
-package good.damn.media.streaming.service
+package good.damn.media.streaming.service.impl
 
 import good.damn.media.streaming.MSTypeDecoderSettings
+import good.damn.media.streaming.env.MSEnvironmentHandshake
+import good.damn.media.streaming.models.handshake.MSMHandshakeAccept
+import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
 import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.net.InetAddress
 import kotlin.random.Random
 
 class MSServiceStreamImplHandshake

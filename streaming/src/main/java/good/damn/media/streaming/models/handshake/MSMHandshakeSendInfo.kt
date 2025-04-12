@@ -1,4 +1,4 @@
-package good.damn.media.streaming.service
+package good.damn.media.streaming.models.handshake
 
 import good.damn.media.streaming.MSTypeDecoderSettings
 import java.net.InetAddress

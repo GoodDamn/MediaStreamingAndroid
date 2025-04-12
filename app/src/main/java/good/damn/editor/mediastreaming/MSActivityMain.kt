@@ -8,7 +8,6 @@ import android.os.StrictMode
 import android.util.Log
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
@@ -21,8 +20,8 @@ import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
 import good.damn.editor.mediastreaming.views.MSViewFragmentTestH264
 import good.damn.editor.mediastreaming.views.MSViewStreamFrame
 import good.damn.editor.mediastreaming.views.dialogs.option.MSDialogOptionsH264
-import good.damn.media.streaming.MSEnvironmentGroupStream
-import good.damn.media.streaming.MSMStream
+import good.damn.media.streaming.env.MSEnvironmentGroupStream
+import good.damn.media.streaming.models.MSMStream
 import good.damn.media.streaming.MSTypeDecoderSettings
 import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.camera.models.MSMCameraId
@@ -30,11 +29,11 @@ import good.damn.media.streaming.extensions.camera2.default
 import good.damn.media.streaming.extensions.hasUpOsVersion
 import good.damn.media.streaming.extensions.toInetAddress
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameUserDefault
-import good.damn.media.streaming.service.MSListenerOnConnectUser
-import good.damn.media.streaming.service.MSListenerOnSuccessHandshake
-import good.damn.media.streaming.service.MSMHandshakeResult
-import good.damn.media.streaming.service.MSMHandshakeAccept
-import good.damn.media.streaming.service.MSMHandshakeSendInfo
+import good.damn.media.streaming.service.impl.MSListenerOnConnectUser
+import good.damn.media.streaming.service.impl.MSListenerOnSuccessHandshake
+import good.damn.media.streaming.models.handshake.MSMHandshakeResult
+import good.damn.media.streaming.models.handshake.MSMHandshakeAccept
+import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

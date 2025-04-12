@@ -8,7 +8,7 @@ import android.util.Log
 import androidx.core.app.ServiceCompat
 import good.damn.editor.mediastreaming.extensions.supportsForegroundService
 import good.damn.editor.mediastreaming.notification.MSNotifications
-import good.damn.media.streaming.service.MSServiceStreamImpl
+import good.damn.media.streaming.service.impl.MSServiceStreamImpl
 import kotlin.random.Random
 
 class MSServiceStreamForeground

@@ -1,15 +1,13 @@
-package good.damn.media.streaming.service
+package good.damn.media.streaming.service.impl
 
 import android.content.Context
-import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
-import good.damn.media.streaming.MSMStream
+import good.damn.media.streaming.models.MSMStream
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.MSStreamSubscriber
-import good.damn.media.streaming.camera.models.MSMCameraId
 import good.damn.media.streaming.extensions.toInetAddress
 import good.damn.media.streaming.network.client.MSClientUDP
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameRestore

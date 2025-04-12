@@ -1,5 +1,6 @@
-package good.damn.media.streaming
+package good.damn.media.streaming.env
 
+import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.network.server.udp.MSIReceiverCameraFrameUser
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrame
 import good.damn.media.streaming.network.server.udp.MSServerUDP

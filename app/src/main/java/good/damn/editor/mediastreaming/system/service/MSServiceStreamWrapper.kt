@@ -2,18 +2,15 @@ package good.damn.editor.mediastreaming.system.service
 
 import android.content.Context
 import android.content.Intent
-import android.media.MediaFormat
 import android.util.Log
 import good.damn.editor.mediastreaming.extensions.supportsForegroundService
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStream
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStreamForeground
-import good.damn.media.streaming.MSMStream
-import good.damn.media.streaming.MSTypeDecoderSettings
-import good.damn.media.streaming.camera.models.MSMCameraId
+import good.damn.media.streaming.models.MSMStream
 import good.damn.media.streaming.service.MSCameraServiceConnection
-import good.damn.media.streaming.service.MSListenerOnConnectUser
-import good.damn.media.streaming.service.MSListenerOnSuccessHandshake
-import good.damn.media.streaming.service.MSMHandshakeSendInfo
+import good.damn.media.streaming.service.impl.MSListenerOnConnectUser
+import good.damn.media.streaming.service.impl.MSListenerOnSuccessHandshake
+import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
 
 class MSServiceStreamWrapper {
 

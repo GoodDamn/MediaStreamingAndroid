@@ -2,7 +2,7 @@ package good.damn.editor.mediastreaming.system.service.serv
 
 import android.app.Service
 import android.content.Intent
-import good.damn.media.streaming.service.MSServiceStreamImpl
+import good.damn.media.streaming.service.impl.MSServiceStreamImpl
 
 class MSServiceStream
 : Service() {

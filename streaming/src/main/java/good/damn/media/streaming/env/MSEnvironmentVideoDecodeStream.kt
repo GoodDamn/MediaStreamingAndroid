@@ -1,9 +1,8 @@
-package good.damn.media.streaming
+package good.damn.media.streaming.env
 
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
-import android.util.Log
 import android.view.Surface
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer

@@ -2,12 +2,12 @@ package good.damn.media.streaming.service
 
 import android.content.ComponentName
 import android.content.ServiceConnection
-import android.media.MediaFormat
 import android.os.IBinder
 import android.util.Log
-import good.damn.media.streaming.MSMStream
-import good.damn.media.streaming.MSTypeDecoderSettings
-import good.damn.media.streaming.camera.models.MSMCameraId
+import good.damn.media.streaming.models.MSMStream
+import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
+import good.damn.media.streaming.service.impl.MSListenerOnConnectUser
+import good.damn.media.streaming.service.impl.MSListenerOnSuccessHandshake
 
 class MSCameraServiceConnection
 : ServiceConnection {

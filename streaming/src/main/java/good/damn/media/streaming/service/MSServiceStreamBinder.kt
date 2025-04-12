@@ -1,10 +1,12 @@
 package good.damn.media.streaming.service
 
-import android.media.MediaFormat
 import android.os.Binder
-import good.damn.media.streaming.MSMStream
-import good.damn.media.streaming.MSTypeDecoderSettings
-import good.damn.media.streaming.camera.models.MSMCameraId
+import good.damn.media.streaming.models.MSMStream
+import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
+import good.damn.media.streaming.service.impl.MSListenerOnConnectUser
+import good.damn.media.streaming.service.impl.MSListenerOnSuccessHandshake
+import good.damn.media.streaming.service.impl.MSServiceStreamImplHandshake
+import good.damn.media.streaming.service.impl.MSServiceStreamImplVideo
 
 class MSServiceStreamBinder(
     private val mImplVideo: MSServiceStreamImplVideo,

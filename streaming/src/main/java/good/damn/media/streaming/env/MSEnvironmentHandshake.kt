@@ -1,7 +1,7 @@
-package good.damn.media.streaming.service
+package good.damn.media.streaming.env
 
 import good.damn.media.streaming.MSStreamConstants
-import good.damn.media.streaming.MSTypeDecoderSettings
+import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
 import good.damn.media.streaming.network.client.tcp.MSClientTCP
 import good.damn.media.streaming.network.client.tcp.MSNetworkDecoderSettings
 import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings

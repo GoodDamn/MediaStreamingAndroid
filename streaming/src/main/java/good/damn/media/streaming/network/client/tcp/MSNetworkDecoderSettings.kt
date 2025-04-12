@@ -7,8 +7,8 @@ import good.damn.media.streaming.extensions.readU
 import good.damn.media.streaming.extensions.toByteArray
 import good.damn.media.streaming.network.server.listeners.MSListenerOnAcceptClient
 import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
-import good.damn.media.streaming.service.MSMHandshakeResult
-import good.damn.media.streaming.service.MSMHandshakeAccept
+import good.damn.media.streaming.models.handshake.MSMHandshakeResult
+import good.damn.media.streaming.models.handshake.MSMHandshakeAccept
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.nio.charset.StandardCharsets
