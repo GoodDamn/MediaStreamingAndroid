@@ -3,7 +3,7 @@ package good.damn.media.streaming.camera
 import android.media.MediaCodec
 import android.media.MediaFormat
 import android.util.Log
-import good.damn.media.streaming.camera.avc.MSStreamConstantsPacket
+import good.damn.media.streaming.MSStreamConstantsPacket
 import good.damn.media.streaming.camera.avc.cache.MSFrame
 import good.damn.media.streaming.extensions.short
 import java.nio.ByteBuffer
@@ -98,6 +98,7 @@ class MSCameraCallbackDecoder
         mSizeFrame = 0
 
         if (mQueueFrames.isNotEmpty()) {
+            Log.d(TAG, "processInputBuffer: ")
             mQueueFrames.remove().packets.forEach {
                 it?.apply {
                     mSizePacket = data.short(

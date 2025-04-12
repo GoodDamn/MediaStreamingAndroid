@@ -3,6 +3,7 @@ package good.damn.media.streaming
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.Log
 import android.view.Surface
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
@@ -103,12 +104,12 @@ class MSEnvironmentVideoDecodeStream
             format
         )
 
+        isRunning = true
         mHandlerDecoding?.post(
             this@MSEnvironmentVideoDecodeStream
         )
 
         mDecoderVideo.start()
-        isRunning = true
     }
 
     override fun run() {
@@ -137,7 +138,7 @@ class MSEnvironmentVideoDecodeStream
         var currentPacketSize = frame.packetsAdded.toInt()
         var delta: Long
         var nextPartMissed = 0L
-
+        
         val timeout = if (
             currentPacketSize >= 8
         ) TIMEOUT_DEFAULT_PACKET_MS * 10 else TIMEOUT_DEFAULT_PACKET_MS

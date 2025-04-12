@@ -31,19 +31,20 @@ class MSEnvironmentHandshake {
     )
 
     fun sendHandshakeSettings(
-        host: String,
-        settings: MSTypeDecoderSettings
+        userId: Int,
+        model: MSMHandshakeSendInfo
     ) = try {
         mNetworkHandshakeSettings.sendDecoderSettings(
+            userId,
             InetSocketAddress(
-                host,
+                model.host,
                 MSStreamConstants.PORT_HANDSHAKE
             ),
             mClient,
-            settings
+            model.settings
         )
     } catch (e: IOException) {
-        false
+        null
     }
 
     fun startListeningSettings() {

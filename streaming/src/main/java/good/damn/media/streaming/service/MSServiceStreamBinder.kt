@@ -2,9 +2,9 @@ package good.damn.media.streaming.service
 
 import android.media.MediaFormat
 import android.os.Binder
+import good.damn.media.streaming.MSMStream
 import good.damn.media.streaming.MSTypeDecoderSettings
-import good.damn.media.streaming.camera.models.MSCameraModelID
-import good.damn.media.streaming.extensions.toInetAddress
+import good.damn.media.streaming.camera.models.MSMCameraId
 
 class MSServiceStreamBinder(
     private val mImplVideo: MSServiceStreamImplVideo,
@@ -24,22 +24,15 @@ class MSServiceStreamBinder(
         }
 
     fun sendHandshakeSettings(
-        host: String,
-        settings: MSTypeDecoderSettings
+        model: MSMHandshakeSendInfo
     ) = mImplHandshake.sendHandshakeSettings(
-        host,
-        settings
+        model
     )
 
     fun startStreamingCamera(
-        modelID: MSCameraModelID,
-        mediaFormat: MediaFormat,
-        host: String
+        stream: MSMStream
     ) = mImplVideo.startStreamingCamera(
-        userId,
-        modelID,
-        mediaFormat,
-        host
+        stream
     )
 
     fun stopStreamingCamera() = mImplVideo

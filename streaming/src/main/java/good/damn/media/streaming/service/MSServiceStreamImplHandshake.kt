@@ -7,11 +7,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.InetAddress
+import kotlin.random.Random
 
 class MSServiceStreamImplHandshake
 : MSListenerOnHandshakeSettings {
 
     private val mHandshakes = HashMap<Int, MSTypeDecoderSettings>()
+
+    private val mUserId = Random.nextInt()
 
     private var mHandshake: MSEnvironmentHandshake? = null
 
@@ -25,22 +28,17 @@ class MSServiceStreamImplHandshake
     }
 
     fun sendHandshakeSettings(
-        host: String,
-        settings: MSTypeDecoderSettings
+        model: MSMHandshakeSendInfo
     ) = CoroutineScope(
         Dispatchers.IO
     ).launch {
         val result = mHandshake?.sendHandshakeSettings(
-            host,
-            settings
+            mUserId,
+            model
         )
 
-        if (result == false) {
-            return@launch
-        }
-
         onSuccessHandshake?.onSuccessHandshake(
-            MSMHandshake(1)
+            result
         )
     }
 
@@ -53,17 +51,17 @@ class MSServiceStreamImplHandshake
     }
 
     override suspend fun onHandshakeSettings(
-        settings: MSTypeDecoderSettings,
-        fromIp: InetAddress
+        result: MSMHandshakeAccept
     ) {
-        mHandshakes[1] = settings
+        mHandshakes[
+            result.userId
+        ] = result.settings
+
         withContext(
             Dispatchers.Main
         ) {
             onConnectUser?.onConnectUser(
-                1,
-                settings,
-                fromIp
+                result
             )
         }
     }

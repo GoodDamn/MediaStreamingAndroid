@@ -4,11 +4,12 @@ import android.content.Context
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
+import good.damn.media.streaming.MSMStream
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.MSStreamSubscriber
-import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.camera.models.MSMCameraId
 import good.damn.media.streaming.extensions.toInetAddress
 import good.damn.media.streaming.network.client.MSClientUDP
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameRestore
@@ -66,17 +67,14 @@ class MSServiceStreamImplVideo
     }
 
     fun startStreamingCamera(
-        userId: Int,
-        modelID: MSCameraModelID,
-        mediaFormat: MediaFormat,
-        host: String
+        stream: MSMStream
     ) {
-        mClientStreamCamera?.host = host.toInetAddress()
+        mClientStreamCamera?.host = stream.host.toInetAddress()
         mServerRestorePackets?.start()
         mStreamCamera?.start(
-            userId,
-            modelID,
-            mediaFormat,
+            stream.userId,
+            stream.camera,
+            stream.format,
             mHandler!!
         )
     }

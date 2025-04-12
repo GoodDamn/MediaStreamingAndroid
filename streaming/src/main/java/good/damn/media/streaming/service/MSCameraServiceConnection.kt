@@ -5,8 +5,9 @@ import android.content.ServiceConnection
 import android.media.MediaFormat
 import android.os.IBinder
 import android.util.Log
+import good.damn.media.streaming.MSMStream
 import good.damn.media.streaming.MSTypeDecoderSettings
-import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.camera.models.MSMCameraId
 
 class MSCameraServiceConnection
 : ServiceConnection {
@@ -30,21 +31,15 @@ class MSCameraServiceConnection
         }
 
     fun sendHandshakeSettings(
-        host: String,
-        settings: MSTypeDecoderSettings
+        model: MSMHandshakeSendInfo
     ) = mBinder?.sendHandshakeSettings(
-        host,
-        settings
+        model
     )
 
     fun startStreamingVideo(
-        modelID: MSCameraModelID,
-        mediaFormat: MediaFormat,
-        host: String
+        stream: MSMStream
     ) = mBinder?.startStreamingCamera(
-        modelID,
-        mediaFormat,
-        host
+        stream
     )
 
     fun stopStreamingVideo() = mBinder

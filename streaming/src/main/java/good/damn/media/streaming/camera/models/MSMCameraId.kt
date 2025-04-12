@@ -1,9 +1,8 @@
 package good.damn.media.streaming.camera.models
 
 import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CameraManager
 
-data class MSCameraModelID(
+data class MSMCameraId(
     val logical: String,
     val physical: String? = null,
     var isLegacy: Boolean = false,

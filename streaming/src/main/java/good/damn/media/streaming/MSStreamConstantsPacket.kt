@@ -1,4 +1,4 @@
-package good.damn.media.streaming.camera.avc
+package good.damn.media.streaming
 
 class MSStreamConstantsPacket {
     companion object {

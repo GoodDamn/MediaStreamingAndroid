@@ -1,6 +1,6 @@
 package good.damn.media.streaming.extensions
 
-import good.damn.media.streaming.camera.avc.MSStreamConstantsPacket
+import good.damn.media.streaming.MSStreamConstantsPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 
 inline fun MSPacketBufferizer.writeDefault(

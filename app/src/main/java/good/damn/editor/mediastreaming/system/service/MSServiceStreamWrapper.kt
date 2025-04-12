@@ -7,11 +7,13 @@ import android.util.Log
 import good.damn.editor.mediastreaming.extensions.supportsForegroundService
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStream
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStreamForeground
+import good.damn.media.streaming.MSMStream
 import good.damn.media.streaming.MSTypeDecoderSettings
-import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.camera.models.MSMCameraId
 import good.damn.media.streaming.service.MSCameraServiceConnection
 import good.damn.media.streaming.service.MSListenerOnConnectUser
 import good.damn.media.streaming.service.MSListenerOnSuccessHandshake
+import good.damn.media.streaming.service.MSMHandshakeSendInfo
 
 class MSServiceStreamWrapper {
 
@@ -37,26 +39,20 @@ class MSServiceStreamWrapper {
         private set
 
     fun sendHandshakeSettings(
-        host: String,
-        settings: MSTypeDecoderSettings,
+        model: MSMHandshakeSendInfo,
         onSuccessHandshake: MSListenerOnSuccessHandshake
     ) = mServiceConnectionStream.run {
         this.onSuccessHandshake = onSuccessHandshake
         sendHandshakeSettings(
-            host,
-            settings
+            model
         )
     }
 
     fun startStreamingVideo(
-        modelID: MSCameraModelID,
-        host: String,
-        mediaFormat: MediaFormat
+        stream: MSMStream
     ) {
         mServiceConnectionStream.startStreamingVideo(
-            modelID,
-            mediaFormat,
-            host
+            stream
         )
         isStreamingVideo = true
     }

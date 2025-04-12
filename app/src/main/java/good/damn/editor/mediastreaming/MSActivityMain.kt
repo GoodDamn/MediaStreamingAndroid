@@ -8,6 +8,7 @@ import android.os.StrictMode
 import android.util.Log
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import good.damn.editor.mediastreaming.clicks.MSListenerOnSelectCamera
@@ -21,18 +22,21 @@ import good.damn.editor.mediastreaming.views.MSViewFragmentTestH264
 import good.damn.editor.mediastreaming.views.MSViewStreamFrame
 import good.damn.editor.mediastreaming.views.dialogs.option.MSDialogOptionsH264
 import good.damn.media.streaming.MSEnvironmentGroupStream
+import good.damn.media.streaming.MSMStream
 import good.damn.media.streaming.MSTypeDecoderSettings
 import good.damn.media.streaming.camera.avc.MSCoder
-import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.camera.models.MSMCameraId
 import good.damn.media.streaming.extensions.camera2.default
 import good.damn.media.streaming.extensions.hasUpOsVersion
+import good.damn.media.streaming.extensions.toInetAddress
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameUserDefault
 import good.damn.media.streaming.service.MSListenerOnConnectUser
 import good.damn.media.streaming.service.MSListenerOnSuccessHandshake
-import good.damn.media.streaming.service.MSMHandshake
+import good.damn.media.streaming.service.MSMHandshakeResult
+import good.damn.media.streaming.service.MSMHandshakeAccept
+import good.damn.media.streaming.service.MSMHandshakeSendInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.InetAddress
 
 class MSActivityMain
 : AppCompatActivity(),
@@ -41,7 +45,6 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
 
     companion object {
         private const val TAG = "MSActivityMain"
-        private const val KEY_HOST_CONNECTED = "host"
     }
 
     private var mView: MSViewFragmentTestH264? = null
@@ -77,7 +80,7 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
 
     override fun onPause() {
         mEnvGroupStream.stop()
-        mView?.layoutSurfaces?.removeAllViews()
+        //mView?.layoutSurfaces?.removeAllViews()
 
         mServiceStreamWrapper.unbind(
             context
@@ -167,7 +170,7 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
 
     override fun onSelectCamera(
         v: View?,
-        cameraId: MSCameraModelID
+        cameraId: MSMCameraId
     ) {
         context.toast("Wait")
 
@@ -187,15 +190,28 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
         )
 
         mServiceStreamWrapper.sendHandshakeSettings(
-            ip,
-            mOptionsHandshake,
+            MSMHandshakeSendInfo(
+                ip.toInetAddress(),
+                mOptionsHandshake
+            ),
             this@MSActivityMain
         )
     }
 
     override suspend fun onSuccessHandshake(
-        result: MSMHandshake
+        result: MSMHandshakeResult?
     ) {
+        if (result == null) {
+            withContext(
+                Dispatchers.Main
+            ) {
+                context.toast(
+                    "No result"
+                )
+            }
+            return
+        }
+
         withContext(
             Dispatchers.Main
         ) {
@@ -208,54 +224,36 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
             mServiceStreamWrapper.stopStreamingVideo()
         }
 
-        val width = mOptionsHandshake[
-            MediaFormat.KEY_WIDTH
-        ] ?: 640
-
-        val height = mOptionsHandshake[
-            MediaFormat.KEY_HEIGHT
-        ] ?: 480
-
         val target = mTarget
             ?: return
 
         mServiceStreamWrapper.startStreamingVideo(
-            target.camera,
-            target.ip,
-            MediaFormat.createVideoFormat(
-                MSCoder.MIME_TYPE_CODEC,
-                width,
-                height
-            ).apply {
-                default()
-
-                mOptionsHandshake.forEach {
+            MSMStream(
+                result.userId,
+                target.ip,
+                target.camera,
+                createDefaultMediaFormat(
+                    mOptionsHandshake
+                ).apply {
                     setInteger(
-                        it.key,
-                        it.value
+                        MediaFormat.KEY_ROTATION,
+                        0
                     )
                 }
-
-                setInteger(
-                    MediaFormat.KEY_ROTATION,
-                    0
-                )
-            }
+            )
         )
     }
 
     override fun onConnectUser(
-        userId: Int,
-        settings: MSTypeDecoderSettings,
-        fromIp: InetAddress
+        model: MSMHandshakeAccept
     ) {
         mEnvGroupStream.getUser(
-            userId
+            model.userId
         )?.apply {
             release()
 
             mEnvGroupStream.removeUser(
-                userId
+                model.userId
             )
 
             mView?.layoutSurfaces?.removeView(
@@ -263,11 +261,11 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
             )
         }
 
-        val width = settings[
+        val width = model.settings[
             MediaFormat.KEY_WIDTH
         ] ?: 640
 
-        val height = settings[
+        val height = model.settings[
             MediaFormat.KEY_HEIGHT
         ] ?: 480
 
@@ -288,28 +286,18 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
         )
 
         mEnvGroupStream.putUser(
-            userId,
+            model.userId,
             user
         )
 
         streamFrame.onChangeSurface = MSListenerOnChangeSurface { surface ->
             user.startReceive(
-                userId,
+                model.userId,
                 surface,
-                MediaFormat.createVideoFormat(
-                    MSCoder.MIME_TYPE_CODEC,
-                    width,
-                    height
-                ).apply {
-                    default()
-                    settings.forEach {
-                        setInteger(
-                            it.key,
-                            it.value
-                        )
-                    }
-                },
-                fromIp
+                createDefaultMediaFormat(
+                    model.settings
+                ),
+                model.address
             )
         }
 
@@ -317,9 +305,26 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
             streamFrame
         )
     }
+
+    private inline fun createDefaultMediaFormat(
+        settings: MSTypeDecoderSettings
+    ) = MediaFormat.createVideoFormat(
+        MSCoder.MIME_TYPE_CODEC,
+        0,
+        0
+    ).apply {
+        default()
+        settings.forEach {
+            setInteger(
+                it.key,
+                it.value
+            )
+        }
+
+    }
 }
 
 private data class MSMTarget(
     val ip: String,
-    val camera: MSCameraModelID
+    val camera: MSMCameraId
 )
