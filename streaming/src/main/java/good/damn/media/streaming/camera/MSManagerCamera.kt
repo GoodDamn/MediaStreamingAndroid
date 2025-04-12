@@ -2,18 +2,14 @@ package good.damn.media.streaming.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.hardware.Camera
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.os.Build
 import android.os.Handler
-import android.os.Looper
-import android.util.Log
-import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.camera.models.MSMCameraId
 import java.util.LinkedList
-import kotlin.math.log
 
 @SuppressLint("MissingPermission")
 class MSManagerCamera(
@@ -24,8 +20,8 @@ class MSManagerCamera(
         Context.CAMERA_SERVICE
     ) as CameraManager
 
-    fun getCameraIds(): List<MSCameraModelID> {
-        val list = LinkedList<MSCameraModelID>()
+    fun getCameraIds(): List<MSMCameraId> {
+        val list = LinkedList<MSMCameraId>()
 
         for (logicalId in manager.cameraIdList) {
             val character = getCharacteristics(
@@ -36,7 +32,7 @@ class MSManagerCamera(
                 CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL
             ) == CameraMetadata.INFO_SUPPORTED_HARDWARE_LEVEL_LEGACY) {
                 list.add(
-                    MSCameraModelID(
+                    MSMCameraId(
                         logicalId,
                         isLegacy = true,
                         characteristics = character
@@ -49,7 +45,7 @@ class MSManagerCamera(
                 character.physicalCameraIds.apply {
                     if (isEmpty()) {
                         list.add(
-                            MSCameraModelID(
+                            MSMCameraId(
                                 logicalId,
                                 characteristics = character
                             )
@@ -59,7 +55,7 @@ class MSManagerCamera(
 
                     forEach {
                         list.add(
-                            MSCameraModelID(
+                            MSMCameraId(
                                 logicalId,
                                 it,
                                 characteristics = character
@@ -72,7 +68,7 @@ class MSManagerCamera(
             }
 
             list.add(
-                MSCameraModelID(
+                MSMCameraId(
                     logicalId,
                     characteristics = character
                 )
@@ -89,7 +85,7 @@ class MSManagerCamera(
     )
 
     fun openCamera(
-        cameraId: MSCameraModelID,
+        cameraId: MSMCameraId,
         listener: CameraDevice.StateCallback,
         handler: Handler
     ) {

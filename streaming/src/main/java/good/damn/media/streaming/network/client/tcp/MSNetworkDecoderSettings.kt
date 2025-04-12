@@ -3,14 +3,12 @@ package good.damn.media.streaming.network.client.tcp
 import android.util.Log
 import good.damn.media.streaming.MSTypeDecoderSettings
 import good.damn.media.streaming.extensions.integerBE
-import good.damn.media.streaming.extensions.integerLE
-import good.damn.media.streaming.extensions.readSafely
 import good.damn.media.streaming.extensions.readU
-import good.damn.media.streaming.extensions.readUSafely
 import good.damn.media.streaming.extensions.toByteArray
-import good.damn.media.streaming.extensions.write
 import good.damn.media.streaming.network.server.listeners.MSListenerOnAcceptClient
 import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
+import good.damn.media.streaming.service.MSMHandshakeResult
+import good.damn.media.streaming.service.MSMHandshakeAccept
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.nio.charset.StandardCharsets
@@ -27,6 +25,7 @@ class MSNetworkDecoderSettings
     var onHandshakeSettings: MSListenerOnHandshakeSettings? = null
 
     fun sendDecoderSettings(
+        userId: Int,
         host: InetSocketAddress,
         client: MSClientTCP,
         settings: MSTypeDecoderSettings
@@ -38,6 +37,10 @@ class MSNetworkDecoderSettings
         )
 
         Log.d(TAG, "sendDecoderSettings: SIZE: ${settings.size}")
+
+        second.write(
+            userId.toByteArray()
+        )
 
         settings.forEach {
             val dataKey = it.key.toByteArray(
@@ -59,13 +62,15 @@ class MSNetworkDecoderSettings
             Log.d(TAG, "sendDecoderSettings: ${it.key}(${dataKey.size}) ${it.value}")
         }
 
-
         val isOk = first.read() == ANSWER_OK
 
         client.close()
 
-        return@run isOk
-    } ?: false
+        return@run MSMHandshakeResult(
+            isOk,
+            userId
+        )
+    }
 
     override suspend fun onAcceptClient(
         socket: Socket
@@ -83,13 +88,23 @@ class MSNetworkDecoderSettings
             return@run
         }
 
+        val bufferVal = ByteArray(4)
+        if (inp.read(
+            bufferVal,
+            0,
+            4
+        ) < 0) {
+            return@run
+        }
+
+        val userId = bufferVal.integerBE(0)
+
         val map = HashMap<String, Int>(
             size
         )
 
         var dataKeySize: Int
         val buffer = ByteArray(512)
-        val bufferVal = ByteArray(4)
 
         for (i in 0 until size) {
             dataKeySize = inp.readU()
@@ -133,8 +148,11 @@ class MSNetworkDecoderSettings
         out.write(ANSWER_OK)
 
         onHandshakeSettings?.onHandshakeSettings(
-            map,
-            srcAddr
+            MSMHandshakeAccept(
+                map,
+                srcAddr,
+                userId
+            )
         )
     }
 

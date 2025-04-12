@@ -1,17 +1,18 @@
 package good.damn.media.streaming.camera.avc.cache;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public final class MSPacketBufferizer {
 
     private static final String TAG = "MSPacketBufferizer";
 
-    public static final int CACHE_PACKET_SIZE = 2048;
+    public static final int CACHE_PACKET_SIZE = 1024;
 
     // Think about dynamic timeout
     // which depends from captured frame's packet count
@@ -26,6 +27,8 @@ public final class MSPacketBufferizer {
         CACHE_PACKET_SIZE
     ];
 
+    private volatile boolean mIsLocked = false;
+
     private volatile int mCurrentQueueIndex = 0;
 
     public MSPacketBufferizer() {
@@ -34,9 +37,19 @@ public final class MSPacketBufferizer {
         }
     }
 
+    public final void unlock() {
+        mCurrentQueueIndex = 0;
+        mIsLocked = false;
+    }
+
+    public final void lock() {
+        mIsLocked = true;
+    }
+
     public final void clear() {
+        mCurrentQueueIndex = 0;
         for (int i = 0; i < CACHE_PACKET_SIZE; i++) {
-            mQueues[i].lastFrameId = 0;
+            mQueues[i].lastFrameId = -1;
             mQueues[i].queue.clear();
         }
     }
@@ -60,16 +73,20 @@ public final class MSPacketBufferizer {
         int frameId
     ) {
         try {
-            return mQueues[frameId % CACHE_PACKET_SIZE].queue.getFirst();
+            return mQueues[
+                hashFrame(frameId)
+            ].queue.getFirst();
         } catch (Exception e) {
             return null;
         }
     }
 
-    public final void removeFirstFrameByIndex(
-        int i
+    public final void removeFirstFrameQueueByFrameId(
+        int frameId
     ) {
-        mQueues[i].queue.removeFirst();
+        mQueues[
+            hashFrame(frameId)
+        ].queue.removeFirst();
     }
 
     public final void write(
@@ -78,11 +95,11 @@ public final class MSPacketBufferizer {
         final short packetCount,
         final byte[] data
     ) {
-        if (packetCount == 0) {
+        if (packetCount == 0 || mIsLocked) {
             return;
         }
 
-        final int queueId = frameId % CACHE_PACKET_SIZE;
+        final int queueId = hashFrame(frameId);
 
         final MSMFrameQueue frameQueue = mQueues[queueId];
         final ConcurrentLinkedDeque<MSFrame> queue = frameQueue.queue;
@@ -178,6 +195,12 @@ public final class MSPacketBufferizer {
                 }
             } catch (Exception ignored) {}
         }
+    }
+
+    private final int hashFrame(
+        int frameId
+    ) {
+        return frameId % CACHE_PACKET_SIZE;
     }
 
     private final void addFrame(

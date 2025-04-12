@@ -3,9 +3,10 @@ package good.damn.media.streaming.camera
 import android.media.MediaCodec
 import android.media.MediaFormat
 import android.util.Log
-import good.damn.media.streaming.camera.avc.MSUtilsAvc
+import good.damn.media.streaming.MSStreamConstantsPacket
 import good.damn.media.streaming.camera.avc.cache.MSFrame
 import good.damn.media.streaming.extensions.short
+import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentLinkedQueue
 
 class MSCameraCallbackDecoder
@@ -19,11 +20,17 @@ class MSCameraCallbackDecoder
         MSFrame
     >()
 
+    private var mSizeFrame = 0
+    private var mSizePacket = 0
+    private var mInputBuffer: ByteBuffer? = null
+
     fun addFrame(
         frame: MSFrame
     ) = mQueueFrames.add(
         frame
     )
+
+    fun clearQueue() = mQueueFrames.clear()
 
     override fun onInputBufferAvailable(
         codec: MediaCodec,
@@ -62,9 +69,7 @@ class MSCameraCallbackDecoder
     override fun onOutputFormatChanged(
         codec: MediaCodec,
         format: MediaFormat
-    ) {
-
-    }
+    ) = Unit
 
     private inline fun processOutputBuffer(
         index: Int,
@@ -80,34 +85,37 @@ class MSCameraCallbackDecoder
         codec: MediaCodec,
         index: Int
     ) {
-        val inp = codec.getInputBuffer(
+        mInputBuffer = codec.getInputBuffer(
             index
         )
 
-        if (inp == null) {
+        if (mInputBuffer == null) {
             Log.d(TAG, "processInputBuffer: NULL")
             return
         }
 
-        inp.clear()
-        var mSizeFrame = 0
+        mInputBuffer!!.clear()
+        mSizeFrame = 0
 
         if (mQueueFrames.isNotEmpty()) {
+            Log.d(TAG, "processInputBuffer: ")
             mQueueFrames.remove().packets.forEach {
                 it?.apply {
-                    val a = data.short(
-                        MSUtilsAvc.OFFSET_PACKET_SIZE
+                    mSizePacket = data.short(
+                        MSStreamConstantsPacket.OFFSET_PACKET_SIZE
                     )
-                    inp.put(
+
+                    mInputBuffer!!.put(
                         data,
-                        MSUtilsAvc.LEN_META,
-                        a
+                        MSStreamConstantsPacket.LEN_META,
+                        mSizePacket
                     )
-                    mSizeFrame += a
+
+                    mSizeFrame += mSizePacket
                 }
             }
         }
-
+        
         codec.queueInputBuffer(
             index,
             0,

@@ -4,12 +4,12 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
-import android.os.IBinder
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import good.damn.editor.mediastreaming.extensions.supportsForegroundService
 import good.damn.editor.mediastreaming.notification.MSNotifications
+import good.damn.media.streaming.service.MSServiceStreamImpl
+import kotlin.random.Random
 
 class MSServiceStreamForeground
 : Service() {
@@ -19,10 +19,10 @@ class MSServiceStreamForeground
     }
     
     private val mImpl = MSServiceStreamImpl()
-    
+
     override fun onCreate() {
         super.onCreate()
-        
+
         if (!applicationContext.supportsForegroundService()) {
             return
         }
@@ -37,14 +37,14 @@ class MSServiceStreamForeground
 
         ServiceCompat.startForeground(
             this,
-            1,
+            Random.nextInt(9806765),
             notification,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
             else 0
         )
     }
-
+    
     override fun onStartCommand(
         intent: Intent?,
         flags: Int,

@@ -5,10 +5,9 @@ import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
 import android.os.Build
 import android.os.Handler
-import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
-import good.damn.media.streaming.camera.models.MSCameraModelID
+import good.damn.media.streaming.camera.models.MSMCameraId
 import good.damn.media.streaming.misc.HandlerExecutor
 import java.util.LinkedList
 
@@ -30,11 +29,11 @@ class MSCamera(
             mCameraSession.targets = v
         }
 
-    var camera: MSCameraModelID? = null
+    var camera: MSMCameraId? = null
         private set
 
     fun openCameraStream(
-        cameraId: MSCameraModelID,
+        cameraId: MSMCameraId,
         handler: Handler
     ): Boolean {
         Log.d(TAG, "openCameraStream: $cameraId")
@@ -137,6 +136,6 @@ class MSCamera(
 }
 
 private data class Device(
-    val id: MSCameraModelID,
+    val id: MSMCameraId,
     var device: CameraDevice? = null
 )

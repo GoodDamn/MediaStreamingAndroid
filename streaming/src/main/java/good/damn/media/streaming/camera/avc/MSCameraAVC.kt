@@ -1,19 +1,11 @@
 package good.damn.media.streaming.camera.avc
 
-import android.graphics.Camera
-import android.hardware.camera2.CameraCharacteristics
-import android.media.MediaCodecInfo
 import android.media.MediaFormat
 import android.os.Handler
-import android.os.HandlerThread
-import android.provider.MediaStore.Audio.Media
-import android.view.Surface
 import good.damn.media.streaming.camera.MSCamera
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.avc.listeners.MSListenerOnGetFrameData
-import good.damn.media.streaming.camera.models.MSCameraModelID
-import good.damn.media.streaming.extensions.camera2.default
-import good.damn.media.streaming.extensions.camera2.getRotation
+import good.damn.media.streaming.camera.models.MSMCameraId
 
 class MSCameraAVC(
     manager: MSManagerCamera,
@@ -52,7 +44,7 @@ class MSCameraAVC(
     }
 
     fun start(
-        cameraId: MSCameraModelID,
+        cameraId: MSMCameraId,
         handler: Handler
     ) = handler.post {
         isRunning = true

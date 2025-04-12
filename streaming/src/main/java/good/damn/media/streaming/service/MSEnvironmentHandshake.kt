@@ -1,22 +1,14 @@
-package good.damn.editor.mediastreaming
+package good.damn.media.streaming.service
 
-import android.media.MediaFormat
-import android.os.Handler
-import good.damn.editor.mediastreaming.system.service.MSServiceStreamWrapper
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.MSTypeDecoderSettings
-import good.damn.media.streaming.camera.avc.MSCoder
-import good.damn.media.streaming.extensions.camera2.default
-import good.damn.media.streaming.extensions.toInetAddress
 import good.damn.media.streaming.network.client.tcp.MSClientTCP
 import good.damn.media.streaming.network.client.tcp.MSNetworkDecoderSettings
 import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
 import good.damn.media.streaming.network.server.tcp.MSServerTCP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.io.IOException
-import java.net.InetAddress
 import java.net.InetSocketAddress
 
 class MSEnvironmentHandshake {
@@ -39,19 +31,20 @@ class MSEnvironmentHandshake {
     )
 
     fun sendHandshakeSettings(
-        host: String,
-        settings: MSTypeDecoderSettings
+        userId: Int,
+        model: MSMHandshakeSendInfo
     ) = try {
         mNetworkHandshakeSettings.sendDecoderSettings(
+            userId,
             InetSocketAddress(
-                host,
+                model.host,
                 MSStreamConstants.PORT_HANDSHAKE
             ),
             mClient,
-            settings
+            model.settings
         )
     } catch (e: IOException) {
-        false
+        null
     }
 
     fun startListeningSettings() {

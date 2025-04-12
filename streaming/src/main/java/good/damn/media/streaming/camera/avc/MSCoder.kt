@@ -1,8 +1,6 @@
 package good.damn.media.streaming.camera.avc
 
 import android.media.MediaCodec
-import android.media.MediaCodecInfo
-import android.media.MediaFormat
 import good.damn.media.streaming.network.MSStateable
 
 abstract class MSCoder
@@ -10,15 +8,10 @@ abstract class MSCoder
 
     companion object {
         private const val TAG = "MSCoder"
-        const val TYPE_AVC = "video/avc"
+        const val MIME_TYPE_CODEC = "video/avc"
     }
 
     protected abstract val mCoder: MediaCodec
-
-    val capabilities: MediaCodecInfo.CodecCapabilities
-        get() = mCoder.codecInfo.getCapabilitiesForType(
-            MediaFormat.MIMETYPE_VIDEO_AVC
-        )
 
     var isRunning = false
         private set
