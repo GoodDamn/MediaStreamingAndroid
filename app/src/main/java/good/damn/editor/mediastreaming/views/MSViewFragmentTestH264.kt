@@ -2,10 +2,12 @@ package good.damn.editor.mediastreaming.views
 
 import android.content.Context
 import android.view.Gravity
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import androidx.appcompat.widget.AppCompatButton
 import androidx.appcompat.widget.AppCompatEditText
 import good.damn.editor.mediastreaming.MSApp
@@ -52,22 +54,31 @@ class MSViewFragmentTestH264(
         ).let {
             setBackgroundColor(0)
 
-            LinearLayout(
+            ScrollView(
                 context
-            ).apply {
-                layoutSurfaces = this
-                orientation = HORIZONTAL
+            ).let { scrollView ->
                 setBackgroundColor(0)
-
-                layoutParams = FrameLayout.LayoutParams(
-                    -2,
-                    -2
+                LinearLayout(
+                    context
                 ).apply {
-                    gravity = Gravity.CENTER_HORIZONTAL
+                    layoutSurfaces = this
+                    orientation = VERTICAL
+                    setBackgroundColor(0)
+
+                    layoutParams = FrameLayout.LayoutParams(
+                        -2,
+                        -2
+                    ).apply {
+                        gravity = Gravity.CENTER_HORIZONTAL
+                    }
+
+                    scrollView.addView(
+                        this
+                    )
                 }
 
                 it.addView(
-                    this
+                    scrollView
                 )
             }
 
