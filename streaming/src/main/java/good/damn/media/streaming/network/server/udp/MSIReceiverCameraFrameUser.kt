@@ -1,6 +1,7 @@
 package good.damn.media.streaming.network.server.udp
 
 import android.media.MediaFormat
+import android.os.Handler
 import android.view.Surface
 import android.view.SurfaceView
 import java.net.InetAddress
@@ -21,7 +22,8 @@ interface MSIReceiverCameraFrameUser {
         userId: Int,
         surfaceOutput: Surface,
         format: MediaFormat,
-        host: InetAddress?
+        host: InetAddress?,
+        handler: Handler
     )
     fun release()
     fun stop()

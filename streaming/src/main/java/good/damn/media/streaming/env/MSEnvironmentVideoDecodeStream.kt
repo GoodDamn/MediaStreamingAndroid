@@ -25,7 +25,6 @@ class MSEnvironmentVideoDecodeStream
     private val mHandlerPacketMissing = MSPacketMissingHandler()
     private val mBufferizerRemote = MSPacketBufferizer()
 
-    private var mThreadDecoding: HandlerThread? = null
     private var mHandlerDecoding: Handler? = null
 
     var isRunning = false
@@ -38,14 +37,15 @@ class MSEnvironmentVideoDecodeStream
     )
 
     fun start(
-        userId: Int,
         surfaceOutput: Surface,
         format: MediaFormat,
-        host: InetAddress?
+        host: InetAddress?,
+        handler: Handler
     ) {
         mHandlerPacketMissing.host = host
         mBufferizerRemote.unlock()
-        mHandlerDecoding?.apply {
+        handler.apply {
+            mHandlerDecoding = this
             removeCallbacks(
                 this@MSEnvironmentVideoDecodeStream
             )
@@ -55,23 +55,6 @@ class MSEnvironmentVideoDecodeStream
                     format
                 )
             }
-            return
-        }
-
-        HandlerThread(
-            "decodingEnvironment$userId"
-        ).apply {
-            start()
-            mThreadDecoding = this
-
-            mHandlerDecoding = Handler(
-                looper
-            )
-
-            startDecoder(
-                surfaceOutput,
-                format
-            )
         }
     }
 
@@ -106,13 +89,12 @@ class MSEnvironmentVideoDecodeStream
 
     fun release() {
         mDecoderVideo.release()
-        mThreadDecoding?.interrupt()
 
         mHandlerPacketMissing.release()
 
         mBufferizerRemote.lock()
         mBufferizerRemote.clear()
-        mThreadDecoding = null
+
         mHandlerDecoding = null
         isRunning = false
     }

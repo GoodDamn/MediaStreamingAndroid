@@ -1,6 +1,7 @@
 package good.damn.media.streaming.network.server.udp
 
 import android.media.MediaFormat
+import android.os.Handler
 import android.view.Surface
 import android.view.SurfaceView
 import good.damn.media.streaming.env.MSEnvironmentVideoDecodeStream
@@ -36,13 +37,14 @@ class MSReceiverCameraFrameUserDefault(
         userId: Int,
         surfaceOutput: Surface,
         format: MediaFormat,
-        host: InetAddress?
+        host: InetAddress?,
+        handler: Handler
     ) {
         mEnvDecode.start(
-            userId,
             surfaceOutput,
             format,
-            host
+            host,
+            handler
         )
     }
 
