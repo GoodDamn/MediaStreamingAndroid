@@ -46,6 +46,7 @@ class MSStreamCameraInput(
 
     fun stop() {
         mCamera.stop()
+        mFrameId = 0
     }
 
     fun release() {
@@ -65,8 +66,8 @@ class MSStreamCameraInput(
                     len
                 )
             }
-            //mFrameId++
-            //return
+            mFrameId++
+            return
         }
 
         subscribersFrame?.forEach {

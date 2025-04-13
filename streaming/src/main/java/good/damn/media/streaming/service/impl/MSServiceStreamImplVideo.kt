@@ -8,26 +8,20 @@ import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
 import good.damn.media.streaming.camera.MSStreamCameraInputConfig
-import good.damn.media.streaming.camera.MSStreamCameraInputFrame
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.toInetAddress
-import good.damn.media.streaming.models.handshake.MSMHandshakeResult
 import good.damn.media.streaming.network.client.MSClientUDP
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameRestore
 import good.damn.media.streaming.network.server.udp.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import java.nio.ByteBuffer
 import java.util.LinkedList
 
-class MSServiceStreamImplVideo
-: MSListenerOnSuccessHandshake {
+class MSServiceStreamImplVideo {
 
     companion object {
         private const val TAG = "MSServiceStreamImplVide"
     }
-
-    var onSuccessHandshake: MSListenerOnSuccessHandshake? = null
 
     private var mStreamCamera: MSStreamCameraInput? = null
     private var mServerRestorePackets: MSServerUDP? = null
@@ -92,6 +86,14 @@ class MSServiceStreamImplVideo
         )
     }
 
+    fun setCanSendFrames(
+        canSend: Boolean
+    ) {
+        mClientDefragment.client = if (
+            canSend
+        ) mClientStreamCamera else null
+    }
+
     fun startStreamingCamera(
         stream: MSMStream
     ) {
@@ -120,17 +122,5 @@ class MSServiceStreamImplVideo
         mStreamCamera?.release()
         mClientStreamCamera?.release()
         mServerRestorePackets?.release()
-    }
-
-    override suspend fun onSuccessHandshake(
-        result: MSMHandshakeResult?
-    ) {
-        if (result?.result == true) {
-            mClientDefragment.client = mClientStreamCamera
-        }
-
-        onSuccessHandshake?.onSuccessHandshake(
-            result
-        )
     }
 }

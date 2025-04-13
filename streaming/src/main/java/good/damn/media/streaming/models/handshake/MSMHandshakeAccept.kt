@@ -6,7 +6,8 @@ import java.net.InetAddress
 data class MSMHandshakeAccept(
     val settings: MSTypeDecoderSettings,
     val address: InetAddress,
-    val userId: Int
+    val userId: Int,
+    val config: ByteArray
 ) {
     override fun toString() = "$userId: ${address.hostAddress}"
 }

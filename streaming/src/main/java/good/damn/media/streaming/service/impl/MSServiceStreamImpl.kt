@@ -3,6 +3,7 @@ package good.damn.media.streaming.service.impl
 import android.content.Context
 import android.util.Log
 import good.damn.media.streaming.service.MSServiceStreamBinder
+import kotlin.random.Random
 
 class MSServiceStreamImpl {
 
@@ -15,26 +16,31 @@ class MSServiceStreamImpl {
         const val EXTRA_HOST = "h"
     }
 
+    private val mUserId = Random.nextInt()
 
-    private val mImplHandshake = MSServiceStreamImplHandshake()
-
-    private val mAccepterStreamConfig = MSAccepterStreamConfigHandshake(
-        mImplHandshake
+    private val mImplHandshake = MSServiceStreamImplHandshake(
+        mUserId
     )
 
-    private val mImplVideo = MSServiceStreamImplVideo().apply {
-        observeStreamConfig(
-            mAccepterStreamConfig
-        )
+    private val mImplVideo = MSServiceStreamImplVideo()
 
-        mImplHandshake.onSuccessHandshake = this
-    }
+    private val mAccepterStreamConfig = MSAccepterStreamConfigHandshake(
+        mImplHandshake,
+        mImplVideo
+    )
 
     private val mBinder = MSServiceStreamBinder(
+        mUserId,
         mImplVideo,
         mImplHandshake,
         mAccepterStreamConfig
     )
+
+    init {
+        mImplVideo.observeStreamConfig(
+            mAccepterStreamConfig
+        )
+    }
 
     fun startCommand(
         context: Context

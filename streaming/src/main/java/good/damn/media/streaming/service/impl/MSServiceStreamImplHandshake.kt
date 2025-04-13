@@ -13,16 +13,15 @@ import kotlinx.coroutines.withContext
 import java.net.InetAddress
 import kotlin.random.Random
 
-class MSServiceStreamImplHandshake
-: MSListenerOnHandshakeSettings {
+class MSServiceStreamImplHandshake(
+    private val userId: Int
+): MSListenerOnHandshakeSettings {
 
     companion object {
         private const val TAG = "MSServiceStreamImplHand"
     }
 
     private val mHandshakes = HashMap<Int, MSMHandshakeSave>()
-
-    private val mUserId = Random.nextInt()
 
     private var mHandshake: MSEnvironmentHandshake? = null
 
@@ -40,7 +39,8 @@ class MSServiceStreamImplHandshake
             MSMHandshakeAccept(
                 it.value.settings,
                 it.value.address,
-                it.key
+                it.key,
+                it.value.config
             )
         )
     }
@@ -51,7 +51,7 @@ class MSServiceStreamImplHandshake
         Dispatchers.IO
     ).launch {
         val result = mHandshake?.sendHandshakeSettings(
-            mUserId,
+            userId,
             model
         )
 
@@ -75,7 +75,8 @@ class MSServiceStreamImplHandshake
             result.userId
         ] = MSMHandshakeSave(
             result.settings,
-            result.address
+            result.address,
+            result.config
         )
 
         withContext(
@@ -90,5 +91,6 @@ class MSServiceStreamImplHandshake
 
 private data class MSMHandshakeSave(
     val settings: MSTypeDecoderSettings,
-    val address: InetAddress
+    val address: InetAddress,
+    val config: ByteArray
 )

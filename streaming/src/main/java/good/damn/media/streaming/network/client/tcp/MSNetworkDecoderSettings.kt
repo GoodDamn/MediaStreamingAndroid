@@ -63,6 +63,14 @@ class MSNetworkDecoderSettings
             Log.d(TAG, "sendDecoderSettings: ${it.key}(${dataKey.size}) ${it.value}")
         }
 
+        second.write(
+            config.size.toByteArray()
+        )
+
+        second.write(
+            config
+        )
+
         val isOk = first.read() == ANSWER_OK
 
         client.close()
@@ -146,16 +154,34 @@ class MSNetworkDecoderSettings
             map[key] = value
         }
 
-        Log.d(TAG, "onAcceptClient: OK")
-        out.write(ANSWER_OK)
+        // Stream Config size
+        if (inp.read(
+            bufferVal,
+            0,
+            4
+        ) < 0) {
+            return@run
+        }
+
+        val config = ByteArray(
+            bufferVal.integerBE(0)
+        )
+
+        if (inp.read(config) < 0) {
+            return@run
+        }
 
         onHandshakeSettings?.onHandshakeSettings(
             MSMHandshakeAccept(
                 map,
                 srcAddr,
-                userId
+                userId,
+                config
             )
         )
+
+        Log.d(TAG, "onAcceptClient: OK")
+        out.write(ANSWER_OK)
     }
 
 }

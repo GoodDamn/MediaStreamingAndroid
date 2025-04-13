@@ -4,7 +4,6 @@ import android.content.ComponentName
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
-import good.damn.media.streaming.models.MSMStream
 import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
 import good.damn.media.streaming.service.impl.MSListenerOnConnectUser
 import good.damn.media.streaming.service.impl.MSListenerOnSuccessHandshake
@@ -39,10 +38,10 @@ class MSCameraServiceConnection
         model
     )
 
-    fun startStreamingVideo(
-        stream: MSMStream
-    ) = mBinder?.startStreamingCamera(
-        stream
+    fun setCanSendFrames(
+        canReceive: Boolean
+    ) = mBinder?.setCanSendFrames(
+        canReceive
     )
 
     fun stopStreamingVideo() = mBinder

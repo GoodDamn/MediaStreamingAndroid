@@ -20,14 +20,16 @@ import good.damn.editor.mediastreaming.views.MSListenerOnChangeSurface
 import good.damn.editor.mediastreaming.views.MSViewFragmentTestH264
 import good.damn.editor.mediastreaming.views.MSViewStreamFrame
 import good.damn.editor.mediastreaming.views.dialogs.option.MSDialogOptionsH264
+import good.damn.media.streaming.MSStreamConstants
+import good.damn.media.streaming.MSStreamConstantsPacket
 import good.damn.media.streaming.env.MSEnvironmentGroupStream
-import good.damn.media.streaming.models.MSMStream
 import good.damn.media.streaming.MSTypeDecoderSettings
 import good.damn.media.streaming.camera.avc.MSCoder
 import good.damn.media.streaming.camera.models.MSMCameraId
 import good.damn.media.streaming.extensions.camera2.default
 import good.damn.media.streaming.extensions.hasUpOsVersion
-import good.damn.media.streaming.extensions.toInetAddress
+import good.damn.media.streaming.extensions.setIntegerOnPosition
+import good.damn.media.streaming.extensions.setShortOnPosition
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameUserDefault
 import good.damn.media.streaming.service.impl.MSListenerOnConnectUser
 import good.damn.media.streaming.service.impl.MSListenerOnSuccessHandshake
@@ -61,8 +63,6 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
         0, 0, 0, 1, 103, 66, -64, 41, -115, 104, 10, 3, -38, 66, 18, 16, 18, 15, 8, -124, 106,
         0, 0, 0, 1, 104, -50, 1, -88, 53, -56
     )*/
-
-    private var mTarget: MSMTarget? = null
 
     private val mOptionsHandshake = hashMapOf(
         MediaFormat.KEY_WIDTH to 640,
@@ -194,15 +194,25 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
         val ip = mView?.editTextHost?.text?.toString()
             ?: return
 
-        mTarget = MSMTarget(
-            ip,
-            cameraId
-        )
+        if (mServiceStreamWrapper.isStreamingVideo) {
+            mServiceStreamWrapper.stopStreamingVideo()
+        }
+
+        mServiceStreamWrapper.setCanSendFrames(false)
 
         mServiceStreamWrapper.sendHandshakeSettings(
             MSMHandshakeSendInfo(
-                ip.toInetAddress(),
-                mOptionsHandshake
+                ip,
+                mOptionsHandshake,
+                cameraId,
+                createDefaultMediaFormat(
+                    mOptionsHandshake
+                ).apply {
+                    setInteger(
+                        MediaFormat.KEY_ROTATION,
+                        0
+                    )
+                }
             ),
             this@MSActivityMain
         )
@@ -230,28 +240,8 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
             )
         }
 
-        if (mServiceStreamWrapper.isStreamingVideo) {
-            mServiceStreamWrapper.stopStreamingVideo()
-        }
-
-        val target = mTarget
-            ?: return
-
-        mServiceStreamWrapper.startStreamingVideo(
-            MSMStream(
-                result.userId,
-                target.ip,
-                target.camera,
-                createDefaultMediaFormat(
-                    mOptionsHandshake
-                ).apply {
-                    setInteger(
-                        MediaFormat.KEY_ROTATION,
-                        0
-                    )
-                }
-            )
-        )
+        Log.d(TAG, "onSuccessHandshake: ")
+        mServiceStreamWrapper.setCanSendFrames(true)
     }
 
     override fun onConnectUser(
@@ -294,10 +284,22 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
         val user = MSReceiverCameraFrameUserDefault(
             streamFrame
         )
+        
+        val configPacket = ByteArray(
+            MSStreamConstantsPacket.LEN_META
+        ) + model.config
 
-        /*user.setConfigFrame(
-            configFrame
-        )*/
+
+        configPacket.setShortOnPosition(
+            model.config.size,
+            MSStreamConstantsPacket.OFFSET_PACKET_SIZE,
+        )
+
+        Log.d(TAG, "onConnectUser: ${model.config.size} ${model.config.contentToString()}")
+
+        user.setConfigFrame(
+            configPacket
+        )
 
         mEnvGroupStream.putUser(
             model.userId,
@@ -320,24 +322,20 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
         )
     }
 
-    private inline fun createDefaultMediaFormat(
-        settings: MSTypeDecoderSettings
-    ) = MediaFormat.createVideoFormat(
-        MSCoder.MIMETYPE_CODEC,
-        0,
-        0
-    ).apply {
-        default()
-        settings.forEach {
-            setInteger(
-                it.key,
-                it.value
-            )
-        }
-    }
 }
 
-private data class MSMTarget(
-    val ip: String,
-    val camera: MSMCameraId
-)
+private inline fun createDefaultMediaFormat(
+    settings: MSTypeDecoderSettings
+) = MediaFormat.createVideoFormat(
+    MSCoder.MIMETYPE_CODEC,
+    0,
+    0
+).apply {
+    default()
+    settings.forEach {
+        setInteger(
+            it.key,
+            it.value
+        )
+    }
+}
