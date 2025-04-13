@@ -46,7 +46,7 @@ class MSServiceStreamImplHandshake
     }
 
     fun sendHandshakeSettings(
-        model: MSMHandshakeSendInfo
+        model: MSMHandshakeSendInfo?
     ) = CoroutineScope(
         Dispatchers.IO
     ).launch {

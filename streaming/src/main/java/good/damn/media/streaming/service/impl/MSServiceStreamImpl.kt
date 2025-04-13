@@ -15,12 +15,25 @@ class MSServiceStreamImpl {
         const val EXTRA_HOST = "h"
     }
 
-    private val mImplVideo = MSServiceStreamImplVideo()
+
     private val mImplHandshake = MSServiceStreamImplHandshake()
+
+    private val mAccepterStreamConfig = MSAccepterStreamConfigHandshake(
+        mImplHandshake
+    )
+
+    private val mImplVideo = MSServiceStreamImplVideo().apply {
+        observeStreamConfig(
+            mAccepterStreamConfig
+        )
+
+        mImplHandshake.onSuccessHandshake = this
+    }
 
     private val mBinder = MSServiceStreamBinder(
         mImplVideo,
-        mImplHandshake
+        mImplHandshake,
+        mAccepterStreamConfig
     )
 
     fun startCommand(

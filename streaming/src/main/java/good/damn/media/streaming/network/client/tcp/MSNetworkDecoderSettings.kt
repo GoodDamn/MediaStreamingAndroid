@@ -28,7 +28,8 @@ class MSNetworkDecoderSettings
         userId: Int,
         host: InetSocketAddress,
         client: MSClientTCP,
-        settings: MSTypeDecoderSettings
+        settings: MSTypeDecoderSettings,
+        config: ByteArray
     ) = client.connect(
         host
     )?.run {

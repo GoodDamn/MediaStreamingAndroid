@@ -5,5 +5,6 @@ import java.net.InetAddress
 
 data class MSMHandshakeSendInfo(
     val host: InetAddress,
-    val settings: MSTypeDecoderSettings
+    val settings: MSTypeDecoderSettings,
+    var config: ByteArray? = null
 )

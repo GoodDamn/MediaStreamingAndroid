@@ -3,6 +3,7 @@ package good.damn.media.streaming.service
 import android.os.Binder
 import good.damn.media.streaming.models.MSMStream
 import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
+import good.damn.media.streaming.service.impl.MSAccepterStreamConfigHandshake
 import good.damn.media.streaming.service.impl.MSListenerOnConnectUser
 import good.damn.media.streaming.service.impl.MSListenerOnSuccessHandshake
 import good.damn.media.streaming.service.impl.MSServiceStreamImplHandshake
@@ -10,7 +11,8 @@ import good.damn.media.streaming.service.impl.MSServiceStreamImplVideo
 
 class MSServiceStreamBinder(
     private val mImplVideo: MSServiceStreamImplVideo,
-    private val mImplHandshake: MSServiceStreamImplHandshake
+    private val mImplHandshake: MSServiceStreamImplHandshake,
+    private val mAccepterStreamConfig: MSAccepterStreamConfigHandshake
 ): Binder() {
 
     var onConnectUser: MSListenerOnConnectUser?
@@ -20,9 +22,9 @@ class MSServiceStreamBinder(
         }
 
     var onSuccessHandshake: MSListenerOnSuccessHandshake?
-        get() = mImplHandshake.onSuccessHandshake
+        get() = mImplVideo.onSuccessHandshake
         set(v) {
-            mImplHandshake.onSuccessHandshake = v
+            mImplVideo.onSuccessHandshake = v
         }
 
     fun requestConnectedUsers() = mImplHandshake
@@ -30,7 +32,7 @@ class MSServiceStreamBinder(
 
     fun sendHandshakeSettings(
         model: MSMHandshakeSendInfo
-    ) = mImplHandshake.sendHandshakeSettings(
+    ) = mAccepterStreamConfig.sendHandshakeSettings(
         model
     )
 

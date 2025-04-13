@@ -1,6 +1,8 @@
 package good.damn.media.streaming.env
 
 import good.damn.media.streaming.MSStreamConstants
+import good.damn.media.streaming.models.handshake.MSMHandshakeAccept
+import good.damn.media.streaming.models.handshake.MSMHandshakeResult
 import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
 import good.damn.media.streaming.network.client.tcp.MSClientTCP
 import good.damn.media.streaming.network.client.tcp.MSNetworkDecoderSettings
@@ -32,19 +34,24 @@ class MSEnvironmentHandshake {
 
     fun sendHandshakeSettings(
         userId: Int,
-        model: MSMHandshakeSendInfo
-    ) = try {
-        mNetworkHandshakeSettings.sendDecoderSettings(
-            userId,
-            InetSocketAddress(
-                model.host,
-                MSStreamConstants.PORT_HANDSHAKE
-            ),
-            mClient,
-            model.settings
-        )
-    } catch (e: IOException) {
-        null
+        model: MSMHandshakeSendInfo?
+    ): MSMHandshakeResult? {
+        model ?: return null
+
+        return try {
+            mNetworkHandshakeSettings.sendDecoderSettings(
+                userId,
+                InetSocketAddress(
+                    model.host,
+                    MSStreamConstants.PORT_HANDSHAKE
+                ),
+                mClient,
+                model.settings,
+                model.config!!
+            )
+        } catch (e: IOException) {
+            null
+        }
     }
 
     fun startListeningSettings() {
