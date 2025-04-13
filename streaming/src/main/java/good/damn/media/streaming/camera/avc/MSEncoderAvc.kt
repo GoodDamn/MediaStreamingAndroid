@@ -14,7 +14,7 @@ class MSEncoderAvc
 
     // may throws Exception with no h264 codec
     override val mCoder = MediaCodec.createEncoderByType(
-        MIME_TYPE_CODEC
+        MIMETYPE_CODEC
     )
 
     private val mCallbackEncoder = MSCameraCallbackEncoder()

@@ -4,8 +4,6 @@ import android.Manifest
 import android.media.MediaFormat
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.os.StrictMode
 import android.util.Log
 import android.view.Gravity
@@ -326,7 +324,7 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
     private inline fun createDefaultMediaFormat(
         settings: MSTypeDecoderSettings
     ) = MediaFormat.createVideoFormat(
-        MSCoder.MIME_TYPE_CODEC,
+        MSCoder.MIMETYPE_CODEC,
         0,
         0
     ).apply {
@@ -337,7 +335,6 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
                 it.value
             )
         }
-
     }
 }
 
