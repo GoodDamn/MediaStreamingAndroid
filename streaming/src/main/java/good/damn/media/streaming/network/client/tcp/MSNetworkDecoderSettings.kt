@@ -145,6 +145,7 @@ class MSNetworkDecoderSettings
             map[key] = value
         }
 
+        Log.d(TAG, "onAcceptClient: OK")
         out.write(ANSWER_OK)
 
         onHandshakeSettings?.onHandshakeSettings(

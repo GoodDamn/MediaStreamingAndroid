@@ -25,6 +25,9 @@ class MSServiceStreamBinder(
             mImplHandshake.onSuccessHandshake = v
         }
 
+    fun requestConnectedUsers() = mImplHandshake
+        .requestConnectedUsers()
+
     fun sendHandshakeSettings(
         model: MSMHandshakeSendInfo
     ) = mImplHandshake.sendHandshakeSettings(

@@ -36,6 +36,11 @@ class MSPacketMissingHandler
         )
     }
 
+    fun release() {
+        host = null
+        mClient.release()
+    }
+
     override fun onEachMissedPacket(
         frameId: Int,
         packetId: Short

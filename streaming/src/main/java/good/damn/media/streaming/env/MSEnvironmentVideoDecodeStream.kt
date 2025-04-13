@@ -5,6 +5,8 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
+import good.damn.media.streaming.camera.avc.cache.MSFrame
+import good.damn.media.streaming.camera.avc.cache.MSPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.writeDefault
 import good.damn.media.streaming.network.server.udp.MSPacketMissingHandler
@@ -73,6 +75,23 @@ class MSEnvironmentVideoDecodeStream
         }
     }
 
+    fun setConfigFrame(
+        data: ByteArray
+    ) {
+        mDecoderVideo.addFrame(
+            MSFrame(
+                0,
+                arrayOf(
+                    MSPacket(
+                        0,
+                        data
+                    )
+                ),
+                1
+            )
+        )
+    }
+
     fun stop() {
         if (!isRunning) {
             return
@@ -87,8 +106,12 @@ class MSEnvironmentVideoDecodeStream
 
     fun release() {
         mDecoderVideo.release()
+        mThreadDecoding?.interrupt()
 
-        mThreadDecoding?.quit()
+        mHandlerPacketMissing.release()
+
+        mBufferizerRemote.lock()
+        mBufferizerRemote.clear()
         mThreadDecoding = null
         mHandlerDecoding = null
         isRunning = false

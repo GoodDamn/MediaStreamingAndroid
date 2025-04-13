@@ -1,10 +1,12 @@
 package good.damn.media.streaming.network.client
 
+import android.util.Log
 import good.damn.media.streaming.extensions.toInetAddress
 import good.damn.media.streaming.network.MSStateable
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+import kotlin.math.log
 
 class MSClientUDP(
     port: Int
@@ -43,9 +45,10 @@ class MSClientUDP(
     }
 
     fun release() {
-        mSocket.apply {
-            disconnect()
-            close()
+        try {
+            mSocket.close()
+        } catch (e: Exception) {
+            Log.d(TAG, "release: ${e.message}")
         }
     }
 }

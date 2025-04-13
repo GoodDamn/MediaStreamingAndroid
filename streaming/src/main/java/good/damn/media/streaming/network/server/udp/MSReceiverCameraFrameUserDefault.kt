@@ -16,6 +16,14 @@ class MSReceiverCameraFrameUserDefault(
 
     private val mEnvDecode = MSEnvironmentVideoDecodeStream()
 
+    override fun setConfigFrame(
+        data: ByteArray
+    ) {
+        mEnvDecode.setConfigFrame(
+            data
+        )
+    }
+
     override fun receiveUserFrame(
         data: ByteArray
     ) {

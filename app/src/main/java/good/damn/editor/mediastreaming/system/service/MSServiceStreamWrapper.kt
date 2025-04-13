@@ -35,6 +35,9 @@ class MSServiceStreamWrapper {
     var isStreamingVideo = false
         private set
 
+    fun requestConnectedUsers() = mServiceConnectionStream
+        .requestConnectedUsers()
+
     fun sendHandshakeSettings(
         model: MSMHandshakeSendInfo,
         onSuccessHandshake: MSListenerOnSuccessHandshake
@@ -104,7 +107,7 @@ class MSServiceStreamWrapper {
     fun unbind(
         context: Context?
     ) {
-        Log.d(TAG, "unbindCamera: $isBound")
+        Log.d(TAG, "unbindCamera: $isBound $isStarted $context")
         context ?: return
 
         if (!isBound || !isStarted) {

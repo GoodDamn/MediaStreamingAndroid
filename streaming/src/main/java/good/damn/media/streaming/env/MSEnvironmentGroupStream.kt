@@ -44,7 +44,7 @@ class MSEnvironmentGroupStream {
         mUsers.remove(userId)
     }
 
-    fun start() {
+    fun startReceivingFrames() {
         mServerVideo.start()
     }
 

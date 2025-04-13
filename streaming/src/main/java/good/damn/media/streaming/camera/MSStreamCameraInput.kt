@@ -13,6 +13,7 @@ import good.damn.media.streaming.camera.models.MSMCameraId
 import good.damn.media.streaming.extensions.setIntegerOnPosition
 import good.damn.media.streaming.extensions.setShortOnPosition
 import java.nio.ByteBuffer
+import kotlin.math.log
 import kotlin.random.Random
 
 class MSStreamCameraInput(
@@ -30,6 +31,9 @@ class MSStreamCameraInput(
     )
 
     private var mUserId = Random.nextInt()
+
+    var configFrame = ByteArray(0)
+        private set
 
     val bufferizer = MSPacketBufferizer()
 
@@ -71,6 +75,15 @@ class MSStreamCameraInput(
         offset: Int,
         len: Int
     ) {
+        if (mFrameId == 0) {
+            configFrame = ByteArray(len)
+            bufferData.get(
+                configFrame
+            )
+
+            Log.d(TAG, "onGetFrameData: ${configFrame.contentToString()}")
+        }
+
         var i = offset
 
         var packetCount = len / PACKET_MAX_SIZE

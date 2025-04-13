@@ -30,6 +30,9 @@ class MSCameraServiceConnection
             mBinder?.onSuccessHandshake = v
         }
 
+    fun requestConnectedUsers() = mBinder
+        ?.requestConnectedUsers()
+
     fun sendHandshakeSettings(
         model: MSMHandshakeSendInfo
     ) = mBinder?.sendHandshakeSettings(
@@ -58,8 +61,8 @@ class MSCameraServiceConnection
         name: ComponentName?
     ) {
         Log.d(TAG, "onServiceDisconnected: ")
-        mBinder?.onConnectUser = null
-        mBinder?.onSuccessHandshake = null
+        onConnectUser = null
+        onSuccessHandshake = null
         mBinder = null
     }
 

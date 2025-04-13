@@ -9,6 +9,10 @@ interface MSIReceiverCameraFrameUser {
 
     val surfaceView: SurfaceView
 
+    fun setConfigFrame(
+        data: ByteArray
+    )
+
     fun receiveUserFrame(
         data: ByteArray
     )

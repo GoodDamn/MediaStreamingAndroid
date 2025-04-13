@@ -98,7 +98,6 @@ class MSCameraCallbackDecoder
         mSizeFrame = 0
 
         if (mQueueFrames.isNotEmpty()) {
-            Log.d(TAG, "processInputBuffer: ")
             mQueueFrames.remove().packets.forEach {
                 it?.apply {
                     mSizePacket = data.short(

@@ -4,6 +4,8 @@ import android.Manifest
 import android.media.MediaFormat
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.StrictMode
 import android.util.Log
 import android.view.Gravity
@@ -54,9 +56,13 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
 
     private val mEnvGroupStream = MSEnvironmentGroupStream()
 
-    private val mServiceStreamWrapper = MSServiceStreamWrapper().apply {
-        onConnectUser = this@MSActivityMain
-    }
+    private val mServiceStreamWrapper = MSServiceStreamWrapper()
+
+    private val configFrame = byteArrayOf(
+        0, 0, 0, 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 1, 103, 66, -64, 41, -115, 104, 10, 3, -38, 66, 18, 16, 18, 15, 8, -124, 106,
+        0, 0, 0, 1, 104, -50, 1, -88, 53, -56
+    )
 
     private var mTarget: MSMTarget? = null
 
@@ -72,18 +78,25 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
 
     override fun onResume() {
         super.onResume()
-        mServiceStreamWrapper.bind(
-            context
-        )
+        mServiceStreamWrapper.apply {
+            onConnectUser = this@MSActivityMain
+            //bind(context)
+            requestConnectedUsers()
+
+            if (isBound) {
+                mEnvGroupStream.startReceivingFrames()
+            }
+        }
     }
 
     override fun onPause() {
         mEnvGroupStream.stop()
-        //mView?.layoutSurfaces?.removeAllViews()
+        mView?.layoutSurfaces?.removeAllViews()
 
-        mServiceStreamWrapper.unbind(
-            context
-        )
+        mServiceStreamWrapper.apply {
+            onConnectUser = null
+            //unbind(context)
+        }
 
         super.onPause()
     }
@@ -163,7 +176,7 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
             bind(context)
         }
 
-        mEnvGroupStream.start()
+        mEnvGroupStream.startReceivingFrames()
     }
 
 
@@ -246,6 +259,7 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
     override fun onConnectUser(
         model: MSMHandshakeAccept
     ) {
+        Log.d(TAG, "onConnectUser: ${mEnvGroupStream.getUser(model.userId)}")
         mEnvGroupStream.getUser(
             model.userId
         )?.apply {
@@ -282,6 +296,10 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
 
         val user = MSReceiverCameraFrameUserDefault(
             streamFrame
+        )
+
+        user.setConfigFrame(
+            configFrame
         )
 
         mEnvGroupStream.putUser(

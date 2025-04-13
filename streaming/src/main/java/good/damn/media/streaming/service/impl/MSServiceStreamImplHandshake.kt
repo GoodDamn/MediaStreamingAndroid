@@ -1,5 +1,6 @@
 package good.damn.media.streaming.service.impl
 
+import android.util.Log
 import good.damn.media.streaming.MSTypeDecoderSettings
 import good.damn.media.streaming.env.MSEnvironmentHandshake
 import good.damn.media.streaming.models.handshake.MSMHandshakeAccept
@@ -9,12 +10,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.net.InetAddress
 import kotlin.random.Random
 
 class MSServiceStreamImplHandshake
 : MSListenerOnHandshakeSettings {
 
-    private val mHandshakes = HashMap<Int, MSTypeDecoderSettings>()
+    companion object {
+        private const val TAG = "MSServiceStreamImplHand"
+    }
+
+    private val mHandshakes = HashMap<Int, MSMHandshakeSave>()
 
     private val mUserId = Random.nextInt()
 
@@ -27,6 +33,16 @@ class MSServiceStreamImplHandshake
         mHandshake = MSEnvironmentHandshake().apply {
             onHandshakeSettings = this@MSServiceStreamImplHandshake
         }
+    }
+
+    fun requestConnectedUsers() = mHandshakes.forEach {
+        onConnectUser?.onConnectUser(
+            MSMHandshakeAccept(
+                it.value.settings,
+                it.value.address,
+                it.key
+            )
+        )
     }
 
     fun sendHandshakeSettings(
@@ -57,7 +73,10 @@ class MSServiceStreamImplHandshake
     ) {
         mHandshakes[
             result.userId
-        ] = result.settings
+        ] = MSMHandshakeSave(
+            result.settings,
+            result.address
+        )
 
         withContext(
             Dispatchers.Main
@@ -68,3 +87,8 @@ class MSServiceStreamImplHandshake
         }
     }
 }
+
+private data class MSMHandshakeSave(
+    val settings: MSTypeDecoderSettings,
+    val address: InetAddress
+)
