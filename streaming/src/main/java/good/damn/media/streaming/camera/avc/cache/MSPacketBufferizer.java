@@ -8,6 +8,8 @@ import androidx.annotation.Nullable;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import kotlin.jvm.JvmInline;
+
 public final class MSPacketBufferizer {
 
     private static final String TAG = "MSPacketBufferizer";

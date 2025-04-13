@@ -56,11 +56,11 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
 
     private val mServiceStreamWrapper = MSServiceStreamWrapper()
 
-    private val configFrame = byteArrayOf(
+    /*private val configFrame = byteArrayOf(
         0, 0, 0, 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 1, 103, 66, -64, 41, -115, 104, 10, 3, -38, 66, 18, 16, 18, 15, 8, -124, 106,
         0, 0, 0, 1, 104, -50, 1, -88, 53, -56
-    )
+    )*/
 
     private var mTarget: MSMTarget? = null
 
@@ -257,7 +257,6 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
     override fun onConnectUser(
         model: MSMHandshakeAccept
     ) {
-        Log.d(TAG, "onConnectUser: ${mEnvGroupStream.getUser(model.userId)}")
         mEnvGroupStream.getUser(
             model.userId
         )?.apply {
@@ -296,9 +295,9 @@ MSListenerOnSelectCamera, MSListenerOnSuccessHandshake, MSListenerOnConnectUser 
             streamFrame
         )
 
-        user.setConfigFrame(
+        /*user.setConfigFrame(
             configFrame
-        )
+        )*/
 
         mEnvGroupStream.putUser(
             model.userId,

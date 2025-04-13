@@ -4,6 +4,7 @@ import android.media.MediaCodec
 import android.media.MediaFormat
 import android.util.Log
 import good.damn.media.streaming.camera.avc.listeners.MSListenerOnGetFrameData
+import good.damn.media.streaming.extensions.contentToString
 
 class MSCameraCallbackEncoder
 : MediaCodec.Callback() {
