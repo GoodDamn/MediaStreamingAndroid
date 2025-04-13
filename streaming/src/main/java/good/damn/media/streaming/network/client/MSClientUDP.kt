@@ -1,12 +1,9 @@
 package good.damn.media.streaming.network.client
 
 import android.util.Log
-import good.damn.media.streaming.extensions.toInetAddress
-import good.damn.media.streaming.network.MSStateable
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
-import kotlin.math.log
 
 class MSClientUDP(
     port: Int
@@ -30,7 +27,7 @@ class MSClientUDP(
         this.port = port
     }
 
-    fun sendToStream(
+    fun send(
         data: ByteArray
     ) {
         mPacket.setData(

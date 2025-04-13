@@ -86,9 +86,11 @@ public final class MSPacketBufferizer {
     public final void removeFirstFrameQueueByFrameId(
         int frameId
     ) {
-        mQueues[
-            hashFrame(frameId)
-        ].queue.removeFirst();
+        try {
+            mQueues[
+              hashFrame(frameId)
+            ].queue.removeFirst();
+        } catch (Exception ignored) {}
     }
 
     public final void write(

@@ -49,7 +49,7 @@ class MSStreamAudioInput
         position: Int,
         len: Int
     ) {
-        mClientAudio.sendToStream(
+        mClientAudio.send(
             samples
         )
     }

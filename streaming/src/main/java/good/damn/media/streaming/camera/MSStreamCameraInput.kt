@@ -2,17 +2,10 @@ package good.damn.media.streaming.camera
 
 import android.media.MediaFormat
 import android.os.Handler
-import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.avc.MSCameraAVC
-import good.damn.media.streaming.MSStreamConstantsPacket
-import good.damn.media.streaming.MSStreamConstantsPacket.Companion.LEN_META
-import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.camera.avc.listeners.MSListenerOnGetFrameData
 import good.damn.media.streaming.camera.models.MSMCameraId
-import good.damn.media.streaming.extensions.setIntegerOnPosition
-import good.damn.media.streaming.extensions.setShortOnPosition
 import java.nio.ByteBuffer
-import kotlin.random.Random
 
 class MSStreamCameraInput(
     manager: MSManagerCamera
@@ -27,7 +20,8 @@ class MSStreamCameraInput(
         this@MSStreamCameraInput
     )
 
-    var subscribers: List<MSStreamCameraInputSubscriber>? = null
+    var subscribersFrame: List<MSStreamCameraInputFrame>? = null
+    var subscribersConfig: List<MSStreamCameraInputConfig>? = null
 
     val isRunning: Boolean
         get() = mCamera.isRunning
@@ -64,7 +58,7 @@ class MSStreamCameraInput(
         len: Int
     ) {
         if (mFrameId == 0) {
-            subscribers?.forEach {
+            subscribersConfig?.forEach {
                 it.onGetCameraConfigStream(
                     bufferData,
                     offset,
@@ -75,7 +69,7 @@ class MSStreamCameraInput(
             //return
         }
 
-        subscribers?.forEach {
+        subscribersFrame?.forEach {
             it.onGetCameraFrame(
                 mFrameId,
                 bufferData,
