@@ -134,6 +134,8 @@ class MSEnvironmentVideoDecodeStream
             return
         }
 
+        mDecoderVideo.showNextFrame()
+
         var capturedTime: Long
         var currentTime: Long
 
