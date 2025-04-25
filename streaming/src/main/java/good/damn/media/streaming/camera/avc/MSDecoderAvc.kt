@@ -5,6 +5,7 @@ import android.media.MediaFormat
 import android.util.Log
 import android.view.Surface
 import good.damn.media.streaming.camera.MSCameraCallbackDecoder
+import good.damn.media.streaming.camera.MSCameraCodecBuffers
 import good.damn.media.streaming.camera.avc.cache.MSFrame
 
 class MSDecoderAvc
@@ -19,14 +20,17 @@ class MSDecoderAvc
         MIMETYPE_CODEC
     )
 
-    private val mCallbackDecoder = MSCameraCallbackDecoder()
+    private val mCodecBuffers = MSCameraCodecBuffers()
+    private val mCallbackDecoder = MSCameraCallbackDecoder(
+        mCodecBuffers
+    )
 
     var isConfigured = false
         private set
 
     override fun stop() {
         isConfigured = false
-        mCallbackDecoder.clearQueue()
+        mCodecBuffers.clearQueue()
         super.stop()
     }
 
@@ -61,9 +65,12 @@ class MSDecoderAvc
         )
     }
 
+    fun showNextFrame() = mCodecBuffers
+        .showNextFrame(mCoder)
+
     fun addFrame(
         frame: MSFrame
-    ) = mCallbackDecoder.addFrame(
+    ) = mCodecBuffers.addFrame(
         frame
     )
     
