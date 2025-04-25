@@ -36,7 +36,10 @@ class MSCameraCodecBuffers {
         index
     )
 
-    fun clearQueue() = mQueueFrames.clear()
+    fun clearQueue() {
+        mQueueFrames.clear()
+        mQueueAvailableBuffers.clear()
+    }
 
     fun showNextFrame(
         codec: MediaCodec
