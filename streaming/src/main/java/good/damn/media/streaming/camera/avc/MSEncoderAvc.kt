@@ -13,7 +13,7 @@ class MSEncoderAvc
     }
 
     // may throws Exception with no h264 codec
-    override val mCoder = MediaCodec.createEncoderByType(
+    override val codec = MediaCodec.createEncoderByType(
         MIMETYPE_CODEC
     )
 
@@ -27,7 +27,7 @@ class MSEncoderAvc
 
     fun configure(
         format: MediaFormat
-    ) = mCoder.run {
+    ) = codec.run {
         setCallback(
             mCallbackEncoder
         )
@@ -40,5 +40,5 @@ class MSEncoderAvc
         )
     }
 
-    fun createInputSurface() = mCoder.createInputSurface()
+    fun createInputSurface() = codec.createInputSurface()
 }

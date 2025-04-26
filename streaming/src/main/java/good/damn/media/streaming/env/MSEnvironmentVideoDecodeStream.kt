@@ -4,6 +4,7 @@ import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
+import good.damn.media.streaming.camera.MSCameraCodecBuffers
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
 import good.damn.media.streaming.camera.avc.cache.MSFrame
 import good.damn.media.streaming.camera.avc.cache.MSPacket
@@ -21,7 +22,8 @@ class MSEnvironmentVideoDecodeStream
         private const val TAG = "MSStreamEnvironmentCame"
     }
 
-    private val mDecoderVideo = MSDecoderAvc()
+    private val mCodecBuffers = MSCameraCodecBuffers()
+    private val mDecoderVideo = MSDecoderAvc(mCodecBuffers)
     private val mHandlerPacketMissing = MSPacketMissingHandler()
     private val mBufferizerRemote = MSPacketBufferizer()
 
@@ -61,7 +63,7 @@ class MSEnvironmentVideoDecodeStream
     fun setConfigFrame(
         data: ByteArray
     ) {
-        mDecoderVideo.addFrame(
+        mCodecBuffers.addFrame(
             MSFrame(
                 0,
                 arrayOf(
@@ -83,6 +85,7 @@ class MSEnvironmentVideoDecodeStream
         mBufferizerRemote.lock()
         mBufferizerRemote.clear()
         mDecoderVideo.stop()
+        mCodecBuffers.clearQueue()
 
         isRunning = false
     }
@@ -95,6 +98,7 @@ class MSEnvironmentVideoDecodeStream
         mBufferizerRemote.lock()
         mBufferizerRemote.clear()
 
+        mCodecBuffers.clearQueue()
         mHandlerDecoding = null
         isRunning = false
     }
@@ -134,7 +138,9 @@ class MSEnvironmentVideoDecodeStream
             return
         }
 
-        mDecoderVideo.showNextFrame()
+        mCodecBuffers.showNextFrame(
+            mDecoderVideo.codec
+        )
 
         var capturedTime: Long
         var currentTime: Long
@@ -161,9 +167,7 @@ class MSEnvironmentVideoDecodeStream
             // Waiting when frame will be combined
             // if it's not, drop it because of timeout
             if (currentPacketSize >= frame.packets.size) {
-                mDecoderVideo.addFrame(
-                    frame
-                )
+                mCodecBuffers.addFrame(frame)
                 break
             }
 

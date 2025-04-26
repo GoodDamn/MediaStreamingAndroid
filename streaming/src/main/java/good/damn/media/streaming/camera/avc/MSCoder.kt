@@ -12,23 +12,23 @@ abstract class MSCoder
         const val MIMETYPE_CODEC = MediaFormat.MIMETYPE_VIDEO_AVC
     }
 
-    protected abstract val mCoder: MediaCodec
+    abstract val codec: MediaCodec
 
     var isRunning = false
         private set
 
     override fun start() {
         isRunning = true
-        mCoder.start()
+        codec.start()
     }
 
     override fun release() {
         isRunning = false
-        mCoder.release()
+        codec.release()
     }
 
     override fun stop() {
         isRunning = false
-        mCoder.reset()
+        codec.reset()
     }
 }
