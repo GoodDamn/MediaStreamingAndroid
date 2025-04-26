@@ -1,11 +1,13 @@
-package good.damn.media.streaming
+package good.damn.media.streaming.env
 
 import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
-import android.util.Log
 import android.view.Surface
+import good.damn.media.streaming.camera.MSCameraCodecBuffers
 import good.damn.media.streaming.camera.avc.MSDecoderAvc
+import good.damn.media.streaming.camera.avc.cache.MSFrame
+import good.damn.media.streaming.camera.avc.cache.MSPacket
 import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.writeDefault
 import good.damn.media.streaming.network.server.udp.MSPacketMissingHandler
@@ -20,11 +22,11 @@ class MSEnvironmentVideoDecodeStream
         private const val TAG = "MSStreamEnvironmentCame"
     }
 
-    private val mDecoderVideo = MSDecoderAvc()
+    private val mCodecBuffers = MSCameraCodecBuffers()
+    private val mDecoderVideo = MSDecoderAvc(mCodecBuffers)
     private val mHandlerPacketMissing = MSPacketMissingHandler()
     private val mBufferizerRemote = MSPacketBufferizer()
 
-    private var mThreadDecoding: HandlerThread? = null
     private var mHandlerDecoding: Handler? = null
 
     var isRunning = false
@@ -37,14 +39,15 @@ class MSEnvironmentVideoDecodeStream
     )
 
     fun start(
-        userId: Int,
         surfaceOutput: Surface,
         format: MediaFormat,
-        host: InetAddress?
+        host: InetAddress?,
+        handler: Handler
     ) {
         mHandlerPacketMissing.host = host
         mBufferizerRemote.unlock()
-        mHandlerDecoding?.apply {
+        handler.apply {
+            mHandlerDecoding = this
             removeCallbacks(
                 this@MSEnvironmentVideoDecodeStream
             )
@@ -54,24 +57,24 @@ class MSEnvironmentVideoDecodeStream
                     format
                 )
             }
-            return
         }
+    }
 
-        HandlerThread(
-            "decodingEnvironment$userId"
-        ).apply {
-            start()
-            mThreadDecoding = this
-
-            mHandlerDecoding = Handler(
-                looper
+    fun setConfigFrame(
+        data: ByteArray
+    ) {
+        mCodecBuffers.addFrame(
+            MSFrame(
+                0,
+                arrayOf(
+                    MSPacket(
+                        0,
+                        data
+                    )
+                ),
+                1
             )
-
-            startDecoder(
-                surfaceOutput,
-                format
-            )
-        }
+        )
     }
 
     fun stop() {
@@ -82,6 +85,7 @@ class MSEnvironmentVideoDecodeStream
         mBufferizerRemote.lock()
         mBufferizerRemote.clear()
         mDecoderVideo.stop()
+        mCodecBuffers.clearQueue()
 
         isRunning = false
     }
@@ -89,8 +93,12 @@ class MSEnvironmentVideoDecodeStream
     fun release() {
         mDecoderVideo.release()
 
-        mThreadDecoding?.quit()
-        mThreadDecoding = null
+        mHandlerPacketMissing.release()
+
+        mBufferizerRemote.lock()
+        mBufferizerRemote.clear()
+
+        mCodecBuffers.clearQueue()
         mHandlerDecoding = null
         isRunning = false
     }
@@ -130,6 +138,10 @@ class MSEnvironmentVideoDecodeStream
             return
         }
 
+        mCodecBuffers.showNextFrame(
+            mDecoderVideo.codec
+        )
+
         var capturedTime: Long
         var currentTime: Long
 
@@ -155,9 +167,7 @@ class MSEnvironmentVideoDecodeStream
             // Waiting when frame will be combined
             // if it's not, drop it because of timeout
             if (currentPacketSize >= frame.packets.size) {
-                mDecoderVideo.addFrame(
-                    frame
-                )
+                mCodecBuffers.addFrame(frame)
                 break
             }
 

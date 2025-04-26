@@ -1,10 +1,10 @@
 package good.damn.media.streaming.network.server.udp
 
 import android.media.MediaFormat
-import android.util.Log
+import android.os.Handler
 import android.view.Surface
 import android.view.SurfaceView
-import good.damn.media.streaming.MSEnvironmentVideoDecodeStream
+import good.damn.media.streaming.env.MSEnvironmentVideoDecodeStream
 import java.net.InetAddress
 
 class MSReceiverCameraFrameUserDefault(
@@ -16,6 +16,14 @@ class MSReceiverCameraFrameUserDefault(
     }
 
     private val mEnvDecode = MSEnvironmentVideoDecodeStream()
+
+    override fun setConfigFrame(
+        data: ByteArray
+    ) {
+        mEnvDecode.setConfigFrame(
+            data
+        )
+    }
 
     override fun receiveUserFrame(
         data: ByteArray
@@ -29,13 +37,14 @@ class MSReceiverCameraFrameUserDefault(
         userId: Int,
         surfaceOutput: Surface,
         format: MediaFormat,
-        host: InetAddress?
+        host: InetAddress?,
+        handler: Handler
     ) {
         mEnvDecode.start(
-            userId,
             surfaceOutput,
             format,
-            host
+            host,
+            handler
         )
     }
 

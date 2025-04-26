@@ -2,18 +2,14 @@ package good.damn.editor.mediastreaming.system.service
 
 import android.content.Context
 import android.content.Intent
-import android.media.MediaFormat
 import android.util.Log
 import good.damn.editor.mediastreaming.extensions.supportsForegroundService
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStream
 import good.damn.editor.mediastreaming.system.service.serv.MSServiceStreamForeground
-import good.damn.media.streaming.MSMStream
-import good.damn.media.streaming.MSTypeDecoderSettings
-import good.damn.media.streaming.camera.models.MSMCameraId
 import good.damn.media.streaming.service.MSCameraServiceConnection
-import good.damn.media.streaming.service.MSListenerOnConnectUser
-import good.damn.media.streaming.service.MSListenerOnSuccessHandshake
-import good.damn.media.streaming.service.MSMHandshakeSendInfo
+import good.damn.media.streaming.service.impl.MSListenerOnConnectUser
+import good.damn.media.streaming.service.impl.MSListenerOnSuccessHandshake
+import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
 
 class MSServiceStreamWrapper {
 
@@ -38,6 +34,9 @@ class MSServiceStreamWrapper {
     var isStreamingVideo = false
         private set
 
+    fun requestConnectedUsers() = mServiceConnectionStream
+        .requestConnectedUsers()
+
     fun sendHandshakeSettings(
         model: MSMHandshakeSendInfo,
         onSuccessHandshake: MSListenerOnSuccessHandshake
@@ -46,16 +45,15 @@ class MSServiceStreamWrapper {
         sendHandshakeSettings(
             model
         )
-    }
 
-    fun startStreamingVideo(
-        stream: MSMStream
-    ) {
-        mServiceConnectionStream.startStreamingVideo(
-            stream
-        )
         isStreamingVideo = true
     }
+
+    fun setCanSendFrames(
+        canReceive: Boolean
+    ) = mServiceConnectionStream.setCanSendFrames(
+        canReceive
+    )
 
     fun stopStreamingVideo() {
         mServiceConnectionStream
@@ -107,7 +105,7 @@ class MSServiceStreamWrapper {
     fun unbind(
         context: Context?
     ) {
-        Log.d(TAG, "unbindCamera: $isBound")
+        Log.d(TAG, "unbindCamera: $isBound $isStarted $context")
         context ?: return
 
         if (!isBound || !isStarted) {

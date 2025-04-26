@@ -8,6 +8,8 @@ import androidx.annotation.Nullable;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import kotlin.jvm.JvmInline;
+
 public final class MSPacketBufferizer {
 
     private static final String TAG = "MSPacketBufferizer";
@@ -84,9 +86,11 @@ public final class MSPacketBufferizer {
     public final void removeFirstFrameQueueByFrameId(
         int frameId
     ) {
-        mQueues[
-            hashFrame(frameId)
-        ].queue.removeFirst();
+        try {
+            mQueues[
+              hashFrame(frameId)
+            ].queue.removeFirst();
+        } catch (Exception ignored) {}
     }
 
     public final void write(

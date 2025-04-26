@@ -1,6 +1,10 @@
-package good.damn.media.streaming.service
+package good.damn.media.streaming.service.impl
 
+import android.util.Log
 import good.damn.media.streaming.MSTypeDecoderSettings
+import good.damn.media.streaming.env.MSEnvironmentHandshake
+import good.damn.media.streaming.models.handshake.MSMHandshakeAccept
+import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
 import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -9,12 +13,15 @@ import kotlinx.coroutines.withContext
 import java.net.InetAddress
 import kotlin.random.Random
 
-class MSServiceStreamImplHandshake
-: MSListenerOnHandshakeSettings {
+class MSServiceStreamImplHandshake(
+    private val userId: Int
+): MSListenerOnHandshakeSettings {
 
-    private val mHandshakes = HashMap<Int, MSTypeDecoderSettings>()
+    companion object {
+        private const val TAG = "MSServiceStreamImplHand"
+    }
 
-    private val mUserId = Random.nextInt()
+    private val mHandshakes = HashMap<Int, MSMHandshakeSave>()
 
     private var mHandshake: MSEnvironmentHandshake? = null
 
@@ -27,13 +34,24 @@ class MSServiceStreamImplHandshake
         }
     }
 
+    fun requestConnectedUsers() = mHandshakes.forEach {
+        onConnectUser?.onConnectUser(
+            MSMHandshakeAccept(
+                it.value.settings,
+                it.value.address,
+                it.key,
+                it.value.config
+            )
+        )
+    }
+
     fun sendHandshakeSettings(
-        model: MSMHandshakeSendInfo
+        model: MSMHandshakeSendInfo?
     ) = CoroutineScope(
         Dispatchers.IO
     ).launch {
         val result = mHandshake?.sendHandshakeSettings(
-            mUserId,
+            userId,
             model
         )
 
@@ -55,7 +73,11 @@ class MSServiceStreamImplHandshake
     ) {
         mHandshakes[
             result.userId
-        ] = result.settings
+        ] = MSMHandshakeSave(
+            result.settings,
+            result.address,
+            result.config
+        )
 
         withContext(
             Dispatchers.Main
@@ -66,3 +88,9 @@ class MSServiceStreamImplHandshake
         }
     }
 }
+
+private data class MSMHandshakeSave(
+    val settings: MSTypeDecoderSettings,
+    val address: InetAddress,
+    val config: ByteArray
+)

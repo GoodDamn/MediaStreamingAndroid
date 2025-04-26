@@ -5,28 +5,30 @@ import android.media.MediaFormat
 import android.util.Log
 import android.view.Surface
 import good.damn.media.streaming.camera.MSCameraCallbackDecoder
-import good.damn.media.streaming.camera.avc.cache.MSFrame
+import good.damn.media.streaming.camera.MSCameraCodecBuffers
 
-class MSDecoderAvc
-: MSCoder() {
+class MSDecoderAvc(
+    codecBuffers: MSCameraCodecBuffers
+): MSCoder() {
 
     companion object {
         private const val TAG = "MSDecoderAvc"
     }
 
     // may throws Exception with no h264 codec
-    override val mCoder = MediaCodec.createDecoderByType(
-        MIME_TYPE_CODEC
+    override val codec = MediaCodec.createDecoderByType(
+        MIMETYPE_CODEC
     )
 
-    private val mCallbackDecoder = MSCameraCallbackDecoder()
+    private val mCallbackDecoder = MSCameraCallbackDecoder(
+        codecBuffers
+    )
 
     var isConfigured = false
         private set
 
     override fun stop() {
         isConfigured = false
-        mCallbackDecoder.clearQueue()
         super.stop()
     }
 
@@ -46,7 +48,7 @@ class MSDecoderAvc
     fun configure(
         decodeSurface: Surface,
         format: MediaFormat
-    ) = mCoder.run {
+    ) = codec.run {
         isConfigured = true
 
         setCallback(
@@ -60,11 +62,4 @@ class MSDecoderAvc
             0
         )
     }
-
-    fun addFrame(
-        frame: MSFrame
-    ) = mCallbackDecoder.addFrame(
-        frame
-    )
-    
 }

@@ -1,14 +1,18 @@
 package good.damn.media.streaming.service
 
-import android.media.MediaFormat
 import android.os.Binder
-import good.damn.media.streaming.MSMStream
-import good.damn.media.streaming.MSTypeDecoderSettings
-import good.damn.media.streaming.camera.models.MSMCameraId
+import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
+import good.damn.media.streaming.service.impl.MSAccepterStreamConfigHandshake
+import good.damn.media.streaming.service.impl.MSListenerOnConnectUser
+import good.damn.media.streaming.service.impl.MSListenerOnSuccessHandshake
+import good.damn.media.streaming.service.impl.MSServiceStreamImplHandshake
+import good.damn.media.streaming.service.impl.MSServiceStreamImplVideo
 
 class MSServiceStreamBinder(
+    private val mUserId: Int,
     private val mImplVideo: MSServiceStreamImplVideo,
-    private val mImplHandshake: MSServiceStreamImplHandshake
+    private val mImplHandshake: MSServiceStreamImplHandshake,
+    private val mAccepterStreamConfig: MSAccepterStreamConfigHandshake
 ): Binder() {
 
     var onConnectUser: MSListenerOnConnectUser?
@@ -23,16 +27,20 @@ class MSServiceStreamBinder(
             mImplHandshake.onSuccessHandshake = v
         }
 
-    fun sendHandshakeSettings(
-        model: MSMHandshakeSendInfo
-    ) = mImplHandshake.sendHandshakeSettings(
-        model
+    fun requestConnectedUsers() = mImplHandshake
+        .requestConnectedUsers()
+
+    fun setCanSendFrames(
+        canReceive: Boolean
+    ) = mImplVideo.setCanSendFrames(
+        canReceive
     )
 
-    fun startStreamingCamera(
-        stream: MSMStream
-    ) = mImplVideo.startStreamingCamera(
-        stream
+    fun sendHandshakeSettings(
+        model: MSMHandshakeSendInfo
+    ) = mAccepterStreamConfig.sendHandshakeSettings(
+        mUserId,
+        model
     )
 
     fun stopStreamingCamera() = mImplVideo

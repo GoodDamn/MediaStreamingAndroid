@@ -1,7 +1,6 @@
 package good.damn.media.streaming.network.client
 
-import good.damn.media.streaming.extensions.toInetAddress
-import good.damn.media.streaming.network.MSStateable
+import android.util.Log
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -28,7 +27,7 @@ class MSClientUDP(
         this.port = port
     }
 
-    fun sendToStream(
+    fun send(
         data: ByteArray
     ) {
         mPacket.setData(
@@ -43,9 +42,10 @@ class MSClientUDP(
     }
 
     fun release() {
-        mSocket.apply {
-            disconnect()
-            close()
+        try {
+            mSocket.close()
+        } catch (e: Exception) {
+            Log.d(TAG, "release: ${e.message}")
         }
     }
 }

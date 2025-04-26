@@ -2,12 +2,11 @@ package good.damn.media.streaming.service
 
 import android.content.ComponentName
 import android.content.ServiceConnection
-import android.media.MediaFormat
 import android.os.IBinder
 import android.util.Log
-import good.damn.media.streaming.MSMStream
-import good.damn.media.streaming.MSTypeDecoderSettings
-import good.damn.media.streaming.camera.models.MSMCameraId
+import good.damn.media.streaming.models.handshake.MSMHandshakeSendInfo
+import good.damn.media.streaming.service.impl.MSListenerOnConnectUser
+import good.damn.media.streaming.service.impl.MSListenerOnSuccessHandshake
 
 class MSCameraServiceConnection
 : ServiceConnection {
@@ -30,16 +29,19 @@ class MSCameraServiceConnection
             mBinder?.onSuccessHandshake = v
         }
 
+    fun requestConnectedUsers() = mBinder
+        ?.requestConnectedUsers()
+
     fun sendHandshakeSettings(
         model: MSMHandshakeSendInfo
     ) = mBinder?.sendHandshakeSettings(
         model
     )
 
-    fun startStreamingVideo(
-        stream: MSMStream
-    ) = mBinder?.startStreamingCamera(
-        stream
+    fun setCanSendFrames(
+        canReceive: Boolean
+    ) = mBinder?.setCanSendFrames(
+        canReceive
     )
 
     fun stopStreamingVideo() = mBinder
@@ -58,8 +60,8 @@ class MSCameraServiceConnection
         name: ComponentName?
     ) {
         Log.d(TAG, "onServiceDisconnected: ")
-        mBinder?.onConnectUser = null
-        mBinder?.onSuccessHandshake = null
+        onConnectUser = null
+        onSuccessHandshake = null
         mBinder = null
     }
 

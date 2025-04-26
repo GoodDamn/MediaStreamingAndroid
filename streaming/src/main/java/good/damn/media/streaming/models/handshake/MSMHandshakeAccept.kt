@@ -1,4 +1,4 @@
-package good.damn.media.streaming.service
+package good.damn.media.streaming.models.handshake
 
 import good.damn.media.streaming.MSTypeDecoderSettings
 import java.net.InetAddress
@@ -6,5 +6,8 @@ import java.net.InetAddress
 data class MSMHandshakeAccept(
     val settings: MSTypeDecoderSettings,
     val address: InetAddress,
-    val userId: Int
-)
+    val userId: Int,
+    val config: ByteArray
+) {
+    override fun toString() = "$userId: ${address.hostAddress}"
+}

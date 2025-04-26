@@ -1,31 +1,50 @@
-package good.damn.media.streaming.service
+package good.damn.media.streaming.service.impl
 
 import android.content.Context
-import android.media.MediaFormat
 import android.os.Handler
 import android.os.HandlerThread
-import good.damn.media.streaming.MSMStream
+import good.damn.media.streaming.models.MSMStream
 import good.damn.media.streaming.MSStreamConstants
 import good.damn.media.streaming.camera.MSManagerCamera
 import good.damn.media.streaming.camera.MSStreamCameraInput
-import good.damn.media.streaming.camera.MSStreamSubscriber
-import good.damn.media.streaming.camera.models.MSMCameraId
+import good.damn.media.streaming.camera.MSStreamCameraInputConfig
+import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.toInetAddress
 import good.damn.media.streaming.network.client.MSClientUDP
 import good.damn.media.streaming.network.server.udp.MSReceiverCameraFrameRestore
 import good.damn.media.streaming.network.server.udp.MSServerUDP
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import java.util.LinkedList
 
-class MSServiceStreamImplVideo
-: MSStreamSubscriber {
+class MSServiceStreamImplVideo {
+
+    companion object {
+        private const val TAG = "MSServiceStreamImplVide"
+    }
 
     private var mStreamCamera: MSStreamCameraInput? = null
-    private var mClientStreamCamera: MSClientUDP? = null
     private var mServerRestorePackets: MSServerUDP? = null
-
     private var mThread: HandlerThread? = null
     private var mHandler: Handler? = null
+    private var mClientStreamCamera: MSClientUDP? = null
+
+    private val mBufferizerLocal = MSPacketBufferizer()
+    private val mClientDefragment = MSClientUDPDefragment(
+        mBufferizerLocal
+    )
+
+    private val mSubsStreamConfig = LinkedList<
+        MSStreamCameraInputConfig
+    >()
+
+    fun removeObserverStreamConfig(
+        sub: MSStreamCameraInputConfig
+    ) = mSubsStreamConfig.remove(sub)
+
+    fun observeStreamConfig(
+        sub: MSStreamCameraInputConfig
+    ) = mSubsStreamConfig.add(sub)
 
     fun startCommand(
         context: Context
@@ -49,9 +68,10 @@ class MSServiceStreamImplVideo
                 context
             )
         ).apply {
-            subscribers = arrayListOf(
-                this@MSServiceStreamImplVideo
+            subscribersFrame = arrayListOf(
+                mClientDefragment
             )
+            subscribersConfig = mSubsStreamConfig
         }
 
         mServerRestorePackets = MSServerUDP(
@@ -61,18 +81,26 @@ class MSServiceStreamImplVideo
                 Dispatchers.IO
             ),
             MSReceiverCameraFrameRestore().apply {
-                bufferizer = mStreamCamera!!.bufferizer
+                bufferizer = mBufferizerLocal
             }
         )
+    }
+
+    fun setCanSendFrames(
+        canSend: Boolean
+    ) {
+        mClientDefragment.client = if (
+            canSend
+        ) mClientStreamCamera else null
     }
 
     fun startStreamingCamera(
         stream: MSMStream
     ) {
+        mClientDefragment.userId = stream.userId
         mClientStreamCamera?.host = stream.host.toInetAddress()
         mServerRestorePackets?.start()
         mStreamCamera?.start(
-            stream.userId,
             stream.camera,
             stream.format,
             mHandler!!
@@ -95,13 +123,4 @@ class MSServiceStreamImplVideo
         mClientStreamCamera?.release()
         mServerRestorePackets?.release()
     }
-
-    override fun onGetPacket(
-        data: ByteArray
-    ) {
-        mClientStreamCamera?.sendToStream(
-            data
-        )
-    }
-
 }

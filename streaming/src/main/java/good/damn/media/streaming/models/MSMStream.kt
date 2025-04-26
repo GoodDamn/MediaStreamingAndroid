@@ -1,4 +1,4 @@
-package good.damn.media.streaming
+package good.damn.media.streaming.models
 
 import android.media.MediaFormat
 import good.damn.media.streaming.camera.models.MSMCameraId

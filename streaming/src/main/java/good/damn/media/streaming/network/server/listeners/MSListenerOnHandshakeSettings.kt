@@ -1,8 +1,6 @@
 package good.damn.media.streaming.network.server.listeners
 
-import good.damn.media.streaming.MSTypeDecoderSettings
-import good.damn.media.streaming.service.MSMHandshakeAccept
-import java.net.InetAddress
+import good.damn.media.streaming.models.handshake.MSMHandshakeAccept
 
 interface MSListenerOnHandshakeSettings {
     suspend fun onHandshakeSettings(

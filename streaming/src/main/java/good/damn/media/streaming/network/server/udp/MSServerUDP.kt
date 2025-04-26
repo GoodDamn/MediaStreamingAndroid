@@ -70,6 +70,7 @@ open class MSServerUDP(
             // causes infinite loop
             //mSocket.disconnect()
             mSocket?.close()
+            mSocket = null
         } catch (ignored: Exception) {}
     }
 

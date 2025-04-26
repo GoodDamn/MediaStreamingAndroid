@@ -7,8 +7,8 @@ import good.damn.media.streaming.extensions.readU
 import good.damn.media.streaming.extensions.toByteArray
 import good.damn.media.streaming.network.server.listeners.MSListenerOnAcceptClient
 import good.damn.media.streaming.network.server.listeners.MSListenerOnHandshakeSettings
-import good.damn.media.streaming.service.MSMHandshakeResult
-import good.damn.media.streaming.service.MSMHandshakeAccept
+import good.damn.media.streaming.models.handshake.MSMHandshakeResult
+import good.damn.media.streaming.models.handshake.MSMHandshakeAccept
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.nio.charset.StandardCharsets
@@ -28,7 +28,8 @@ class MSNetworkDecoderSettings
         userId: Int,
         host: InetSocketAddress,
         client: MSClientTCP,
-        settings: MSTypeDecoderSettings
+        settings: MSTypeDecoderSettings,
+        config: ByteArray
     ) = client.connect(
         host
     )?.run {
@@ -61,6 +62,14 @@ class MSNetworkDecoderSettings
 
             Log.d(TAG, "sendDecoderSettings: ${it.key}(${dataKey.size}) ${it.value}")
         }
+
+        second.write(
+            config.size.toByteArray()
+        )
+
+        second.write(
+            config
+        )
 
         val isOk = first.read() == ANSWER_OK
 
@@ -145,15 +154,34 @@ class MSNetworkDecoderSettings
             map[key] = value
         }
 
-        out.write(ANSWER_OK)
+        // Stream Config size
+        if (inp.read(
+            bufferVal,
+            0,
+            4
+        ) < 0) {
+            return@run
+        }
+
+        val config = ByteArray(
+            bufferVal.integerBE(0)
+        )
+
+        if (inp.read(config) < 0) {
+            return@run
+        }
 
         onHandshakeSettings?.onHandshakeSettings(
             MSMHandshakeAccept(
                 map,
                 srcAddr,
-                userId
+                userId,
+                config
             )
         )
+
+        Log.d(TAG, "onAcceptClient: OK")
+        out.write(ANSWER_OK)
     }
 
 }

@@ -7,8 +7,6 @@ import good.damn.media.streaming.camera.avc.cache.MSPacketBufferizer
 import good.damn.media.streaming.extensions.setIntegerOnPosition
 import good.damn.media.streaming.extensions.setShortOnPosition
 import good.damn.media.streaming.network.client.MSClientUDP
-import java.net.DatagramPacket
-import java.net.DatagramSocket
 import java.net.InetAddress
 
 class MSPacketMissingHandler
@@ -36,6 +34,11 @@ class MSPacketMissingHandler
         )
     }
 
+    fun release() {
+        host = null
+        mClient.release()
+    }
+
     override fun onEachMissedPacket(
         frameId: Int,
         packetId: Short
@@ -51,7 +54,7 @@ class MSPacketMissingHandler
             packetId.toInt(),
             4
         )
-        mClient.sendToStream(
+        mClient.send(
             buffer
         )
     }
